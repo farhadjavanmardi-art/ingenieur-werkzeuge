@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ART ENVI | Structure Final (Fixed)</title>
+    
+    <link rel="stylesheet" href="bibliotheken/fontawesome/css/all.min.css">
+    <style>
+        :root { 
+            --bg: #1e272e; 
+            --sidebar-bg: #2f3640; 
+            --accent: #f39c12; 
+            --text: #f5f6fa;
+            --border: #444;
+        }
+        body { margin: 0; overflow: hidden; background: var(--bg); font-family: 'Segoe UI', sans-serif; color: var(--text); }
+        
+        .header {
+            position: fixed; top: 0; width: 100%; height: 60px;
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 0 20px; box-sizing: border-box; background: #111; border-bottom: 3px solid var(--accent); z-index: 20;
+        }
+        .brand { font-size: 20px; font-weight: 800; color: #fff; display: flex; align-items: center; gap:10px; }
+        .brand span { font-size: 11px; color: #000; background: var(--accent); padding: 3px 8px; border-radius: 4px; }
+        
+        /* Updated Back Button Style */
+        .btn-back { 
+            text-decoration: none; color: #aaa; border: 1px solid #555; padding: 8px 15px; 
+            border-radius: 4px; font-size: 13px; font-weight: bold; display: flex; align-items: center; gap: 8px; transition: 0.3s;
+        }
+        .btn-back:hover { background: var(--accent); color: #000; border-color: var(--accent); }
+
+        #sidebar {
+            position: fixed; top: 60px; left: 0; bottom: 0; width: 340px;
+            background: var(--sidebar-bg); border-right: 1px solid var(--border);
+            padding: 20px; display: flex; flex-direction: column; overflow-y: auto; 
+        }
+        
+        .control-group { margin-bottom: 15px; background: #222; padding: 15px; border-radius: 8px; border: 1px solid #444; }
+        label { display: flex; justify-content: space-between; font-size: 11px; color: #ccc; margin-bottom: 5px; font-weight: bold; }
+        input, select { width: 100%; padding: 8px; background: #111; border: 1px solid #555; color: #fff; border-radius: 4px; box-sizing: border-box; }
+
+        .btn-action { 
+            width: 100%; padding: 12px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; 
+            color: #000; background: var(--accent); margin-top: 10px; transition: 0.2s;
+        }
+        .btn-export { background: #27ae60; color: white; }
+        .btn-action:hover { filter: brightness(1.1); transform: translateY(-2px); }
+
+        .type-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-bottom: 15px; }
+        .type-btn { padding: 10px; background: #111; border: 1px solid #444; color: #aaa; cursor: pointer; font-size: 10px; text-align: center; border-radius: 4px; transition: 0.2s; }
+        .type-btn:hover { background: #444; }
+        .type-btn.active { background: var(--accent); color: #000; border-color: var(--accent); font-weight: bold; }
+
+        #canvas-container {
+            margin-left: 340px; margin-top: 60px; width: calc(100% - 340px); height: calc(100vh - 60px);
+            background: radial-gradient(circle, #353b48 0%, #1e272e 100%);
+        }
+    </style>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "./bibliotheken/three-0.150/three.module.js",
+                "three/addons/": "./bibliotheken/three-0.150/jsm/"
+            }
+        }
+    </script>
+
+<style id="ki-ui-only-style">
+/* ===== KI Engineering UI Shell (Emerald) | UI-only patch ===== */
+html{ box-sizing:border-box; }
+*,*::before,*::after{ box-sizing:inherit; }
+:root{
+  --ki-emerald:#10b981;
+  --ki-emerald-2:#34d399;
+  --ki-topbar-h:64px;
+  --ki-shadow: 0 10px 25px rgba(0,0,0,0.35);
+  --ki-border: rgba(16,185,129,0.40);
+  --ki-bgbar:#0b1220; /* opaque to avoid "black line" bleed */
+}
+.ki-iconbtn{
+  width:42px;height:42px;border-radius:12px;
+  display:inline-flex;align-items:center;justify-content:center;
+  background:rgba(255,255,255,0.04);
+  border:1px solid rgba(255,255,255,0.10);
+  color:var(--ki-emerald-2);
+  text-decoration:none;
+  cursor:pointer;
+  transition:transform .15s ease, background .15s ease, border-color .15s ease;
+  box-shadow:0 6px 16px rgba(0,0,0,0.25);
+  flex:0 0 auto;
+  line-height:1;
+}
+.ki-iconbtn:hover{
+  transform: translateY(-1px);
+  background: rgba(16,185,129,0.12);
+  border-color: rgba(16,185,129,0.60);
+}
+.ki-ico{ width:20px;height:20px; fill:currentColor; pointer-events:none; }
+</style>
+
+<style id="ki-structure-ui-override">
+/* Match Electrical_Toolbox look: top bar with emerald accent */
+:root{
+  --accent: var(--ki-emerald) !important;
+}
+/* Re-skin existing header instead of adding new floating buttons */
+.header{
+  height: var(--ki-topbar-h) !important;
+  background: var(--ki-bgbar) !important;
+  border-bottom: 2px solid var(--ki-emerald) !important;
+  box-shadow: var(--ki-shadow) !important;
+  padding: 0 16px !important;
+  z-index: 2147483000 !important;
+}
+.header .brand span{
+  background: var(--ki-emerald) !important;
+  color: #061018 !important;
+}
+.btn-back{ display:none !important; } /* keep in DOM, hide visually */
+.ki-topbar-right{
+  position:absolute;
+  right:16px;
+  top:50%;
+  transform:translateY(-50%);
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+#sidebar{
+  top: var(--ki-topbar-h) !important;
+  height: calc(100vh - var(--ki-topbar-h)) !important;
+}
+#canvas-container{
+  margin-top: var(--ki-topbar-h) !important;
+  height: calc(100vh - var(--ki-topbar-h)) !important;
+}
+</style>
+
+<style id="ki-structure-modal-style">
+.ki-modal-overlay{
+  display:none;
+  position:fixed; inset:0;
+  background: rgba(0,0,0,0.70);
+  z-index:2147483647;
+  align-items:center;
+  justify-content:center;
+}
+.ki-modal-box{
+  width: 720px;
+  max-width: 92vw;
+  background: #0b1220;
+  border: 1px solid var(--ki-border);
+  border-radius: 14px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.55);
+  padding: 22px 22px 18px 22px;
+  color: rgba(255,255,255,0.92);
+  position: relative;
+}
+.ki-modal-title{
+  font: 800 18px/1.2 system-ui, -apple-system, Segoe UI, Roboto, Arial;
+  color: var(--ki-emerald-2);
+  margin: 0 36px 12px 0;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(255,255,255,0.10);
+  display:flex; align-items:center; gap:10px;
+}
+.ki-modal-close{
+  position:absolute;
+  top:14px; right:14px;
+  width:38px;height:38px;border-radius:12px;
+  border:1px solid rgba(255,255,255,0.10);
+  background: rgba(255,255,255,0.04);
+  color: rgba(255,255,255,0.75);
+  cursor:pointer;
+}
+.ki-modal-close:hover{ color:#fff; border-color: rgba(16,185,129,0.55); }
+.ki-help-grid{ display:grid; gap:10px; margin-top: 8px; }
+.ki-help-step{
+  border: 1px solid rgba(255,255,255,0.10);
+  background: rgba(255,255,255,0.03);
+  border-radius: 12px;
+  padding: 12px 12px;
+  display:flex; gap:12px;
+}
+.ki-step-num{
+  width:28px;height:28px;border-radius:999px;
+  background: var(--ki-emerald);
+  color: #061018;
+  font-weight:900;
+  display:flex;align-items:center;justify-content:center;
+  flex:0 0 auto;
+}
+.ki-step-txt{ font-size: 13px; line-height: 1.55; color: rgba(255,255,255,0.86); }
+.ki-step-txt strong{ color:#fff; }
+</style>
+<!-- Ein Aussehen fuer alle Werkzeuge. Steht direkt hinter dem letzten
+     <style> dieses Werkzeugs: spaeter in der Reihenfolge, also gewinnt
+     es bei gleicher Spezifitaet - aber so frueh wie moeglich, damit die
+     Seite nicht erst in der alten Farbe erscheint und dann umfaerbt.
+     Am Ende des <body> geladen war genau das zu sehen: Knoepfe mit
+     transition faerbten sichtbar um. Faerbt nur, verschiebt nichts.
+     Siehe werkzeug-stil.css. -->
+<link rel="stylesheet" href="werkzeug-stil.css">
+<!-- Sprachumschaltung Deutsch / Persisch / Englisch. Was nicht im
+     Woerterbuch steht, bleibt Deutsch. Siehe uebersetzung.js. -->
+<script src="woerter.js"></script>
+<script src="woerter/Structure_CAD.js"></script>
+<script src="uebersetzung.js"></script>
+
+
+</head>
+<body>
+
+<header class="header">
+    <div class="brand">ART ENVI <span>STRUCTURE PRO</span></div>
+    <!-- Redundant text button removed -->
+
+    <!-- KI_TOPBAR_ACTIONS_UI_ONLY -->
+    <div class="ki-topbar-right" aria-label="KI Top Actions">
+        <button type="button" class="ki-iconbtn" onclick="kiOpenHelp()" title="Info / Anleitung" aria-label="Info / Anleitung">
+            <svg class="ki-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 1 0 .001 20.001A10 10 0 0 0 12 2Zm0 4.8a1.2 1.2 0 1 1 0 2.4a1.2 1.2 0 0 1 0-2.4Zm1.6 12H10.9a.9.9 0 1 1 0-1.8h.9v-5.2h-.7a.9.9 0 1 1 0-1.8h1.5c.5 0 .9.4.9.9v6.1h.9a.9.9 0 1 1 0 1.8Z"/></svg>
+        </button>
+        <a class="ki-iconbtn" href="dashboard/" title="Home / Dashboard" aria-label="Home / Dashboard">
+            <svg class="ki-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.1 2.7 11a1 1 0 0 0 1.3 1.5l1-.8V20a2 2 0 0 0 2 2h3.8a1 1 0 0 0 1-1v-5.2h2.4V21a1 1 0 0 0 1 1H17a2 2 0 0 0 2-2v-8.3l1 .8a1 1 0 1 0 1.3-1.5L12 3.1Z"/></svg>
+        </a>
+    </div>
+</header>
+
+<!-- KI_HELP_MODAL_UI_ONLY -->
+<div id="kiHelpModal" class="ki-modal-overlay" role="dialog" aria-modal="true" aria-label="Structure CAD Help">
+  <div class="ki-modal-box">
+    <button type="button" class="ki-modal-close" onclick="kiCloseHelp()" aria-label="Close">✕</button>
+    <div class="ki-modal-title"><svg class="ki-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 1 0 .001 20.001A10 10 0 0 0 12 2Zm0 4.8a1.2 1.2 0 1 1 0 2.4a1.2 1.2 0 0 1 0-2.4Zm1.6 12H10.9a.9.9 0 1 1 0-1.8h.9v-5.2h-.7a.9.9 0 1 1 0-1.8h1.5c.5 0 .9.4.9.9v6.1h.9a.9.9 0 1 1 0 1.8Z"/></svg> Struktur CAD | Anleitung</div>
+    <div class="ki-help-grid">
+      <div class="ki-help-step"><div class="ki-step-num">1</div><div class="ki-step-txt"><strong>Struktur-Typ wählen:</strong> Halle, Plattform, Pipe Rack, Silo, Bridge oder Tower auswählen.</div></div>
+      <div class="ki-help-step"><div class="ki-step-num">2</div><div class="ki-step-txt"><strong>Dimensionen eingeben (m):</strong> Länge (L), Breite (W), Höhe (H) und Raster/Bay einstellen. Änderungen aktualisieren das 3D-Modell.</div></div>
+      <div class="ki-help-step"><div class="ki-step-num">3</div><div class="ki-step-txt"><strong>Profil & Optionen:</strong> HEB/IPE wählen, Verbände und Geländer bei Bedarf aktivieren.</div></div>
+      <div class="ki-help-step"><div class="ki-step-num">4</div><div class="ki-step-txt"><strong>CAD Export:</strong> „DXF Export (CAD)” nutzen, um das Modell als DXF zu exportieren.</div></div>
+    </div>
+  </div>
+</div>
+
+
+<div id="sidebar">
+    <h3 style="color:var(--accent); border-bottom:1px solid #555; padding-bottom:5px;">1. Struktur-Typ</h3>
+    <div class="type-grid">
+        <div class="type-btn active" onclick="setType('hall', this)">Halle<br>(Hall)</div>
+        <div class="type-btn" onclick="setType('platform', this)">Bühne<br>(Platform)</div>
+        <div class="type-btn" onclick="setType('rack', this)">Pipe Rack<br>(Brücke)</div>
+        <div class="type-btn" onclick="setType('silo', this)">Silo-Bau<br>(Support)</div>
+        <div class="type-btn" onclick="setType('tower', this)">Turm<br>(Tower)</div>
+        <div class="type-btn" onclick="setType('bridge', this)">Conveyor<br>(Bridge)</div>
+    </div>
+
+    <h3 style="color:#aaa; border-bottom:1px solid #555; padding-bottom:5px;">2. Dimensionen (m)</h3>
+    
+    <div class="control-group">
+        <label>Länge (L) [m]</label><input type="number" id="inpL" value="20" onchange="updateModel()">
+        <label>Breite (W) [m]</label><input type="number" id="inpW" value="12" onchange="updateModel()">
+        <label>Höhe (H) [m]</label><input type="number" id="inpH" value="6" onchange="updateModel()">
+        <label id="lblGrid">Raster (Bay) [m]</label><input type="number" id="inpBay" value="5" onchange="updateModel()">
+    </div>
+
+    <div class="control-group">
+        <label>Profil-Typ</label>
+        <select id="inpProfile" onchange="profilUebernehmen()">
+            <option value="HEB">HEB 200 (schwer)</option>
+            <option value="IPE">IPE 240 (leicht)</option>
+        </select>
+        <div style="margin-top:8px; display:flex; gap:8px;">
+            <div style="flex:1"><label>Stützenbreite [mm]</label>
+                <input type="number" id="inpProfW" value="200" onchange="updateModel()"></div>
+            <div style="flex:1"><label>Stützentiefe [mm]</label>
+                <input type="number" id="inpProfD" value="200" onchange="updateModel()"></div>
+        </div>
+        <div style="margin-top:10px; display:flex; gap:10px; color:#aaa; font-size:11px;">
+            <label><input type="checkbox" id="chkBracing" checked onchange="updateModel()"> Verbände</label>
+            <label><input type="checkbox" id="chkRail" checked onchange="updateModel()"> Geländer</label>
+        </div>
+    </div>
+
+    <h3 style="color:#27ae60; border-bottom:1px solid #555; padding-bottom:5px;">3. Export</h3>
+    <div class="control-group">
+        <button class="btn-action btn-export" onclick="exportDXF_Pro()">DXF Export (CAD)</button>
+    </div>
+    
+    <div style="font-size:11px; color:#888; margin-top:10px;">
+        Status: <span id="statusMsg" style="color:var(--accent)">Bereit</span>
+    </div>
+</div>
+
+<div id="canvas-container"></div>
+
+<script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+    let scene, camera, renderer, controls;
+    let mainGroup, steelGroup, concreteGroup, railGroup, equipmentGroup;
+    let currentType = 'hall';
+
+    // Die zwei Profile waren zwei feste Zahlenpaare im Code: HEB hiess
+    // 200 x 200, IPE hiess 120 x 240, und auf dem Schirm stand nur
+    // "HEB (Schwer)". Welches Profil gezeichnet wurde, stand nirgends.
+    // Jetzt nennt die Auswahl die Groesse, und die beiden Masse sind
+    // Eingabefelder mit diesen Werten als Vorgabe - wer die Profiltabelle
+    // hat, traegt HEB 300 ein, statt sich auf eine Annahme zu verlassen.
+    const PROFIL_VORGABE = { HEB: { w: 200, d: 200 }, IPE: { w: 120, d: 240 } };
+
+    // Mehr Felder als das hier baut niemand von Hand. Die Grenze ist eine
+    // Grenze der Maschine, keine Regel des Stahlbaus - sie steht hier,
+    // damit ein Tippfehler nicht den Browser anhaelt. Beide Konstanten
+    // stehen bewusst hier oben: init() ruft updateModel() auf, und weiter
+    // unten laegen sie beim Laden noch in der temporalen Totzone.
+    const MAX_FELDER = 500;
+
+    const MAT = {
+        steel: new THREE.MeshStandardMaterial({ color: 0x7f8c8d, roughness: 0.6, metalness: 0.4, name: "Steel" }),
+        concrete: new THREE.MeshStandardMaterial({ color: 0x95a5a6, roughness: 0.9, name: "Concrete" }),
+        railing: new THREE.MeshStandardMaterial({ color: 0xf1c40f, roughness: 0.5, name: "Railing" }),
+        grating: new THREE.MeshStandardMaterial({ color: 0xbdc3c7, roughness: 0.8, opacity:0.8, transparent:true, name: "Grating", side: THREE.DoubleSide }),
+        tank: new THREE.MeshStandardMaterial({ color: 0xdfe6e9, roughness: 0.2, metalness: 0.8, name: "Tank" }) // Shiny Steel for Silo
+    };
+
+    window.setType = setType;
+    window.updateModel = updateModel;
+    window.profilUebernehmen = profilUebernehmen;
+    window.exportDXF_Pro = exportDXF_Pro;
+
+    init();
+
+    function init() {
+        const container = document.getElementById('canvas-container');
+        scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x2f3640);
+        scene.add(new THREE.GridHelper(5000, 50, 0x444444, 0x222222));
+
+        camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 10, 50000);
+        camera.position.set(2000, 1500, 2000);
+
+        renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(container.clientWidth, container.clientHeight);
+        renderer.shadowMap.enabled = true;
+        container.appendChild(renderer.domElement);
+
+        controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+
+        const ambi = new THREE.AmbientLight(0xffffff, 0.6);
+        scene.add(ambi);
+        const dir = new THREE.DirectionalLight(0xffffff, 0.8);
+        dir.position.set(1000, 2000, 1000);
+        scene.add(dir);
+
+        updateModel();
+        window.addEventListener('resize', onResize);
+        animate();
+    }
+
+    function setType(type, btn) {
+        currentType = type;
+        document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        
+        // Smart Presets
+        const setVal = (id, val) => document.getElementById(id).value = val;
+        if(type === 'hall') { setVal('inpL', 20); setVal('inpW', 12); setVal('inpH', 6); }
+        else if (type === 'platform') { setVal('inpL', 6); setVal('inpW', 4); setVal('inpH', 3); }
+        else if (type === 'rack') { setVal('inpL', 30); setVal('inpW', 4); setVal('inpH', 6); }
+        else if (type === 'silo') { setVal('inpL', 6); setVal('inpW', 6); setVal('inpH', 5); } // Silo structure needs height
+        else if (type === 'bridge') { setVal('inpL', 30); setVal('inpW', 2); setVal('inpH', 3); }
+        else if (type === 'tower') { setVal('inpL', 4); setVal('inpW', 4); setVal('inpH', 12); }
+        
+        updateModel();
+    }
+
+    function profilUebernehmen() {
+        const v = PROFIL_VORGABE[document.getElementById('inpProfile').value];
+        if (v) {
+            document.getElementById('inpProfW').value = v.w;
+            document.getElementById('inpProfD').value = v.d;
+        }
+        updateModel();
+    }
+
+    function zahlFeld(id) {
+        const v = parseFloat(document.getElementById(id).value);
+        return isFinite(v) ? v : null;
+    }
+
+    function updateModel() {
+        if(mainGroup) scene.remove(mainGroup);
+
+        const Lm = zahlFeld('inpL'), Wm = zahlFeld('inpW');
+        const Hm = zahlFeld('inpH'), Baym = zahlFeld('inpBay');
+        const meldung = (t) => { document.getElementById('statusMsg').innerText = t; };
+
+        // Ein Rastermass von null hat das Werkzeug aufgehaengt: bays wurde
+        // Math.floor(L / 0) = Infinity, und die Schleife lief endlos. Ein
+        // leeres Laengenfeld ergab NaN und damit ein leeres Modell, ohne
+        // dass jemand etwas davon erfuhr. Beides wird jetzt gesagt.
+        if (Lm === null || Wm === null || Hm === null || Baym === null) {
+            meldung("Bitte Länge, Breite, Höhe und Raster mit Zahlen füllen.");
+            return;
+        }
+        if (Lm <= 0 || Wm <= 0 || Hm <= 0 || Baym <= 0) {
+            meldung("Alle Maße müssen größer als null sein.");
+            return;
+        }
+        if (Lm / Baym > MAX_FELDER) {
+            meldung("Zu viele Felder für ein Raster dieser Größe.");
+            return;
+        }
+
+        const L = Lm * 1000;
+        const W = Wm * 1000;
+        const H = Hm * 1000;
+        const Bay = Baym * 1000;
+        const hasBrace = document.getElementById('chkBracing').checked;
+        const hasRail = document.getElementById('chkRail').checked;
+
+        const cW = zahlFeld('inpProfW');
+        const cD = zahlFeld('inpProfD');
+        if (cW === null || cD === null || cW <= 0 || cD <= 0) {
+            meldung("Stützenbreite und -tiefe müssen Zahlen größer als null sein.");
+            return;
+        }
+
+        mainGroup = new THREE.Group();
+        steelGroup = new THREE.Group();
+        concreteGroup = new THREE.Group();
+        railGroup = new THREE.Group();
+        equipmentGroup = new THREE.Group(); // For Tanks/Silos
+
+        if(currentType === 'hall') buildHall(L,W,H,Bay, cW, cD, hasBrace);
+        else if(currentType === 'platform') buildPlatform(L,W,H,Bay, cW, cD, hasRail);
+        else if(currentType === 'rack') buildRack(L,W,H,Bay, cW, cD, hasBrace);
+        else if(currentType === 'silo') buildSiloStructure(L,W,H,cW,cD, hasBrace, hasRail);
+        else if(currentType === 'bridge') buildConveyorBridge(L,W,H,cW,cD, hasRail);
+        else if(currentType === 'tower') buildTower(L,W,H,cW,cD, hasBrace, hasRail);
+
+        mainGroup.add(steelGroup);
+        mainGroup.add(concreteGroup);
+        mainGroup.add(railGroup);
+        mainGroup.add(equipmentGroup);
+        scene.add(mainGroup);
+        
+        document.getElementById('statusMsg').innerText = "Erstellt: " + currentType.toUpperCase();
+    }
+
+    // --- 4. SILO STRUCTURE (FIXED) ---
+    function buildSiloStructure(L, W, H, cW, cD, brace, rail) {
+        // 4 Heavy Main Columns
+        const xPos = [-W/2, W/2];
+        const zPos = [-L/2, L/2];
+        
+        xPos.forEach(x => {
+            zPos.forEach(z => {
+                addBeam(cW*1.5, H, cD*1.5, x, H/2, z); // Heavy cols
+                addFoundation(x, z);
+            });
+        });
+
+        // Top Frame (Ring Beam)
+        addBeam(W, cD*1.5, cW, 0, H, -L/2);
+        addBeam(W, cD*1.5, cW, 0, H, L/2);
+        addBeam(cW, cD*1.5, L, -W/2, H, 0);
+        addBeam(cW, cD*1.5, L, W/2, H, 0);
+
+        // Cross Bracing (Heavy X)
+        if(brace) {
+            // Front & Back
+            addXBrace(-W/2, H/2, -L/2, W/2, H/2, -L/2, H, W);
+            addXBrace(-W/2, H/2, L/2, W/2, H/2, L/2, H, W);
+            // Sides
+            addXBrace(-W/2, H/2, -L/2, -W/2, H/2, L/2, H, L);
+            addXBrace(W/2, H/2, -L/2, W/2, H/2, L/2, H, L);
+        }
+
+        // Grating Platform on top (with hole for silo)
+        // Simplified as 4 plates around center
+        const plateW = (W - 2500)/2; // Gap for silo
+        if(plateW > 0) {
+            const p1 = new THREE.Mesh(new THREE.BoxGeometry(plateW, 30, L), MAT.grating); p1.position.set(-W/2 + plateW/2, H+15, 0); steelGroup.add(p1);
+            const p2 = new THREE.Mesh(new THREE.BoxGeometry(plateW, 30, L), MAT.grating); p2.position.set(W/2 - plateW/2, H+15, 0); steelGroup.add(p2);
+        }
+
+        // THE SILO VESSEL
+        const tankH = H * 1.2;
+        const tankRad = Math.min(W, L) / 2 - 200; 
+        
+        // Cylinder Body
+        const tank = new THREE.Mesh(new THREE.CylinderGeometry(tankRad, tankRad, tankH, 32), MAT.tank);
+        tank.position.y = H + tankH/2;
+        equipmentGroup.add(tank);
+        
+        // Cone Bottom (Hopper)
+        const coneH = H * 0.4;
+        const cone = new THREE.Mesh(new THREE.CylinderGeometry(tankRad, 200, coneH, 32), MAT.tank);
+        cone.position.y = H - coneH/2;
+        equipmentGroup.add(cone);
+        
+        // Cap
+        const cap = new THREE.Mesh(new THREE.ConeGeometry(tankRad, 500, 32), MAT.tank);
+        cap.position.y = H + tankH + 250;
+        equipmentGroup.add(cap);
+
+        if(rail) addRailingRect(W, L, H);
+    }
+
+    // --- OTHER BUILDERS ---
+    function buildHall(L, W, H, Bay, cW, cD, brace) {
+        const bays = Math.floor(L / Bay);
+        const roofH = H + W * 0.15; 
+        for(let i=0; i<=bays; i++) {
+            const z = -L/2 + i*Bay;
+            addBeam(cW, H, cD, -W/2, H/2, z);
+            addBeam(cW, H, cD, W/2, H/2, z);
+            addFoundation(-W/2, z); addFoundation(W/2, z);
+            
+            // Roof Rafters
+            const rafLen = Math.sqrt(Math.pow(W/2, 2) + Math.pow(roofH-H, 2));
+            const rL = new THREE.Mesh(new THREE.BoxGeometry(rafLen, cW, cD), MAT.steel);
+            rL.position.set(-W/4, H+(roofH-H)/2, z); rL.rotation.z = 0.3; steelGroup.add(rL);
+            const rR = new THREE.Mesh(new THREE.BoxGeometry(rafLen, cW, cD), MAT.steel);
+            rR.position.set(W/4, H+(roofH-H)/2, z); rR.rotation.z = -0.3; steelGroup.add(rR);
+
+            if(i < bays) {
+                addBeam(cW, cW, Bay, -W/2, H*0.8, z+Bay/2); // Eave strut
+                addBeam(cW, cW, Bay, W/2, H*0.8, z+Bay/2);
+                addBeam(cW, cW, Bay, 0, roofH, z+Bay/2); // Ridge
+                if(brace && (i===0 || i===bays-1)) {
+                    addXBrace(-W/2, H/2, z, -W/2, H/2, z+Bay, H, Bay);
+                    addXBrace(W/2, H/2, z, W/2, H/2, z+Bay, H, Bay);
+                }
+            }
+        }
+    }
+
+    function buildPlatform(L, W, H, Bay, cW, cD, rail) {
+        const bays = Math.ceil(L / 3000); const bayLen = L / bays;
+        for(let i=0; i<=bays; i++) {
+            const z = -L/2 + i*bayLen;
+            addBeam(cW, H, cD, -W/2, H/2, z); addBeam(cW, H, cD, W/2, H/2, z);
+            addFoundation(-W/2, z); addFoundation(W/2, z);
+            addBeam(W, cD, cW, 0, H, z);
+        }
+        addBeam(cW, cD, L, -W/2, H, 0); addBeam(cW, cD, L, W/2, H, 0);
+        const floor = new THREE.Mesh(new THREE.BoxGeometry(W, 30, L), MAT.grating);
+        floor.position.set(0, H+15, 0); steelGroup.add(floor);
+        if(rail) addRailingRect(W, L, H);
+    }
+
+    function buildRack(L, W, H, Bay, cW, cD, brace) {
+        const bays = Math.floor(L/Bay); const h1 = H * 0.6; const h2 = H;
+        for(let i=0; i<=bays; i++) {
+            const z = -L/2 + i*Bay;
+            addBeam(cW, H, cD, -W/2, H/2, z); addBeam(cW, H, cD, W/2, H/2, z);
+            addFoundation(-W/2, z); addFoundation(W/2, z);
+            addBeam(W, cD, cW, 0, h1, z); addBeam(W, cD, cW, 0, h2, z);
+            if(i<bays) {
+                addBeam(cW, cD, Bay, -W/2, h1, z+Bay/2); addBeam(cW, cD, Bay, W/2, h1, z+Bay/2);
+                addBeam(cW, cD, Bay, -W/2, h2, z+Bay/2); addBeam(cW, cD, Bay, W/2, h2, z+Bay/2);
+            }
+        }
+    }
+
+    function buildConveyorBridge(L, W, H, cW, cD, rail) {
+        const trussH = 1500;
+        const numSup = Math.ceil(L/12000); const span = L/numSup;
+        for(let i=0; i<=numSup; i++) {
+            const z = -L/2 + i*span;
+            // V-Legs
+            const legH = H;
+            const l1 = new THREE.Mesh(new THREE.BoxGeometry(cW, Math.sqrt(legH*legH + (W/2)*(W/2)), cD), MAT.steel);
+            l1.position.set(-W/4, legH/2, z); l1.rotation.z = -0.15; steelGroup.add(l1);
+            const l2 = new THREE.Mesh(new THREE.BoxGeometry(cW, Math.sqrt(legH*legH + (W/2)*(W/2)), cD), MAT.steel);
+            l2.position.set(W/4, legH/2, z); l2.rotation.z = 0.15; steelGroup.add(l2);
+            addFoundation(-W/2, z); addFoundation(W/2, z);
+        }
+        // Truss
+        addBeam(cW, cW, L, -W/2, H, 0); addBeam(cW, cW, L, W/2, H, 0); // Bottom chords
+        addBeam(cW, cW, L, -W/2, H+trussH, 0); addBeam(cW, cW, L, W/2, H+trussH, 0); // Top chords
+        // Verticals
+        const segs = Math.floor(L/1500);
+        for(let i=0; i<=segs; i++) {
+            const z = -L/2 + i*1500;
+            addBeam(cW, trussH, cW, -W/2, H+trussH/2, z);
+            addBeam(cW, trussH, cW, W/2, H+trussH/2, z);
+            addBeam(W, cW, cW, 0, H, z);
+        }
+        const floor = new THREE.Mesh(new THREE.BoxGeometry(W, 20, L), MAT.grating);
+        floor.position.y = H+10; steelGroup.add(floor);
+        if(rail) addRailing(L, W, H);
+    }
+
+    function buildTower(L, W, H, cW, cD, brace, rail) {
+        addBeam(cW, H, cD, -W/2, H/2, -L/2); addBeam(cW, H, cD, W/2, H/2, -L/2);
+        addBeam(cW, H, cD, -W/2, H/2, L/2); addBeam(cW, H, cD, W/2, H/2, L/2);
+        addFoundation(-W/2, -L/2); addFoundation(W/2, -L/2);
+        addFoundation(-W/2, L/2); addFoundation(W/2, L/2);
+        const levs = Math.floor(H/3000);
+        for(let i=1; i<=levs; i++) {
+            const hL = i*3000;
+            addBeam(W, cD, cW, 0, hL, -L/2); addBeam(W, cD, cW, 0, hL, L/2);
+            addBeam(cW, cD, L, -W/2, hL, 0); addBeam(cW, cD, L, W/2, hL, 0);
+            const fl = new THREE.Mesh(new THREE.BoxGeometry(W, 30, L), MAT.grating);
+            fl.position.y = hL+15; steelGroup.add(fl);
+            // Stairs
+            const sLen = Math.sqrt(3000*3000 + L*L);
+            const st = new THREE.Mesh(new THREE.BoxGeometry(W/2, 50, sLen), MAT.steel);
+            st.position.set(0, hL-1500, 0); st.rotation.x = (i%2===0)?0.6:-0.6; steelGroup.add(st);
+            if(rail) addRailingRect(W, L, hL);
+        }
+        if(brace) {
+            addXBrace(-W/2, H/2, 0, -W/2, H/2, 0, H, L); // Side
+            addXBrace(W/2, H/2, 0, W/2, H/2, 0, H, L);
+        }
+    }
+
+    // --- UTILS ---
+    function addBeam(x, y, z, px, py, pz) {
+        const b = new THREE.Mesh(new THREE.BoxGeometry(x, y, z), MAT.steel);
+        b.position.set(px, py, pz); steelGroup.add(b);
+    }
+    function addFoundation(x, z) {
+        const f = new THREE.Mesh(new THREE.BoxGeometry(600, 400, 600), MAT.concrete);
+        f.position.set(x, -200, z); concreteGroup.add(f);
+    }
+    function addXBrace(cx, cy, cz, cx2, cy2, cz2, h, w) {
+        // Simplified X
+        const len = Math.sqrt(h*h + w*w);
+        const b1 = new THREE.Mesh(new THREE.CylinderGeometry(20, 20, len, 8), MAT.steel);
+        b1.position.set(cx, cy, cz);
+        // Rotation logic simplified for demo: Just showing existence
+        if(Math.abs(cz-cz2) < 10) { b1.rotation.z = 0.5; } else { b1.rotation.x = 0.5; }
+        steelGroup.add(b1);
+        const b2 = b1.clone(); 
+        if(Math.abs(cz-cz2) < 10) { b2.rotation.z = -0.5; } else { b2.rotation.x = -0.5; }
+        steelGroup.add(b2);
+    }
+    function addRailingRect(w, l, y) {
+        const hR = 1100;
+        const top1 = new THREE.Mesh(new THREE.BoxGeometry(w, 40, 40), MAT.railing); top1.position.set(0, y+hR, l/2); railGroup.add(top1);
+        const top2 = new THREE.Mesh(new THREE.BoxGeometry(w, 40, 40), MAT.railing); top2.position.set(0, y+hR, -l/2); railGroup.add(top2);
+        const top3 = new THREE.Mesh(new THREE.BoxGeometry(40, 40, l), MAT.railing); top3.position.set(w/2, y+hR, 0); railGroup.add(top3);
+        const top4 = new THREE.Mesh(new THREE.BoxGeometry(40, 40, l), MAT.railing); top4.position.set(-w/2, y+hR, 0); railGroup.add(top4);
+        const p1 = new THREE.Mesh(new THREE.BoxGeometry(40, hR, 40), MAT.railing); p1.position.set(w/2, y+hR/2, l/2); railGroup.add(p1);
+        const p2 = new THREE.Mesh(new THREE.BoxGeometry(40, hR, 40), MAT.railing); p2.position.set(-w/2, y+hR/2, l/2); railGroup.add(p2);
+        const p3 = new THREE.Mesh(new THREE.BoxGeometry(40, hR, 40), MAT.railing); p3.position.set(w/2, y+hR/2, -l/2); railGroup.add(p3);
+        const p4 = new THREE.Mesh(new THREE.BoxGeometry(40, hR, 40), MAT.railing); p4.position.set(-w/2, y+hR/2, -l/2); railGroup.add(p4);
+    }
+    function addRailing(L, W, y) {
+        const hR = 1100;
+        const r1 = new THREE.Mesh(new THREE.BoxGeometry(40, 40, L), MAT.railing); r1.position.set(W/2, y+hR, 0); railGroup.add(r1);
+        const r2 = new THREE.Mesh(new THREE.BoxGeometry(40, 40, L), MAT.railing); r2.position.set(-W/2, y+hR, 0); railGroup.add(r2);
+    }
+
+    function exportDXF_Pro() {
+        let dxf = "0\nSECTION\n2\nHEADER\n9\n$ACADVER\n1\nAC1009\n0\nENDSEC\n0\nSECTION\n2\nENTITIES\n";
+        mainGroup.updateMatrixWorld(true);
+        mainGroup.traverse(child => {
+            if (child.isMesh) {
+                const geom = child.geometry;
+                const mat = child.matrixWorld;
+                let layer = "Structure_Steel";
+                if(child.parent === concreteGroup) layer = "Structure_Concrete";
+                if(child.parent === railGroup) layer = "Structure_Railing";
+                if(child.parent === equipmentGroup) layer = "Structure_Equipment";
+
+                const pos = geom.attributes.position;
+                const idx = geom.index;
+                const face = (a, b, c) => {
+                    const v1 = new THREE.Vector3().fromBufferAttribute(pos, a).applyMatrix4(mat);
+                    const v2 = new THREE.Vector3().fromBufferAttribute(pos, b).applyMatrix4(mat);
+                    const v3 = new THREE.Vector3().fromBufferAttribute(pos, c).applyMatrix4(mat);
+                    dxf += `0\n3DFACE\n8\n${layer}\n10\n${v1.x.toFixed(3)}\n20\n${v1.y.toFixed(3)}\n30\n${v1.z.toFixed(3)}\n11\n${v2.x.toFixed(3)}\n21\n${v2.y.toFixed(3)}\n31\n${v2.z.toFixed(3)}\n12\n${v3.x.toFixed(3)}\n22\n${v3.y.toFixed(3)}\n32\n${v3.z.toFixed(3)}\n13\n${v3.x.toFixed(3)}\n23\n${v3.y.toFixed(3)}\n33\n${v3.z.toFixed(3)}\n`;
+                };
+                if (idx) { for (let i=0; i<idx.count; i+=3) face(idx.getX(i), idx.getX(i+1), idx.getX(i+2)); }
+                else { for (let i=0; i<pos.count; i+=3) face(i, i+1, i+2); }
+            }
+        });
+        dxf += "0\nENDSEC\n0\nEOF";
+        const blob = new Blob([dxf], {type:'application/dxf'});
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `Structure_${currentType}.dxf`;
+        link.click();
+    }
+
+    function onResize() {
+        const c = document.getElementById('canvas-container');
+        camera.aspect = c.clientWidth / c.clientHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(c.clientWidth, c.clientHeight);
+    }
+    function animate() { requestAnimationFrame(animate); controls.update(); renderer.render(scene, camera); }
+</script>
+
+<script id="ki-structure-help-js">
+/* UI-only: help modal controls (namespaced) */
+(function(){
+  function byId(id){ return document.getElementById(id); }
+  window.kiOpenHelp = function(){
+    var m = byId('kiHelpModal');
+    if(!m) return;
+    m.style.display = 'flex';
+  };
+  window.kiCloseHelp = function(){
+    var m = byId('kiHelpModal');
+    if(!m) return;
+    m.style.display = 'none';
+  };
+  document.addEventListener('keydown', function(ev){
+    if(ev.key === 'Escape') window.kiCloseHelp();
+  });
+  document.addEventListener('click', function(ev){
+    var m = byId('kiHelpModal');
+    if(!m || m.style.display !== 'flex') return;
+    if(ev.target === m) window.kiCloseHelp();
+  }, true);
+})();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,1021 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ART ENVI | Schaltschrank CAD Pro v2</title>
+    
+    <link rel="stylesheet" href="bibliotheken/fontawesome/css/all.min.css">
+    <link href="bibliotheken/inter/inter.css" rel="stylesheet">
+    <script src="bibliotheken/jspdf.umd.min.js"></script>
+    <script src="bibliotheken/html2canvas.min.js"></script>
+
+    <style>
+        :root {
+            /* Dashboard Theme Colors */
+            --bg-dark: #121212;
+            --panel-dark: #0a0a0a;
+            --card-bg: #1e272e;
+            --border-color: #333;
+            --accent: #00d2d3; /* Cyan Accent */
+            --accent-hover: #00b8b9;
+            --text-main: #ecf0f1;
+            --text-mute: #aaa;
+            
+            --plate-color: #dcdcdc; /* Helle Platte für Kontrast */
+            --grid-line: rgba(0,0,0,0.1);
+            
+            --danger: #ff4757;
+            --success: #2ecc71;
+            --cad-color: #f39c12;
+            --info: #3498db;
+        }
+
+        body { margin: 0; padding: 0; background: var(--bg-dark); color: var(--text-main); font-family: 'Inter', sans-serif; height: 100vh; display: flex; overflow: hidden; }
+        
+        /* LAYOUT STRUCTURE */
+        .app-container { display: flex; width: 100%; height: 100%; }
+        
+        /* SIDEBAR LEFT (Library) */
+        .sidebar-left { width: 320px; background: var(--panel-dark); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; z-index: 20; box-shadow: 4px 0 20px rgba(0,0,0,0.5); }
+        
+        .sidebar-header { 
+            padding: 20px; border-bottom: 1px solid var(--border-color); background: #151515; 
+            padding-left: 20px; text-align: center;
+        }
+
+        /* TOP LEFT NAVIGATION (FIXED) */
+        .top-nav {
+            position: fixed; top: 12px; right: 12px; left: auto; z-index: 9999; display: flex; gap: 10px; align-items: center;
+        }
+        .nav-btn {
+            width: 42px; height: 42px; background: rgba(6,78,59,0.96); border: 1px solid rgba(16,185,129,0.55); border-radius: 10px;
+            color: #d1fae5; display: flex; align-items: center; justify-content: center;
+            font-size: 18px; cursor: pointer; transition: 0.2s; text-decoration: none;
+            box-shadow: 0 6px 16px rgba(0,0,0,0.35); user-select: none;
+        }
+        .nav-btn:hover { background: rgba(16,185,129,0.95); color: #052e1f; transform: translateY(-1px); }
+
+        .brand { font-size: 20px; font-weight: 800; color: #fff; display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 40px; } 
+        .brand span { color: var(--accent); }
+        
+        .scroll-content { flex: 1; overflow-y: auto; padding: 20px; }
+        .scroll-content::-webkit-scrollbar { width: 6px; }
+        .scroll-content::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+
+        h3 { font-size: 11px; color: var(--text-mute); text-transform: uppercase; letter-spacing: 1.2px; margin-top: 25px; margin-bottom: 10px; font-weight: 700; border-bottom: 1px solid #333; padding-bottom: 5px; }
+
+        .input-group { display: flex; gap: 10px; margin-bottom: 15px; }
+        .input-wrapper { flex: 1; }
+        label { font-size: 10px; color: var(--text-mute); display: block; margin-bottom: 5px; text-transform: uppercase; }
+        input, select { 
+            width: 100%; background: #1a1a1a; border: 1px solid #444; color: #fff; padding: 10px; border-radius: 6px; font-size: 12px; transition: 0.3s; box-sizing: border-box; 
+        }
+        input[type="color"] { padding: 0; height: 35px; cursor: pointer; }
+        input:focus, select:focus { border-color: var(--accent); outline: none; }
+
+        /* Component List */
+        .comp-list { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .lib-item {
+            background: var(--card-bg); padding: 15px 10px; border-radius: 8px; cursor: pointer; text-align: center; border: 1px solid #333; transition: 0.2s;
+            display: flex; flex-direction: column; align-items: center; gap: 8px;
+        }
+        .lib-item:hover { transform: translateY(-3px); border-color: var(--accent); box-shadow: 0 5px 15px rgba(0, 210, 211, 0.1); }
+        
+        .icon-box {
+            width: 35px; height: 35px; background: rgba(0, 210, 211, 0.1); border-radius: 50%; display: flex; justify-content: center; align-items: center;
+            border: 1px solid var(--accent); margin-bottom: 5px;
+        }
+        .icon-box i { font-size: 16px; color: var(--accent); }
+        .lib-item span { font-size: 11px; font-weight: 600; color: #ccc; }
+
+        /* BUTTONS */
+        .btn { width: 100%; padding: 12px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px; display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s; margin-top: 10px; }
+        .btn:hover { transform: translateY(-2px); filter: brightness(1.1); }
+        .btn-primary { background: var(--accent); color: #000; }
+        .btn-success { background: var(--success); color: #000; }
+        .btn-danger { background: var(--danger); color: #fff; }
+        .btn-cad { background: var(--cad-color); color: #000; } 
+        .btn-info { background: var(--info); color: #fff; }
+
+        /* MAIN WORKSPACE */
+        .workspace { flex: 1; position: relative; background: #151515; overflow: hidden; display: flex; align-items: center; justify-content: center; 
+            background-image: radial-gradient(#333 1px, transparent 1px); background-size: 25px 25px; cursor: grab; }
+        .workspace:active { cursor: grabbing; }
+
+        #drawingCanvas { position: absolute; transform-origin: center center; transition: transform 0.1s ease-out; }
+        
+        #mountingPlate {
+            background: var(--plate-color);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            position: relative;
+            background-image: 
+                linear-gradient(var(--grid-line) 1px, transparent 1px),
+                linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+
+        /* COMPONENTS ON PLATE */
+        .comp {
+            position: absolute; border: 1px solid rgba(0,0,0,0.4); box-sizing: border-box;
+            font-size: 11px; font-family: 'Consolas', monospace; font-weight: bold; color: #333;
+            display: flex; justify-content: center; align-items: center; text-align: center;
+            cursor: pointer; user-select: none; z-index: 10;
+            box-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+            transition: box-shadow 0.2s, outline 0.1s;
+        }
+        .comp:hover { outline: 2px solid var(--accent); z-index: 99; }
+        .comp.selected { 
+            outline: 3px solid var(--accent); 
+            box-shadow: 0 0 15px var(--accent); 
+            z-index: 100; 
+        }
+
+        /* Specific Component Looks */
+        .c-duct { background: #cbd5e1; opacity: 0.9; border: 1px dashed #64748b; }
+        .c-rail { background: #e2e8f0; border-top: 2px solid #94a3b8; border-bottom: 2px solid #94a3b8; height: 35px; }
+        .c-plc { background: linear-gradient(135deg, #334155 0%, #1e293b 100%); color: #fff; border: 1px solid #000; }
+        .c-term { background: #94a3b8; border-right: 1px solid #64748b; writing-mode: vertical-lr; font-size: 9px; }
+        .c-psu { background: linear-gradient(to bottom, #e2e8f0, #94a3b8); border: 2px solid #64748b; }
+        .c-circle { border-radius: 50%; background: #57606f; border: 2px dashed #2f3542; color: #fff; font-size: 9px; } 
+        .c-trans { background: #b2bec3; border: 2px solid #2d3436; box-shadow: inset 0 0 10px #000; } 
+        /* NEW COMPONENTS STYLES */
+        .c-relay { background: #fff; border: 1px solid #333; font-size: 9px; }
+        .c-barrier { background: #2ecc71; color: #000; border: 1px solid #27ae60; }
+        .c-term-pe { background: #f1c40f; border-right: 2px solid #2ecc71; writing-mode: vertical-lr; font-size: 9px; }
+
+        /* RIGHT SIDEBAR (Properties) */
+        .sidebar-right { width: 260px; background: var(--panel-dark); border-left: 1px solid var(--border-color); display: flex; flex-direction: column; padding: 20px; z-index: 20; transition: margin-right 0.3s; }
+        .sidebar-right.closed { margin-right: -260px; }
+        
+        .prop-header { font-size: 14px; font-weight: bold; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-bottom: 15px; display: flex; justify-content: space-between; color: #fff; }
+        .empty-state { text-align: center; color: var(--text-mute); font-size: 12px; margin-top: 50px; font-style: italic; }
+
+        /* Dimensions Lines */
+        .dim-text { position: absolute; color: #fff; font-size: 14px; font-weight: bold; text-shadow: 0 1px 3px #000; pointer-events: none; }
+
+        /* Bottom Toolbar */
+        .toolbar {
+            position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
+            background: rgba(30, 41, 59, 0.95); padding: 10px 25px; border-radius: 50px; 
+            display: flex; gap: 20px; backdrop-filter: blur(10px); border: 1px solid var(--border-color);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+        }
+        .tool-btn { background: #222; color: #cbd5e1; border: 1px solid #444; font-size: 18px; cursor: pointer; transition: 0.2s; padding: 10px; border-radius: 50%; width: 45px; height: 45px; display: flex; align-items: center; justify-content: center; }
+        .tool-btn:hover { color: #000; background: var(--accent); border-color: var(--accent); transform: scale(1.1); }
+
+        /* --- MODAL STYLES (Help & BOM) --- */
+        .modal-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8); z-index: 2000; backdrop-filter: blur(5px);
+            align-items: center; justify-content: center;
+        }
+        .modal-box {
+            background: #1e293b; width: 600px; max-width: 90%; border-radius: 12px; border: 1px solid var(--accent);
+            padding: 25px; position: relative; box-shadow: 0 20px 50px rgba(0,0,0,0.5); color: #fff;
+            max-height: 80vh; overflow-y: auto;
+        }
+        .modal-header { font-size: 20px; font-weight: bold; color: var(--accent); margin-bottom: 15px; border-bottom: 1px solid #333; padding-bottom: 10px; display:flex; justify-content:space-between; align-items:center; }
+        .modal-close { color: #aaa; cursor: pointer; font-size: 20px; transition:0.2s; }
+        .modal-close:hover { color: #fff; transform: scale(1.1); }
+        
+        .help-step { margin-bottom: 15px; display: flex; gap: 15px; border-bottom: 1px solid #333; padding-bottom: 10px; }
+        .step-num { 
+            min-width: 30px; height: 30px; background: var(--accent); color: #000; font-weight: bold;
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+        }
+        .step-content { font-size: 14px; line-height: 1.5; color: #ddd; }
+        
+        /* BOM Table */
+        .bom-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
+        .bom-table th, .bom-table td { padding: 8px; border: 1px solid #444; text-align: left; }
+        .bom-table th { background: #0f172a; color: var(--accent); }
+        .bom-table tr:nth-child(even) { background: #2d3748; }
+        .bom-total { font-weight: bold; color: var(--success); margin-top: 10px; text-align: right; }
+    </style>
+<!-- Ein Aussehen fuer alle Werkzeuge. Steht direkt hinter dem letzten
+     <style> dieses Werkzeugs: spaeter in der Reihenfolge, also gewinnt
+     es bei gleicher Spezifitaet - aber so frueh wie moeglich, damit die
+     Seite nicht erst in der alten Farbe erscheint und dann umfaerbt.
+     Am Ende des <body> geladen war genau das zu sehen: Knoepfe mit
+     transition faerbten sichtbar um. Faerbt nur, verschiebt nichts.
+     Siehe werkzeug-stil.css. -->
+<link rel="stylesheet" href="werkzeug-stil.css">
+<!-- Sprachumschaltung Deutsch / Persisch / Englisch. Was nicht im
+     Woerterbuch steht, bleibt Deutsch. Siehe uebersetzung.js. -->
+<script src="woerter.js"></script>
+<script src="woerter/Schaltschrank_CAD.js"></script>
+<script src="uebersetzung.js"></script>
+
+</head>
+<body>
+
+    <div class="top-nav">
+        <a href="dashboard/" class="nav-btn" title="Zurück zum Dashboard">
+            <i class="fas fa-house"></i>
+        </a>
+        <div class="nav-btn" onclick="openHelp()" title="Hilfe & Anleitung">
+            <i class="fas fa-question"></i>
+        </div>
+    </div>
+
+    <div id="helpModal" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-header">
+                <span><i class="fas fa-info-circle"></i> Anleitung & Funktionen</span>
+                <div class="modal-close" onclick="closeHelp()"><i class="fas fa-times"></i></div>
+            </div>
+            
+            <div class="help-step">
+                <div class="step-num">1</div>
+                <div class="step-content">
+                    <strong>Copy & Paste:</strong><br>
+                    Wählen Sie ein Objekt und drücken Sie <code>Strg+C</code> zum Kopieren und <code>Strg+V</code> zum Einfügen.
+                </div>
+            </div>
+            <div class="help-step">
+                <div class="step-num">2</div>
+                <div class="step-content">
+                    <strong>Farbe ändern:</strong><br>
+                    Wählen Sie ein Objekt aus. Im rechten Menü können Sie nun die Farbe anpassen.
+                </div>
+            </div>
+            <div class="help-step">
+                <div class="step-num">3</div>
+                <div class="step-content">
+                    <strong>Rotation & Bearbeitung:</strong><br>
+                    Nutzen Sie "Rotieren" im rechten Menü oder passen Sie die Maße (Höhe/Breite) manuell an.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="bomModal" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-header">
+                <span><i class="fas fa-list-ul"></i> Materialliste (BOM)</span>
+                <div class="modal-close" onclick="closeBOM()"><i class="fas fa-times"></i></div>
+            </div>
+            <div id="bomContent"></div>
+            <button class="btn btn-primary" style="margin-top:15px;" onclick="window.print()">Liste Drucken</button>
+        </div>
+    </div>
+
+<div class="app-container">
+    
+    <div class="sidebar-left">
+        <div class="sidebar-header">
+            <div class="brand">ART ENVI <span>CAD</span></div>
+        </div>
+        
+        <div class="scroll-content">
+            <h3>1. Schrank-Konfiguration</h3>
+            <div class="input-group">
+                <div class="input-wrapper"><label>Höhe (mm)</label><input type="number" id="cabH" value="2000" onchange="updatePlate()"></div>
+                <div class="input-wrapper"><label>Breite (mm)</label><input type="number" id="cabW" value="800" onchange="updatePlate()"></div>
+            </div>
+
+            <div class="input-group">
+                <div class="input-wrapper"><label>Tiefe (mm)</label><input type="number" id="cabD" value="400" onchange="waermeRechnen()"></div>
+                <div class="input-wrapper"><label>Aufstellung</label>
+                    <select id="aufstellung" onchange="waermeRechnen()">
+                        <option value="frei" selected>freistehend, alle Seiten frei</option>
+                        <option value="wand">an der Wand, R&uuml;ckseite verdeckt</option>
+                        <option value="reihe_ende">Reihenende, an der Wand</option>
+                        <option value="reihe_mitte">in der Reihe, beide Seiten verdeckt</option>
+                    </select>
+                </div>
+            </div>
+
+            <h3>2. W&auml;rmebilanz (IEC 61439-1)</h3>
+            <div class="input-group">
+                <div class="input-wrapper"><label>Umgebung (&deg;C)</label><input type="number" id="tUmgebung" value="35" onchange="waermeRechnen()"></div>
+                <div class="input-wrapper"><label>Zul. innen (&deg;C)</label><input type="number" id="tInnenMax" value="55" onchange="waermeRechnen()"></div>
+            </div>
+            <div class="input-group">
+                <div class="input-wrapper"><label>Geh&auml;use (k in W/m&sup2;K)</label>
+                    <select id="kWert" onchange="waermeRechnen()">
+                        <option value="5.5" selected>Stahlblech lackiert - 5,5</option>
+                        <option value="3.7">Edelstahl - 3,7</option>
+                        <option value="12">Aluminium - 12</option>
+                        <option value="3.5">Kunststoff - 3,5</option>
+                    </select>
+                </div>
+            </div>
+            <div id="waermeErgebnis" style="font-size:12px; line-height:1.7; padding:10px 12px; border-radius:8px; background:rgba(255,255,255,0.04); margin-bottom:14px;">
+                <div>Verlustleistung gesamt: <b id="wPv">0 W</b></div>
+                <div>Nutzoberfl&auml;che A<sub>e</sub>: <b id="wFlaeche">0 m&sup2;</b></div>
+                <div>&Uuml;bertemperatur &Delta;T: <b id="wDeltaT">0 K</b></div>
+                <div>Innentemperatur: <b id="wTInnen">0 &deg;C</b></div>
+                <div id="wMassnahme" style="margin-top:6px;"></div>
+            </div>
+            <div style="font-size:11px; line-height:1.6; color:#8a9ba8; margin:-8px 0 14px;">
+                Nutzoberfl&auml;che nach den Oberfl&auml;chenfaktoren der IEC 60890.
+                &Delta;T aus <span class="mono">P<sub>v</sub>/(k&middot;A<sub>e</sub>)</span> - so legen die
+                Schrankhersteller ihre K&uuml;hlger&auml;te aus. Der Kurvennachweis der
+                IEC 60890 ist genauer; dessen Kurven liegen hier nicht vor. F&uuml;r die
+                Auslegung brauchbar, als Nachweis nicht ausreichend. Die
+                Verlustleistungen sind Typwerte und am Bauteil &auml;nderbar.
+            </div>
+
+            <h3>3. Komponenten-Bibliothek</h3>
+            <div class="comp-list">
+                <div class="lib-item" onclick="addManually('rail')">
+                    <div class="icon-box"><i class="fas fa-bars"></i></div>
+                    <span>Hutschiene</span>
+                </div>
+                <div class="lib-item" onclick="addManually('duct60')">
+                    <div class="icon-box"><i class="fas fa-grip-lines-vertical"></i></div>
+                    <span>Kanal 60mm</span>
+                </div>
+                <div class="lib-item" onclick="addManually('s7-1500_cpu')">
+                    <div class="icon-box"><i class="fas fa-microchip"></i></div>
+                    <span>S7-1500 CPU</span>
+                </div>
+                <div class="lib-item" onclick="addManually('relay')">
+                    <div class="icon-box"><i class="fas fa-toggle-on"></i></div>
+                    <span>Relais</span>
+                </div>
+                <div class="lib-item" onclick="addManually('term_block')">
+                    <div class="icon-box"><i class="fas fa-ellipsis-v"></i></div>
+                    <span>Klemme</span>
+                </div>
+                <div class="lib-item" onclick="addManually('term_pe')">
+                    <div class="icon-box"><i class="fas fa-level-down-alt"></i></div>
+                    <span>Klemme PE</span>
+                </div>
+                <div class="lib-item" onclick="addManually('barrier')">
+                    <div class="icon-box"><i class="fas fa-shield-alt"></i></div>
+                    <span>Barriere Ex</span>
+                </div>
+                <div class="lib-item" onclick="addManually('puls_20a')">
+                    <div class="icon-box"><i class="fas fa-bolt"></i></div>
+                    <span>Netzteil 20A</span>
+                </div>
+                <div class="lib-item" onclick="addManually('gland_m32')">
+                    <div class="icon-box"><i class="fas fa-circle-notch"></i></div>
+                    <span>Verschr. M32</span>
+                </div>
+                <div class="lib-item" onclick="addManually('transformer')">
+                    <div class="icon-box"><i class="fas fa-car-battery"></i></div>
+                    <span>Trafo 24V</span>
+                </div>
+            </div>
+
+            <h3>4. Automatisierung</h3>
+            <label>Steuerungstyp</label>
+            <select id="plcSys" style="margin-bottom:10px;">
+                <option value="s7-1500">Siemens S7-1500</option>
+                <option value="et200">Siemens ET200SP</option>
+            </select>
+            <button class="btn btn-primary" onclick="autoLayout()"><i class="fas fa-magic"></i> Auto-Layout Generieren</button>
+
+            <h3 style="margin-top:40px; border-top:1px solid #333; padding-top:20px;">Export & Daten</h3>
+            <button class="btn btn-info" onclick="generateBOM()"><i class="fas fa-list"></i> Stückliste anzeigen</button>
+            <button class="btn btn-success" onclick="exportPDF()"><i class="fas fa-file-pdf"></i> PDF Plan Exportieren</button>
+            <button class="btn btn-cad" onclick="exportDXF_3D()"><i class="fas fa-cube"></i> 3D CAD Export (DXF)</button>
+            <button class="btn btn-danger" onclick="clearAll()"><i class="fas fa-trash"></i> Alles Zurücksetzen</button>
+        </div>
+    </div>
+
+    <div class="workspace" id="workspace">
+        <div id="drawingCanvas">
+            <div id="dimContainer"></div>
+            <div id="mountingPlate" onclick="deselectAll(event)"></div>
+        </div>
+
+        <div class="toolbar">
+            <button class="tool-btn" onclick="fitToScreen()" title="Ansicht einpassen"><i class="fas fa-compress-arrows-alt"></i></button>
+            <button class="tool-btn" onclick="zoom(0.1)" title="Vergrößern"><i class="fas fa-plus"></i></button>
+            <button class="tool-btn" onclick="zoom(-0.1)" title="Verkleinern"><i class="fas fa-minus"></i></button>
+        </div>
+    </div>
+
+    <div class="sidebar-right" id="propPanel">
+        <div class="prop-header">
+            <span>Eigenschaften</span>
+            <i class="fas fa-sliders-h" style="color:var(--accent)"></i>
+        </div>
+        <div id="propContent">
+            <div class="empty-state">Kein Objekt ausgewählt</div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    // --- HELPER FUNCTIONS FOR MODALS ---
+    function openHelp() { document.getElementById('helpModal').style.display = 'flex'; }
+    function closeHelp() { document.getElementById('helpModal').style.display = 'none'; }
+    function closeBOM() { document.getElementById('bomModal').style.display = 'none'; }
+    window.onclick = function(event) { 
+        if (event.target == document.getElementById('helpModal')) closeHelp();
+        if (event.target == document.getElementById('bomModal')) closeBOM();
+    }
+
+    // === COMPONENT DATABASE (Added Relay, Barrier, PE) ===
+    // Die Verlustleistung pv ist der Typwert eines ueblichen Geraetes dieser
+    // Art, nicht der Wert eines bestimmten Fabrikats. Sie steht hier, damit
+    // ueberhaupt gerechnet wird, und ist am Bauteil aenderbar: wer das
+    // Datenblatt hat, traegt seinen Wert ein, und dieser gewinnt.
+    const DB = {
+        'rail': { w: 800, h: 35, d: 7.5, type: 'c-rail', name: '', pv: 0 },
+        'duct60': { w: 60, h: 2000, d: 80, type: 'c-duct', name: '', pv: 0 },
+        'duct40': { w: 40, h: 2000, d: 80, type: 'c-duct', name: '', pv: 0 },
+        's7-1500_cpu': { w: 70, h: 147, d: 129, type: 'c-plc', name: 'CPU 1515', pv: 10 },
+        's7-1500_io': { w: 35, h: 147, d: 129, type: 'c-plc', name: 'IO', pv: 5 },
+        'puls_20a': { w: 65, h: 124, d: 127, type: 'c-psu', name: 'PSU 20A', pv: 40 },
+        'term_block': { w: 52, h: 49, d: 45, type: 'c-term', name: 'X1', pv: 0.3 },
+        'gland_m32': { w: 32, h: 32, d: 10, type: 'c-circle', name: 'M32', pv: 0 },
+        'gland_m50': { w: 50, h: 50, d: 10, type: 'c-circle', name: 'M50', pv: 0 },
+        'transformer': { w: 120, h: 100, d: 110, type: 'c-trans', name: 'T1', pv: 35 },
+        // NEW ITEMS
+        'relay': { w: 15, h: 70, d: 60, type: 'c-relay', name: 'K1', pv: 1 },
+        'term_pe': { w: 52, h: 49, d: 45, type: 'c-term-pe', name: 'PE', pv: 0 },
+        'barrier': { w: 12, h: 100, d: 110, type: 'c-barrier', name: 'Barriere', pv: 0 }
+    };
+
+    // === STATE ===
+    let scale = 1.0;
+    let transX = 0, transY = 0;
+    let isPanning = false;
+    let startPanX, startPanY;
+    let selectedEl = null;
+    let clipboardData = null; // For Copy/Paste
+
+    // === INIT ===
+    window.onload = function() {
+        updatePlate();
+        setupEvents();
+    };
+
+    function setupEvents() {
+        const ws = document.getElementById('workspace');
+        
+        ws.addEventListener('mousedown', (e) => {
+            if(e.target === ws || e.target.id === 'drawingCanvas' || e.target.id === 'dimContainer') {
+                isPanning = true;
+                startPanX = e.clientX - transX;
+                startPanY = e.clientY - transY;
+                ws.style.cursor = 'grabbing';
+            }
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            if(isPanning) {
+                transX = e.clientX - startPanX;
+                transY = e.clientY - startPanY;
+                applyTransform();
+            }
+        });
+
+        window.addEventListener('mouseup', () => {
+            isPanning = false;
+            ws.style.cursor = 'grab';
+        });
+
+        ws.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const delta = e.deltaY > 0 ? -0.05 : 0.05;
+            zoom(delta);
+        });
+
+        // Keyboard Shortcuts (Delete & Copy/Paste)
+        document.addEventListener('keydown', (e) => {
+            if(e.target.tagName === 'INPUT') return; // Don't trigger if typing in input
+
+            // DELETE
+            if(e.key === 'Delete' && selectedEl) deleteSelected();
+            
+            // COPY (Strg+C)
+            if((e.ctrlKey || e.metaKey) && e.key === 'c' && selectedEl) {
+                e.preventDefault();
+                clipboardData = {
+                    type: selectedEl.classList[1], // e.g. c-relay
+                    w: selectedEl.style.width,
+                    h: selectedEl.style.height,
+                    d: selectedEl.dataset.depth,
+                    name: selectedEl.dataset.name,
+                    bg: selectedEl.style.backgroundColor, // Copy custom color
+                    borderColor: selectedEl.style.borderColor // Copy custom border
+                };
+                console.log("Copied to clipboard", clipboardData);
+            }
+
+            // PASTE (Strg+V)
+            if((e.ctrlKey || e.metaKey) && e.key === 'v' && clipboardData) {
+                e.preventDefault();
+                // Paste slightly offset from center or original position
+                // Currently implementing center of screen offset logic would be complex, 
+                // so we paste at a fixed offset from top-left for visibility.
+                const plate = document.getElementById('mountingPlate');
+                let x = 50; 
+                let y = 50;
+                
+                // Smart offset: if an element is selected, paste near it
+                if(selectedEl) {
+                    x = parseInt(selectedEl.style.left) + 20;
+                    y = parseInt(selectedEl.style.top) + 20;
+                }
+
+                const newEl = spawnComponent(
+                    clipboardData.type, 
+                    parseInt(clipboardData.w), 
+                    parseInt(clipboardData.h), 
+                    clipboardData.d, 
+                    clipboardData.name, 
+                    x, y
+                );
+                
+                // Apply copied styles
+                if(clipboardData.bg) newEl.style.backgroundColor = clipboardData.bg;
+                if(clipboardData.borderColor) newEl.style.borderColor = clipboardData.borderColor;
+                
+                selectComponent(newEl);
+            }
+        });
+    }
+
+    // === CORE LOGIC ===
+    function updatePlate() {
+        const w = parseInt(document.getElementById('cabW').value);
+        const h = parseInt(document.getElementById('cabH').value);
+        const plate = document.getElementById('mountingPlate');
+        plate.style.width = w + 'px';
+        plate.style.height = h + 'px';
+        drawDimensions(w, h);
+        fitToScreen();
+        waermeRechnen();   // andere Masse, andere Nutzoberflaeche
+    }
+
+    function fitToScreen() {
+        const ws = document.getElementById('workspace');
+        const plate = document.getElementById('mountingPlate');
+        const w = parseInt(plate.style.width);
+        const h = parseInt(plate.style.height);
+        const padding = 150;
+        const scaleW = (ws.clientWidth - padding) / w;
+        const scaleH = (ws.clientHeight - padding) / h;
+        scale = Math.min(scaleW, scaleH);
+        transX = 0; transY = 0;
+        applyTransform();
+    }
+
+    function zoom(delta) {
+        scale = Math.max(0.1, scale + delta);
+        applyTransform();
+    }
+
+    function applyTransform() {
+        document.getElementById('drawingCanvas').style.transform = `translate(${transX}px, ${transY}px) scale(${scale})`;
+    }
+
+    function drawDimensions(w, h) {
+        const con = document.getElementById('dimContainer');
+        con.innerHTML = `
+            <div style="position:absolute; left:-40px; top:0; bottom:0; border-left:2px solid #fff; width:10px;"></div>
+            <div style="position:absolute; left:-50px; top:${h/2}px; color:white; transform:rotate(-90deg); font-size:20px; font-weight:bold;">${h} mm</div>
+            <div style="position:absolute; left:0; right:0; top:${h+40}px; border-bottom:2px solid #fff; height:10px;"></div>
+            <div style="position:absolute; left:50%; top:${h+50}px; color:white; transform:translateX(-50%); font-size:20px; font-weight:bold;">${w} mm</div>
+        `;
+    }
+
+    // === WAERMEBILANZ ===
+    //
+    // IEC 61439-1 verlangt den Nachweis, dass die Grenzuebertemperatur im
+    // Inneren eingehalten wird. Bisher stand hier nichts dazu - das Werkzeug
+    // hat den Schrank bestueckt und nicht gefragt, was die Bestueckung an
+    // Waerme abgibt. Ein voller Schrank mit IP54 und geschlossener Tuer steht
+    // im Sommer ueber 55 Grad, und die Geraete darin schalten sich selbst ab.
+    //
+    // Die Nutzoberflaeche Ae wird aus den Oberflaechenfaktoren b der
+    // IEC 60890 gebildet: Dach 1,4 - freie Seiten 0,9 - verdeckte Seiten 0,5 -
+    // Boden 0. Zur Gegenprobe: fuer den freistehenden Schrank ergibt das
+    // 1,8*H*(B+T) + 1,4*B*T und fuer den Wandschrank 1,4*B*(H+T) + 1,8*H*T -
+    // genau die beiden Formeln, die in jedem Schrankkatalog stehen.
+    const B_DACH = 1.4, B_FREI = 0.9, B_VERDECKT = 0.5;
+
+    // Welche Flaechen verdeckt sind, haengt an der Aufstellung.
+    function nutzoberflaeche(B, H, T, art) {
+        const dach = B * T * B_DACH;
+        const vorn = B * H * B_FREI;                 // die Tuer ist immer frei
+        let hinten = B * H * B_FREI;
+        let seiten = 2 * T * H * B_FREI;
+        if (art === 'wand' || art === 'reihe_ende') hinten = B * H * B_VERDECKT;
+        if (art === 'reihe_ende')  seiten = T * H * B_FREI + T * H * B_VERDECKT;
+        if (art === 'reihe_mitte') { hinten = B * H * B_VERDECKT; seiten = 2 * T * H * B_VERDECKT; }
+        return dach + vorn + hinten + seiten;        // Boden zaehlt nicht mit
+    }
+
+    // Luftmenge eines Filterluefters. Nicht abgeschrieben, sondern aus der
+    // Waermekapazitaet der Luft: V = P / (rho * cp * dT), mit rho*cp = 1206
+    // J/(m3*K) sind das 2,99 m3/h je Watt und Kelvin. Die Hersteller rechnen
+    // mit rund 3,1 und haben damit etwas Luft fuer Hoehe und Filter.
+    const LUFT_FAKTOR = 3600 / (1.2 * 1005);
+
+    function waermeRechnen() {
+        const feldPv = document.getElementById('wPv');
+        if (!feldPv) return;
+        const B = Number(document.getElementById('cabW').value) / 1000;
+        const H = Number(document.getElementById('cabH').value) / 1000;
+        const T = Number(document.getElementById('cabD').value) / 1000;
+        const art = document.getElementById('aufstellung').value;
+        const k = Number(document.getElementById('kWert').value);
+        const tU = Number(document.getElementById('tUmgebung').value);
+        const tMax = Number(document.getElementById('tInnenMax').value);
+        const massnahme = document.getElementById('wMassnahme');
+
+        let Pv = 0;
+        document.querySelectorAll('.comp').forEach(el => {
+            const p = Number(el.dataset.pv);
+            if (Number.isFinite(p)) Pv += p;
+        });
+
+        if (!(B > 0 && H > 0 && T > 0 && k > 0)) {
+            feldPv.innerText = Pv.toFixed(1) + ' W';
+            document.getElementById('wFlaeche').innerText = '--';
+            document.getElementById('wDeltaT').innerText = '--';
+            document.getElementById('wTInnen').innerText = '--';
+            massnahme.innerHTML = '<span style="color:var(--danger,#e74c3c)">Schrankma\u00dfe pr\u00fcfen</span>';
+            return;
+        }
+
+        const Ae = nutzoberflaeche(B, H, T, art);
+        const dT = Pv / (k * Ae);
+        const tInnen = tU + dT;
+
+        feldPv.innerText = Pv.toFixed(1) + ' W';
+        document.getElementById('wFlaeche').innerText = Ae.toFixed(2) + ' m\u00b2';
+        document.getElementById('wDeltaT').innerText = dT.toFixed(1) + ' K';
+        document.getElementById('wTInnen').innerText = tInnen.toFixed(1) + ' \u00b0C';
+
+        if (Pv === 0) {
+            massnahme.innerHTML = '<span style="color:#8a9ba8">Noch kein Bauteil mit Verlustleistung.</span>';
+        } else if (tInnen <= tMax) {
+            massnahme.innerHTML = '<span style="color:var(--accent)"><span>Eigenkonvektion reicht, </span><b>'
+                + (tMax - tInnen).toFixed(1) + ' K</b><span> Luft nach oben.</span></span>';
+        } else if (tU < tMax) {
+            // Solange die Umgebung kuehler ist als das Ziel, genuegt ein
+            // Luefter: er tauscht Luft, er kuehlt nicht.
+            const noetig = LUFT_FAKTOR * Pv / (tMax - tU);
+            massnahme.innerHTML = '<span style="color:var(--warn,#f1c40f)">'
+                + '<span>Zu warm. Filterl\u00fcfter mit mindestens </span><b>'
+                + Math.ceil(noetig) + ' m\u00b3/h</b><span>, oder K\u00fchlger\u00e4t mit </span><b>'
+                + Math.ceil(Pv - k * Ae * (tMax - tU)) + ' W</b><span>.</span></span>';
+        } else {
+            // Ist die Umgebung schon waermer als das Ziel, bringt ein Luefter
+            // nichts mehr - er blaest warme Luft hinein.
+            massnahme.innerHTML = '<span style="color:var(--danger,#e74c3c)">'
+                + '<span>Umgebung ist w\u00e4rmer als das Ziel: ein L\u00fcfter hilft nicht. '
+                + 'K\u00fchlger\u00e4t mit mindestens </span><b>'
+                + Math.ceil(Pv) + ' W</b><span>.</span></span>';
+        }
+    }
+
+    // === ADDING COMPONENTS ===
+    function addManually(key) {
+        const wVal = parseInt(document.getElementById('cabW').value);
+        const hVal = parseInt(document.getElementById('cabH').value);
+        let item = DB[key];
+        
+        let finalW = item.w;
+        let finalH = item.h;
+        if(key === 'rail') finalW = wVal - 100;
+        if(key.includes('duct')) finalH = hVal - 100;
+
+        spawnComponent(item.type, finalW, finalH, item.d, item.name, (wVal/2 - finalW/2), (hVal/2 - finalH/2), item.pv);
+    }
+
+    function spawnComponent(cls, w, h, d, txt, x, y, pv) {
+        const el = document.createElement('div');
+        el.className = `comp ${cls}`;
+        Object.assign(el.style, { width: w+'px', height: h+'px', left: x+'px', top: y+'px' });
+        el.innerText = txt;
+        el.dataset.depth = d; 
+        el.dataset.name = txt;
+        el.dataset.pv = (pv === undefined || pv === null) ? 0 : pv;
+
+        // Drag Handler
+        el.onmousedown = function(e) {
+            e.stopPropagation();
+            selectComponent(el);
+            
+            let shiftX = e.clientX - el.getBoundingClientRect().left;
+            let shiftY = e.clientY - el.getBoundingClientRect().top;
+            
+            function moveAt(pageX, pageY) {
+                const rect = document.getElementById('mountingPlate').getBoundingClientRect();
+                let newX = (pageX - rect.left) / scale - (shiftX / scale);
+                let newY = (pageY - rect.top) / scale - (shiftY / scale);
+                
+                newX = Math.round(newX/5)*5; // Snap grid 5mm
+                newY = Math.round(newY/5)*5;
+
+                el.style.left = newX + 'px';
+                el.style.top = newY + 'px';
+                updatePropPanel(el);
+            }
+
+            function onMouseMove(e) { moveAt(e.clientX, e.clientY); }
+
+            document.addEventListener('mousemove', onMouseMove);
+            document.onmouseup = function() {
+                document.removeEventListener('mousemove', onMouseMove);
+                document.onmouseup = null;
+            };
+        };
+
+        document.getElementById('mountingPlate').appendChild(el);
+        selectComponent(el);
+        // Erst anhaengen, dann rechnen - sonst fehlt genau das Bauteil, das
+        // gerade dazugekommen ist. Die Bilanz gilt fuer das, was auf der
+        // Platte liegt.
+        waermeRechnen();
+        return el; // Return element for copy/paste logic
+    }
+
+    // === SELECTION & PROPERTIES ===
+    function selectComponent(el) {
+        if(selectedEl) selectedEl.classList.remove('selected');
+        selectedEl = el;
+        el.classList.add('selected');
+        updatePropPanel(el);
+    }
+
+    function deselectAll(e) {
+        if(e.target.id === 'mountingPlate') {
+            if(selectedEl) selectedEl.classList.remove('selected');
+            selectedEl = null;
+            document.getElementById('propContent').innerHTML = '<div class="empty-state">Kein Objekt ausgewählt</div>';
+        }
+    }
+
+    // --- UPDATED: Property Panel with Color Picker ---
+    function updatePropPanel(el) {
+        const panel = document.getElementById('propContent');
+        const w = parseInt(el.style.width);
+        const h = parseInt(el.style.height);
+        const x = parseInt(el.style.left);
+        const y = parseInt(el.style.top);
+        const d = el.dataset.depth;
+        const pv = el.dataset.pv || 0;
+        const name = el.innerText;
+        
+        // Convert RGB to Hex for color input
+        let rgb = window.getComputedStyle(el).backgroundColor;
+        let hex = rgbToHex(rgb);
+
+        panel.innerHTML = `
+            <div class="input-group">
+                <div class="input-wrapper"><label>Name / Tag</label><input type="text" value="${name}" onchange="updateEl('name', this.value)"></div>
+                <div class="input-wrapper" style="flex:0.4"><label>Farbe</label><input type="color" value="${hex}" onchange="updateEl('color', this.value)"></div>
+            </div>
+            <div class="input-group">
+                <div class="input-wrapper"><label>X (mm)</label><input type="number" value="${x}" onchange="updateEl('x', this.value)"></div>
+                <div class="input-wrapper"><label>Y (mm)</label><input type="number" value="${y}" onchange="updateEl('y', this.value)"></div>
+            </div>
+            <div class="input-group">
+                <div class="input-wrapper"><label>Breite</label><input type="number" value="${w}" onchange="updateEl('w', this.value)"></div>
+                <div class="input-wrapper"><label>Höhe</label><input type="number" value="${h}" onchange="updateEl('h', this.value)"></div>
+            </div>
+             <div class="input-group">
+                <div class="input-wrapper"><label>Tiefe (Z-Achse)</label><input type="number" value="${d}" onchange="updateEl('d', this.value)"></div>
+                <div class="input-wrapper"><label>Verlust P<sub>v</sub> (W)</label><input type="number" step="0.1" value="${pv}" onchange="updateEl('pv', this.value)"></div>
+            </div>
+            <button class="btn btn-primary" onclick="rotateSelected()" style="margin-bottom:10px;"><i class="fas fa-sync-alt"></i> Rotieren (90°)</button>
+            <button class="btn btn-danger" onclick="deleteSelected()">Löschen</button>
+        `;
+    }
+
+    // Helper for color conversion
+    function rgbToHex(rgb) {
+        if(!rgb || rgb.indexOf('rgb') === -1) return '#cccccc';
+        const sep = rgb.indexOf(",") > -1 ? "," : " ";
+        rgb = rgb.substr(4).split(")")[0].split(sep);
+        let r = (+rgb[0]).toString(16), g = (+rgb[1]).toString(16), b = (+rgb[2]).toString(16);
+        if (r.length == 1) r = "0" + r;
+        if (g.length == 1) g = "0" + g;
+        if (b.length == 1) b = "0" + b;
+        return "#" + r + g + b;
+    }
+
+    function updateEl(prop, val) {
+        if(!selectedEl) return;
+        if(prop === 'name') { selectedEl.innerText = val; selectedEl.dataset.name = val; }
+        if(prop === 'x') selectedEl.style.left = val + 'px';
+        if(prop === 'y') selectedEl.style.top = val + 'px';
+        if(prop === 'w') selectedEl.style.width = val + 'px';
+        if(prop === 'h') selectedEl.style.height = val + 'px';
+        if(prop === 'd') selectedEl.dataset.depth = val;
+        if(prop === 'pv') { selectedEl.dataset.pv = val; waermeRechnen(); }
+        
+        // COLOR LOGIC: Override class style with inline style
+        if(prop === 'color') {
+            selectedEl.style.backgroundColor = val;
+            selectedEl.style.backgroundImage = 'none'; // Remove gradient if exists
+            selectedEl.style.borderColor = adjustColor(val, -40); // Darker border
+        }
+    }
+
+    // Darken color for border
+    function adjustColor(color, amount) {
+        return '#' + color.replace(/^#/, '').replace(/../g, color => ('0'+Math.min(255, Math.max(0, parseInt(color, 16) + amount)).toString(16)).substr(-2));
+    }
+
+    function rotateSelected() {
+        if(!selectedEl) return;
+        const currentW = selectedEl.style.width;
+        const currentH = selectedEl.style.height;
+        selectedEl.style.width = currentH;
+        selectedEl.style.height = currentW;
+        updatePropPanel(selectedEl);
+    }
+
+    function deleteSelected() {
+        if(selectedEl) {
+            selectedEl.remove();
+            selectedEl = null;
+            document.getElementById('propContent').innerHTML = '<div class="empty-state">Gelöscht</div>';
+            waermeRechnen();
+        }
+    }
+
+    function clearAll() {
+        if(confirm("Layout wirklich löschen?")) {
+            document.getElementById('mountingPlate').innerHTML = '';
+            selectedEl = null;
+            waermeRechnen();
+        }
+    }
+
+    // === BOM GENERATOR ===
+    function generateBOM() {
+        const comps = document.querySelectorAll('.comp');
+        if(comps.length === 0) { alert("Keine Komponenten vorhanden."); return; }
+        
+        const counts = {};
+        comps.forEach(el => {
+            const name = el.dataset.name || 'Unbenannt';
+            const dims = `${parseInt(el.style.width)}x${parseInt(el.style.height)}x${el.dataset.depth}`;
+            const key = `${name} (${dims}mm)`;
+            if(!counts[key]) counts[key] = { n: 0, pv: Number(el.dataset.pv) || 0 };
+            counts[key].n++;
+        });
+        
+        let pvGesamt = 0;
+        let html = `<table class="bom-table">
+            <thead><tr><th>Komponente / Typ</th><th>Menge</th><th>P<sub>v</sub> je St&uuml;ck</th><th>P<sub>v</sub> gesamt</th></tr></thead>
+            <tbody>`;
+        for (const [key, val] of Object.entries(counts)) {
+            const summe = val.n * val.pv;
+            pvGesamt += summe;
+            html += `<tr><td>${key}</td><td>${val.n}</td><td>${val.pv.toFixed(1)} W</td><td>${summe.toFixed(1)} W</td></tr>`;
+        }
+        html += `</tbody></table><div class="bom-total">Gesamtobjekte: ${comps.length} &nbsp;&middot;&nbsp; Verlustleistung ${pvGesamt.toFixed(1)} W</div>`;
+        document.getElementById('bomContent').innerHTML = html;
+        document.getElementById('bomModal').style.display = 'flex';
+    }
+
+    // === AUTO LAYOUT ===
+    function autoLayout() {
+        clearAll();
+        const W = parseInt(document.getElementById('cabW').value);
+        const type = document.getElementById('plcSys').value;
+        let cy = 50;
+
+        spawnComponent('c-duct', W-100, 60, 80, '', 50, cy); cy += 70;
+        spawnComponent('c-rail', W-100, 35, 7.5, '', 50, cy+60);
+        let cx = 60;
+        
+        if(type === 's7-1500') {
+             spawnComponent('c-plc', 70, 147, 129, 'PM', cx, cy-13); cx+=75;
+             spawnComponent('c-plc', 70, 147, 129, 'CPU', cx, cy-13); cx+=75;
+             for(let i=0; i<8; i++) { spawnComponent('c-plc', 35, 147, 129, 'IO', cx, cy-13); cx+=36; }
+             cy += 200;
+        } else {
+             spawnComponent('c-plc', 50, 117, 75, 'IM', cx, cy+2); cx+=55;
+             for(let i=0; i<12; i++) { spawnComponent('c-plc', 15, 117, 75, 'IO', cx, cy+2); cx+=16; }
+             cy += 160;
+        }
+
+        spawnComponent('c-duct', W-100, 60, 80, '', 50, cy); cy += 80;
+        spawnComponent('c-rail', W-100, 35, 7.5, '', 50, cy+40);
+        cx = 60;
+        // Terminals
+        for(let i=0; i<10; i++) { spawnComponent('c-term', 52, 49, 45, 'X1', cx, cy+16); cx+=52; }
+        cx+=10;
+        for(let i=0; i<3; i++) { spawnComponent('c-term-pe', 52, 49, 45, 'PE', cx, cy+16); cx+=52; }
+
+        spawnComponent('c-duct', 60, cy+200, 80, '', 0, 50);
+        spawnComponent('c-duct', 60, cy+200, 80, '', W-60, 50);
+    }
+
+    // === 3D DXF EXPORT ===
+    function exportDXF_3D() {
+        const plate = document.getElementById('mountingPlate');
+        const plateH = parseInt(plate.style.height);
+        const comps = document.querySelectorAll('.comp');
+        
+        let dxf = [];
+        dxf.push("0\nSECTION\n2\nHEADER\n0\nENDSEC");
+        dxf.push("0\nSECTION\n2\nENTITIES");
+
+        function addFace(x1, y1, z1, x2, y2, z2, x3, y3, z3, x4, y4, z4, color) {
+            dxf.push("0\n3DFACE");
+            dxf.push("8\n0"); 
+            dxf.push(`62\n${color}`);
+            dxf.push(`10\n${x1}`); dxf.push(`20\n${y1}`); dxf.push(`30\n${z1}`);
+            dxf.push(`11\n${x2}`); dxf.push(`21\n${y2}`); dxf.push(`31\n${z2}`);
+            dxf.push(`12\n${x3}`); dxf.push(`22\n${y3}`); dxf.push(`32\n${z3}`);
+            dxf.push(`13\n${x4}`); dxf.push(`23\n${y4}`); dxf.push(`33\n${z4}`);
+        }
+
+        function drawBox(x, y, w, h, d, color) {
+            const y_cad = plateH - y;
+            addFace(x, y_cad, d,   x+w, y_cad, d,   x+w, y_cad-h, d,   x, y_cad-h, d, color); 
+            addFace(x, y_cad, 0,   x+w, y_cad, 0,   x+w, y_cad-h, 0,   x, y_cad-h, 0, color); 
+            addFace(x, y_cad, 0,   x+w, y_cad, 0,   x+w, y_cad, d,     x, y_cad, d, color); 
+            addFace(x, y_cad-h, 0, x+w, y_cad-h, 0, x+w, y_cad-h, d,   x, y_cad-h, d, color); 
+            addFace(x, y_cad, 0,   x, y_cad-h, 0,   x, y_cad-h, d,     x, y_cad, d, color); 
+            addFace(x+w, y_cad, 0, x+w, y_cad-h, 0, x+w, y_cad-h, d,   x+w, y_cad, d, color); 
+        }
+
+        function drawCylinder(cx, cy, r, d, color) {
+            const y_cad = plateH - cy; 
+            dxf.push("0\nCIRCLE");
+            dxf.push("8\n0");
+            dxf.push(`62\n${color}`);
+            dxf.push(`10\n${cx}`); dxf.push(`20\n${y_cad}`); dxf.push(`30\n${d}`);
+            dxf.push(`40\n${r}`); 
+            dxf.push("39\n" + (-d)); 
+        }
+
+        drawBox(0, 0, parseInt(plate.style.width), plateH, -5, 9);
+
+        comps.forEach(el => {
+            let x = parseFloat(el.style.left);
+            let y = parseFloat(el.style.top);
+            let w = parseFloat(el.style.width);
+            let h = parseFloat(el.style.height);
+            let d = parseFloat(el.dataset.depth) || 50; 
+            
+            // Map CSS colors to approximate AutoCAD Colors (ACI)
+            let color = 7; 
+            if(el.classList.contains('c-duct')) color = 253; 
+            if(el.classList.contains('c-rail')) color = 250; 
+            if(el.classList.contains('c-plc')) color = 3; 
+            if(el.classList.contains('c-term')) color = 5; 
+            if(el.classList.contains('c-psu')) color = 1;
+            if(el.classList.contains('c-trans')) color = 30; 
+            if(el.classList.contains('c-barrier')) color = 130; 
+            if(el.classList.contains('c-term-pe')) color = 2; // Yellow
+
+            if(el.classList.contains('c-circle')) {
+                let r = w / 2;
+                drawCylinder(x+r, y+r, r, d, 1); 
+            } else {
+                drawBox(x, y, w, h, d, color);
+            }
+        });
+
+        dxf.push("0\nENDSEC\n0\nEOF");
+        
+        const blob = new Blob([dxf.join('\n')], {type: "application/dxf"});
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = "Schaltschrank_3D.dxf";
+        link.click();
+    }
+
+    // === PDF EXPORT ===
+    function exportPDF() {
+        if(selectedEl) selectedEl.classList.remove('selected');
+        const el = document.getElementById('drawingCanvas');
+        const oldTrans = el.style.transform;
+        el.style.transform = 'none'; 
+
+        html2canvas(document.getElementById('mountingPlate'), { scale: 3 }).then(canvas => {
+            el.style.transform = oldTrans; 
+            const imgData = canvas.toDataURL('image/jpeg', 1.0);
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            const pw = pdf.internal.pageSize.getWidth();
+            const imgProps = pdf.getImageProperties(imgData);
+            const ph = (imgProps.height * pw) / imgProps.width;
+
+            pdf.setFillColor(15, 23, 42);
+            pdf.rect(0, 0, pw, 20, 'F');
+            pdf.setTextColor(255, 255, 255);
+            pdf.setFontSize(14);
+            pdf.text("Schaltschrank-Aufbauplan", 10, 13);
+            pdf.addImage(imgData, 'JPEG', 0, 25, pw, ph);
+            pdf.setFontSize(8);
+            pdf.setTextColor(100);
+            pdf.text("Erstellt mit ART ENVI Cabinet CAD - " + new Date().toLocaleDateString(), 10, 285);
+            pdf.save("Aufbauplan.pdf");
+        });
+    }
+
+</script>
+</body>
+</html>

@@ -1,0 +1,991 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ART ENVI | Regelventil-Auslegung</title>
+    <link rel="stylesheet" href="bibliotheken/fontawesome/css/all.min.css">
+    <!-- Chart.js für Pro Charts -->
+    <script src="bibliotheken/chart.umd.js"></script>
+    <script src="bibliotheken/xlsx.full.min.js"></script>
+
+    <style>
+        :root {
+            /* Dashboard Theme Colors */
+            --bg: #121212;
+            --panel: #1e1e1e;
+            --card-bg: #1e272e;
+            --border: #333;
+            --text: #ecf0f1;
+            
+            --accent: #00d2d3; /* Cyan Accent */
+            --accent-hover: #00b8b9;
+            --primary: #e14eca; /* Magenta für Zweitlinien im Chart */
+            
+            --muted: #aaa;
+            --danger: #ff4757;
+            --warning: #f1c40f;
+            --success: #2ecc71;
+        }
+
+        body { margin: 0; padding: 0; background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; position: relative; }
+        
+        .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+
+        /* HEADER */
+        header { 
+            display: flex; justify-content: space-between; align-items: center; 
+            margin-bottom: 25px; padding-bottom: 15px; border-bottom: 2px solid var(--accent);
+            margin-left: 80px; /* Space for floating buttons */
+            transition: margin-left 0.3s;
+        }
+        
+        .header-left { display: flex; align-items: center; gap: 20px; }
+
+        .brand h1 { margin: 0; font-size: 24px; color: var(--text); font-weight: 800; }
+        .brand span { color: var(--accent); }
+        .brand div { letter-spacing: 1px; margin-top: 2px; }
+
+        /* Old back button kept as secondary navigation */
+        .btn-back {
+            text-decoration: none;
+            color: #aaa;
+            font-size: 13px;
+            display: flex; align-items: center; gap: 8px;
+            border: 1px solid var(--border);
+            padding: 8px 12px;
+            border-radius: 6px;
+            background: #222;
+            transition: 0.3s;
+            display: none; /* Hidden because we have the new main button */
+        }
+        .btn-back:hover { background: var(--accent); color: #000; border-color: var(--accent); }
+
+        /* LAYOUT */
+        .grid-main { display: grid; grid-template-columns: 1fr 1.2fr; gap: 25px; }
+        @media(max-width: 900px) { .grid-main { grid-template-columns: 1fr; } }
+
+        /* CARDS */
+        .card { background: var(--card-bg); border-radius: 12px; padding: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); border: 1px solid var(--border); }
+        .card h3 { margin-top: 0; color: var(--accent); font-size: 18px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 25px; border-bottom: 1px solid var(--border); padding-bottom: 10px; display: flex; align-items: center; gap: 10px; }
+
+        /* INPUTS */
+        .input-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px; }
+        label { display: block; font-size: 11px; color: var(--muted); margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.5px; }
+        select, input {
+            width: 100%; background: #121212; border: 1px solid #444; color: #fff; padding: 10px; border-radius: 6px; box-sizing: border-box; transition: 0.3s;
+        }
+        input:focus, select:focus { outline: none; border-color: var(--accent); }
+
+        /* RESULTS */
+        .kv-box {
+            text-align: center; padding: 25px; background: rgba(0, 210, 211, 0.05); 
+            border: 1px solid var(--accent); border-radius: 8px; margin-bottom: 25px;
+        }
+        .kv-val { font-size: 48px; font-weight: bold; color: #fff; }
+        .kv-unit { font-size: 16px; color: var(--accent); font-weight: bold; }
+
+        .status-badge {
+            display: inline-block; padding: 6px 12px; border-radius: 4px; font-size: 12px; font-weight: bold; margin-top: 10px; text-transform: uppercase;
+        }
+        .status-ok { background: rgba(46, 204, 113, 0.15); color: var(--success); border: 1px solid var(--success); }
+        .status-warn { background: rgba(241, 196, 15, 0.15); color: var(--warning); border: 1px solid var(--warning); }
+        .status-crit { background: rgba(255, 71, 87, 0.15); color: var(--danger); border: 1px solid var(--danger); }
+
+        /* SLIDER */
+        .opening-bar {
+            height: 24px; background: #121212; border-radius: 12px; position: relative; overflow: hidden; margin-top: 8px; border: 1px solid #444;
+        }
+        .opening-fill {
+            height: 100%; background: linear-gradient(90deg, var(--accent), #2ecc71); width: 0%; transition: width 0.5s;
+        }
+        .opening-marker {
+            position: absolute; top:0; bottom:0; width: 2px; background: #fff; opacity: 0.5;
+        }
+
+        /* BUTTONS */
+        .btn-calc {
+            width: 100%; padding: 12px; background: var(--accent); border: none; 
+            border-radius: 6px; color: #000; font-weight: bold; cursor: pointer; transition: 0.3s;
+            font-size: 14px; display: flex; align-items: center; justify-content: center; gap: 10px;
+        }
+        .btn-calc:hover { background: #fff; transform: translateY(-2px); }
+
+        .tab-btn { background:transparent; border:1px solid var(--muted); color:var(--muted); padding:8px 15px; cursor:pointer; border-radius:4px; margin-right:5px; transition: 0.3s; font-size: 13px; font-weight: 500;}
+        .tab-btn.active { background: var(--accent); color:#000; border-color:var(--accent); font-weight: bold; }
+        .tab-btn:hover:not(.active) { border-color: #fff; color: #fff; }
+
+        .btn-export { background:#27ae60; color:white; border:none; padding:8px 15px; border-radius:4px; cursor:pointer; font-weight: bold; font-size: 13px; display: flex; align-items: center; gap: 8px; transition: 0.3s; }
+        .btn-export:hover { background: #2ecc71; }
+
+        /* --- NEW FLOATING BUTTONS & MODAL STYLE --- */
+        .nav-buttons {
+            position: fixed; top: 20px; left: 20px; display: flex; gap: 10px; z-index: 1000;
+        }
+        .nav-btn {
+            width: 45px; height: 45px; border-radius: 50%; background: #1e293b; border: 2px solid #334155;
+            color: var(--accent); display: flex; align-items: center; justify-content: center;
+            text-decoration: none; font-size: 18px; transition: 0.3s; box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            cursor: pointer;
+        }
+        .nav-btn:hover { background: var(--accent); color: #000; border-color: #fff; transform: scale(1.1); }
+        
+        /* Modal Styles */
+        .modal-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7); z-index: 2000; backdrop-filter: blur(5px);
+            align-items: center; justify-content: center;
+        }
+        .modal-box {
+            background: #1e293b; width: 600px; max-width: 90%; border-radius: 12px; border: 1px solid var(--accent);
+            padding: 25px; position: relative; box-shadow: 0 20px 50px rgba(0,0,0,0.5); color: #fff;
+        }
+        .modal-header { font-size: 20px; font-weight: bold; color: var(--accent); margin-bottom: 15px; border-bottom: 1px solid #333; padding-bottom: 10px; }
+        .modal-close { position: absolute; top: 20px; right: 20px; color: #aaa; cursor: pointer; font-size: 20px; }
+        .modal-close:hover { color: #fff; }
+        .help-step { margin-bottom: 15px; display: flex; gap: 15px; }
+        .step-num { 
+            min-width: 30px; height: 30px; background: var(--accent); color: #000; font-weight: bold;
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+        }
+        .step-content { font-size: 14px; line-height: 1.5; color: #ddd; }
+
+    
+
+/* === KI Dashboard Standard Override (Do not remove) === */
+
+:root{
+  --accent:#00b894 !important;      /* Emerald/Jade */
+  --accent-hover:#00d4a5 !important;
+  --primary:#22c55e !important;
+  --card-bg:#0f1a17 !important;
+  --panel:#0b1210 !important;
+  --bg:#070b0a !important;
+  --border:#1b3a31 !important;
+  --text:#eaf5f1 !important;
+  --muted:#a9c2ba !important;
+}
+body{ padding-top: 70px !important; }
+.nav-buttons{ display:none !important; } /* keep DOM, hide old floating buttons */
+header{ margin-left: 0 !important; }
+.ki-topbar{
+  position: fixed; top:0; left:0; right:0;
+  height:56px;
+  background:#053a2f;
+  border-bottom: 2px solid var(--accent);
+  z-index: 3500;
+  display:flex; align-items:center; justify-content:space-between;
+  padding: 0 14px;
+}
+.ki-topbar-title{
+  font-weight: 900; letter-spacing: 0.8px;
+  color: var(--text);
+  font-size: 14px;
+  text-transform: uppercase;
+}
+.ki-accent{ color: var(--accent); font-weight: 900; }
+.ki-topbar-actions{ display:flex; gap:10px; align-items:center; }
+.ki-icon-btn{
+  width:40px; height:40px;
+  border-radius:999px;
+  border:1px solid rgba(255,255,255,0.18);
+  background: rgba(0,0,0,0.22);
+  color: var(--accent);
+  display:inline-flex; align-items:center; justify-content:center;
+  cursor:pointer;
+  text-decoration:none;
+  transition: .2s;
+}
+.ki-icon-btn:hover{
+  background: var(--accent);
+  color:#00140f;
+  transform: translateY(-1px);
+}
+.ki-icon-btn i{ font-size: 16px; pointer-events:none; }
+.modal-box{ border-color: var(--accent) !important; background:#0f1a17 !important; }
+.modal-header{ color: var(--accent) !important; }
+
+</style>
+<!-- Ein Aussehen fuer alle Werkzeuge. Steht direkt hinter dem letzten
+     <style> dieses Werkzeugs: spaeter in der Reihenfolge, also gewinnt
+     es bei gleicher Spezifitaet - aber so frueh wie moeglich, damit die
+     Seite nicht erst in der alten Farbe erscheint und dann umfaerbt.
+     Am Ende des <body> geladen war genau das zu sehen: Knoepfe mit
+     transition faerbten sichtbar um. Faerbt nur, verschiebt nichts.
+     Siehe werkzeug-stil.css. -->
+<link rel="stylesheet" href="werkzeug-stil.css">
+<!-- Sprachumschaltung Deutsch / Persisch / Englisch. Was nicht im
+     Woerterbuch steht, bleibt Deutsch. Siehe uebersetzung.js. -->
+<script src="woerter.js"></script>
+<script src="woerter/Regelventil.js"></script>
+<script src="uebersetzung.js"></script>
+
+</head>
+<body>
+
+<div class="ki-topbar" role="navigation" aria-label="KI Dashboard Navigation">
+  <div class="ki-topbar-left">
+    <div class="ki-topbar-title">ART ENVI <span class="ki-accent">|</span> Regelventil Master</div>
+  </div>
+  <div class="ki-topbar-actions">
+    <a class="ki-icon-btn" href="dashboard/" onclick="return kiGoHome(event)" title="Zurück zum Dashboard" aria-label="Home">
+      <i class="fas fa-home"></i>
+    </a>
+    <button class="ki-icon-btn" type="button" onclick="openHelp()" title="Hilfe / Formeln" aria-label="Info">
+      <i class="fas fa-question"></i>
+    </button>
+  </div>
+</div>
+
+
+
+    <!-- NAVIGATION & HELP BUTTONS -->
+    <div class="nav-buttons">
+        <a href="dashboard/" class="nav-btn" title="Zurück zum Dashboard">
+            <i class="fas fa-home"></i>
+        </a>
+        <div class="nav-btn" onclick="openHelp()" title="Hilfe & Anleitung">
+            <i class="fas fa-question"></i>
+        </div>
+    </div>
+
+    <!-- HELP MODAL -->
+    <div id="helpModal" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-close" onclick="closeHelp()"><i class="fas fa-times"></i></div>
+            <div class="modal-header"><i class="fas fa-graduation-cap"></i> Regelventil-Master Anleitung</div>
+            
+            <div class="help-step">
+                <div class="step-num">1</div>
+                <div class="step-content">
+                    <strong>Prozessdaten eingeben:</strong><br>
+                    Wählen Sie zuerst das Medium (Flüssigkeit, Gas, Dampf). Geben Sie dann den Eingangsdruck (P1), Ausgangsdruck (P2) und den Durchfluss ein.
+                </div>
+            </div>
+            <div class="help-step">
+                <div class="step-num">2</div>
+                <div class="step-content">
+                    <strong>Berechnung starten:</strong><br>
+                    Klicken Sie auf "Kv BERECHNEN". Das System berechnet den benötigten Kv-Wert und prüft auf kritische Zustände wie Kavitation (Flüssigkeit) oder Choked Flow (Gas).
+                </div>
+            </div>
+            <div class="help-step">
+                <div class="step-num">3</div>
+                <div class="step-content">
+                    <strong>Ventil wählen & Simulieren:</strong><br>
+                    Wählen Sie aus der Liste "Gewähltes Ventil (Kvs)" eine Standardgröße. Der Balken zeigt sofort den Öffnungsgrad an. Ziel ist ein Bereich zwischen 20% und 80%.
+                </div>
+            </div>
+            <div class="help-step">
+                <div class="step-num">4</div>
+                <div class="step-content">
+                    <strong>Kennlinie prüfen:</strong><br>
+                    Das Diagramm zeigt die Regelkurve. Der weiße Punkt markiert Ihren aktuellen Betriebspunkt. Stellen Sie sicher, dass dieser auf der Kurve liegt.
+                </div>
+            </div>
+        
+<div style="margin-top:18px; padding-top:14px; border-top:1px solid #233;">
+  <div style="font-size:16px; font-weight:800; color:var(--accent); margin-bottom:10px;">
+    <i class="fas fa-square-root-variable"></i> Formeln & Berechnung (aus dem Script)
+  </div>
+  <div style="font-size:13px; line-height:1.6; color:#ddd;">
+    <div style="margin-bottom:10px;">
+      <b>Ventilautorität:</b><br>
+      <code>a = ΔP_Ventil / (ΔP_Ventil + ΔP_Anlage)</code> beim Auslegungsdurchfluss.
+      Der K<sub>v</sub> sagt, wieviel durchgeht; die Autorität sagt, ob man es regeln kann.
+      Unter 0,3 verbiegt sich die Kennlinie so stark, dass der Hub fast nur noch im ersten
+      Viertel wirkt.
+    </div>
+    <div style="margin-bottom:10px;">
+      <b>Grundlagen:</b><br>
+      <code>ΔP = P1 − P2</code>, <code>SG = ρ / 998</code> (bezogen auf Wasser), <code>Cv = Kv · 1.156</code>
+    </div>
+    <div style="margin-bottom:10px;">
+      <b>Flüssigkeit (IEC 60534):</b><br>
+      Choked/Cavitation-Grenze: <code>ΔP_choked = F<sub>L</sub>² · (P1 − 0.96 · Pv)</code><br>
+      Wenn <code>ΔP &gt; ΔP_choked</code>: <code>Kv = Q / √(ΔP_choked / SG)</code><br>
+      Sonst: <code>Kv = Q / √(ΔP / SG)</code><br>
+      Flashing-Hinweis: wenn <code>P2 &lt; Pv</code>.<br>
+      <span style="color:var(--muted); font-size:12px;">F<sub>L</sub> ist ein Eingabefeld, kein fester Wert.
+      Die Bauart setzt einen Richtwert: 0,90 beim Durchgangsventil, 0,55 bei der 90-Grad-Klappe.
+      Das ist keine Kleinigkeit - bei P1 = 6 auf P2 = 2 bar braucht das Durchgangsventil
+      K<sub>v</sub> = 12,5, die Klappe 18,6, weil sie frueher kritisch wird.</span>
+    </div>
+    <div style="margin-bottom:10px;">
+      <b>Gas:</b><br>
+      <code>x = ΔP / P1</code>, <code>F_γ = κ / 1,40</code>, <code>x_krit = F_γ · x<sub>T</sub></code><br>
+      Expansionsfaktor: <code>Y = 1 − x / (3 · F_γ · x<sub>T</sub>)</code>, nach unten begrenzt auf 2/3<br>
+      Bei <code>x &gt; x_krit</code> wird mit <code>x_krit</code> gerechnet, nicht mit dem vollen ΔP:
+      im kritischen Zustand steigt der Durchfluss nicht weiter.<br>
+      Temperatur: <code>T = 273 + Temp(°C)</code>, <code>ρ_rel = ρ / 1.29</code><br>
+      <code>Kv = (Q / 514) · √((ρ_rel · T) / (ΔP · P1))</code>
+    </div>
+    <div>
+      <b>Dampf (sehr grobe Näherung im Code):</b><br>
+      <code>Kv = Q / (31.6 · √(ΔP · P1))</code>
+    </div>
+  </div>
+</div>
+
+</div>
+    </div>
+
+<div class="container">
+    <header>
+        <div class="header-left">
+            <!-- Legacy back button removed/hidden via CSS, new buttons used -->
+            <div class="brand">
+                <h1>Regelventil <span>Master</span></h1>
+                <div style="font-size:12px; color:var(--muted);">IEC 60534 Berechnung & Simulation</div>
+            </div>
+        </div>
+        <button onclick="exportExcel()" class="btn-export">
+            <i class="fas fa-file-excel"></i> Excel Export
+        </button>
+    </header>
+
+    <div class="grid-main">
+        
+        <!-- LEFT: INPUTS -->
+        <div class="card">
+            <h3><i class="fas fa-sliders-h"></i> Prozessbedingungen</h3>
+            
+            <div style="margin-bottom:20px;">
+                <label>Aggregatzustand</label>
+                <div style="display:flex;">
+                    <button class="tab-btn active" onclick="setFluid('liquid')" id="btnLiq"><i class="fas fa-tint"></i> Flüssigkeit</button>
+                    <button class="tab-btn" onclick="setFluid('gas')" id="btnGas"><i class="fas fa-wind"></i> Gas / Luft</button>
+                    <button class="tab-btn" onclick="setFluid('steam')" id="btnSteam"><i class="fas fa-cloud"></i> Dampf</button>
+                </div>
+            </div>
+
+            <div class="input-row">
+                <div>
+                    <label>Medium</label>
+                    <select id="fluidSelect" onchange="loadFluidProp()">
+                        <option value="water">Wasser</option>
+                        <option value="oil">Thermoöl</option>
+                        <option value="custom">Benutzerdefiniert...</option>
+                    </select>
+                </div>
+                <div>
+                    <label id="lblRho">Dichte (kg/m³)</label>
+                    <input type="number" id="rho" value="998">
+                </div>
+            </div>
+
+            <div class="input-row">
+                <div>
+                    <label>Eingangsdruck (P1) [bar abs]</label>
+                    <input type="number" id="p1" value="6.0">
+                </div>
+                <div>
+                    <label>Ausgangsdruck (P2) [bar abs]</label>
+                    <input type="number" id="p2" value="4.5">
+                </div>
+            </div>
+
+            <div class="input-row">
+                <div>
+                    <label>Temperatur (°C)</label>
+                    <input type="number" id="temp" value="20">
+                </div>
+                <div>
+                    <label id="lblFlow">Durchfluss (m³/h)</label>
+                    <input type="number" id="flow" value="25">
+                </div>
+            </div>
+
+            <div class="input-row">
+                <div style="flex:1">
+                    <label>Ventilbauart <span style="opacity:.6; font-size:11px">setzt F<sub>L</sub> und x<sub>T</sub></span></label>
+                    <select id="ventilBauart" onchange="bauartWechsel()">
+                        <option value="0.90|0.72" selected>Durchgangsventil, Parabolkegel</option>
+                        <option value="0.90|0.75">Durchgangsventil, Käfigführung</option>
+                        <option value="0.85|0.60">Exzenterventil (Drehkegel)</option>
+                        <option value="0.74|0.42">Kugelhahn, voller Durchgang</option>
+                        <option value="0.68|0.38">Klappe, 60 Grad</option>
+                        <option value="0.60|0.30">Segmentkugelhahn</option>
+                        <option value="0.55|0.20">Klappe, 90 Grad</option>
+                    </select>
+                </div>
+            </div>
+            <div class="input-row">
+                <div>
+                    <label>F<sub>L</sub> <span style="opacity:.6; font-size:11px">Druckrückgewinnung</span></label>
+                    <input type="number" id="FL" value="0.90" step="0.01" min="0.1" max="1">
+                </div>
+                <div>
+                    <label>x<sub>T</sub> <span style="opacity:.6; font-size:11px">Druckverhältnis</span></label>
+                    <input type="number" id="xT" value="0.72" step="0.01" min="0.05" max="1">
+                </div>
+            </div>
+            <div class="input-row">
+                <div>
+                    <label>&kappa; <span style="opacity:.6; font-size:11px">Isentropenexponent (Gas/Dampf)</span></label>
+                    <input type="number" id="kappa" value="1.40" step="0.01" min="1">
+                </div>
+                <div style="font-size:10.5px; color:#8a8a8a; line-height:1.45; align-self:end; padding-bottom:6px;">
+                    F<sub>L</sub> und x<sub>T</sub> stehen im Datenblatt des Ventils.
+                    Die Bauart setzt Richtwerte aus der üblichen Tabelle. Sie sind Anhaltswerte,
+                    keine Messung an Ihrem Ventil: was im Datenblatt des Herstellers steht, gewinnt,
+                    und die beiden Felder sind darum frei beschreibbar. Der Unterschied ist gross -
+                    eine 90-Grad-Klappe hat F<sub>L</sub> = 0,55 gegen 0,90 beim Durchgangsventil.
+                    &kappa;: Luft 1,40, Erdgas 1,31, Dampf 1,30.
+                </div>
+            </div>
+
+            <div class="input-row" id="vaporRow">
+                <div>
+                    <label>Dampfdruck (Pv) [bar abs]</label>
+                    <input type="number" id="pv" value="0.023">
+                </div>
+                <div>
+                    <label>Kritischer Druck (Pc) [bar]</label>
+                    <input type="number" id="pc" value="221">
+                </div>
+            </div>
+
+            <div style="border-top:1px solid #444; padding-top:20px; margin-top:20px;">
+                <label>Ventilkennlinie</label>
+                <select id="charType" onchange="calculate()">
+                    <option value="eq">Gleichprozentig (Eq%)</option>
+                    <option value="lin">Linear</option>
+                    <option value="quick">Schnellöffnend (Quick Opening)</option>
+                </select>
+            </div>
+
+            <button class="btn-calc" onclick="calculate()" style="margin-top:25px;"><i class="fas fa-calculator"></i> Kv BERECHNEN</button>
+        </div>
+
+        <!-- RIGHT: RESULTS -->
+        <div class="card">
+            <h3><i class="fas fa-chart-pie"></i> Auslegungsergebnisse</h3>
+            
+            <div class="kv-box">
+                <div style="font-size:12px; color:var(--muted); margin-bottom:5px; text-transform:uppercase;">Benötigter Kv-Wert</div>
+                <span class="kv-val" id="resKv">0.00</span>
+                <span class="kv-unit">m³/h</span>
+                <div id="resCv" style="font-size:13px; color:var(--muted); margin-top:5px;">(Cv = 0.00)</div>
+                <div id="flowStatus"></div>
+            </div>
+
+            <!-- SIMULATION AREA -->
+            <div style="background:rgba(255,255,255,0.03); padding:20px; border-radius:8px; margin-bottom:25px; border:1px solid #333;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                    <label style="margin:0; color:#fff; font-weight:bold;">Gewähltes Ventil (Kvs)</label>
+                    <select id="selectedKvs" style="width:140px; padding:5px; background:#000; border-color:var(--accent);" onchange="updateSim()">
+                        <!-- Filled by JS -->
+                    </select>
+                </div>
+
+                <label>Druckverlust der übrigen Anlage bei Auslegungsdurchfluss (bar)</label>
+                <input type="number" id="dpAnlage" value="2.0" step="0.1" min="0" onchange="updateSim()" oninput="updateSim()">
+                <div style="font-size:11px; color:var(--muted); line-height:1.6; margin:4px 0 12px;">
+                    Alles ausser dem Ventil: Rohr, Formstücke, Wärmetauscher. Daraus die
+                    <b>Ventilautorität</b> a = &Delta;P<sub>Ventil</sub> / (&Delta;P<sub>Ventil</sub> + &Delta;P<sub>Anlage</sub>).
+                    Ein Ventil mit zu kleiner Autorität ist nicht regelbar, egal wie genau der
+                    K<sub>v</sub> stimmt: die Kennlinie verbiegt sich, und der Hub wirkt fast nur noch
+                    im ersten Viertel.
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                    <span>Ventilautorität a</span>
+                    <span id="resAutoritaet" style="font-weight:bold;">--</span>
+                </div>
+
+                <label>Berechneter Öffnungsgrad (%)</label>
+                <div class="opening-bar">
+                    <div class="opening-fill" id="barFill"></div>
+                    <!-- Markers for healthy range -->
+                    <div class="opening-marker" style="left:20%; background:var(--warning);"></div>
+                    <div class="opening-marker" style="left:80%; background:var(--warning);"></div>
+                </div>
+                <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--muted); margin-top:5px;">
+                    <span>0%</span>
+                    <span id="openingText" style="color:var(--accent); font-weight:bold; font-size:14px;">0%</span>
+                    <span>100%</span>
+                </div>
+                <div id="openingAlert" style="font-size:12px; margin-top:8px; text-align:center;"></div>
+            </div>
+
+            <!-- CHART -->
+            <div style="height:250px;">
+                <canvas id="valveChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- HELPER FUNCTIONS FOR MODAL ---
+    function openHelp() { document.getElementById('helpModal').style.display = 'flex'; }
+    function closeHelp() { document.getElementById('helpModal').style.display = 'none'; }
+    // Close modal when clicking outside
+    window.onclick = function(event) {
+        if (event.target == document.getElementById('helpModal')) {
+            closeHelp();
+        }
+    }
+
+    // --- DATABASE & STATE ---
+    let currentFluidType = 'liquid';
+    let myChart = null;
+
+    const fluids = {
+        liquid: {
+            water: { rho: 998, pv: 0.023, pc: 221 },
+            oil: { rho: 870, pv: 0.001, pc: 50 },
+            custom: { rho: 1000, pv: 0, pc: 0 }
+        },
+        gas: {
+            air: { rho: 1.2, t: 20 }, // Density at normal conditions
+            nitrogen: { rho: 1.16, t: 20 },
+            custom: { rho: 1.0, t: 20 }
+        },
+        steam: {
+            saturated: { rho: 0, t: 150 }, // Complex, usually lookup tables
+            custom: { rho: 0, t: 150 }
+        }
+    };
+
+    const stdKvs = [0.4, 0.63, 1.0, 1.6, 2.5, 4.0, 6.3, 10, 16, 25, 40, 63, 100, 160, 250, 400];
+
+    // --- UI LOGIC ---
+    function setFluid(type) {
+        currentFluidType = type;
+        
+        // Update Buttons
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        if(type==='liquid') document.getElementById('btnLiq').classList.add('active');
+        if(type==='gas') document.getElementById('btnGas').classList.add('active');
+        if(type==='steam') document.getElementById('btnSteam').classList.add('active');
+
+        // Update Select Options
+        const sel = document.getElementById('fluidSelect');
+        sel.innerHTML = '';
+        const keys = Object.keys(fluids[type]);
+        keys.forEach(k => {
+            const opt = document.createElement('option');
+            opt.value = k;
+            
+            // German Translation for Dropdown
+            let label = k.charAt(0).toUpperCase() + k.slice(1);
+            if(k === 'water') label = 'Wasser';
+            if(k === 'oil') label = 'Thermoöl';
+            if(k === 'custom') label = 'Benutzerdefiniert...';
+            if(k === 'air') label = 'Luft';
+            if(k === 'nitrogen') label = 'Stickstoff';
+            if(k === 'saturated') label = 'Sattdampf';
+
+            opt.textContent = label;
+            sel.appendChild(opt);
+        });
+
+        // Toggle Fields
+        const lblFlow = document.getElementById('lblFlow');
+        const vaporRow = document.getElementById('vaporRow');
+        const lblRho = document.getElementById('lblRho');
+
+        if(type === 'liquid') {
+            lblFlow.innerText = "Durchfluss (m³/h)";
+            lblRho.innerText = "Dichte (kg/m³)";
+            vaporRow.style.display = "grid";
+        } else if (type === 'gas') {
+            lblFlow.innerText = "Normdurchfluss (Nm³/h)";
+            lblRho.innerText = "Normdichte (kg/Nm³)";
+            vaporRow.style.display = "none";
+        } else {
+            lblFlow.innerText = "Massestrom (kg/h)";
+            lblRho.innerText = "Spez. Volumen (m³/kg)"; // For steam we often use mass flow
+            vaporRow.style.display = "none";
+        }
+        
+        loadFluidProp();
+    }
+
+    function loadFluidProp() {
+        const name = document.getElementById('fluidSelect').value;
+        const data = fluids[currentFluidType][name];
+        
+        if(currentFluidType === 'liquid') {
+            document.getElementById('rho').value = data.rho;
+            document.getElementById('pv').value = data.pv;
+            document.getElementById('pc').value = data.pc;
+        } else if (currentFluidType === 'gas') {
+            document.getElementById('rho').value = data.rho;
+        } else {
+            // Dampf: im selben Feld steht das spezifische Volumen. Vorher blieb hier
+            // die zuletzt geladene Fluessigkeitsdichte stehen (z. B. 998), was als
+            // m3/kg voelliger Unsinn ist und trotzdem eine Zahl ergab.
+            document.getElementById('rho').value = '';
+        }
+    }
+
+    // --- CALCULATION ENGINE ---
+    // Liest ein Zahlenfeld. null bei leer, keine Zahl, Unendlich.
+    function zahl(id) {
+        const el = document.getElementById(id);
+        if (!el) return null;
+        const t = (el.value || '').trim();
+        if (t === '') return null;
+        const v = Number(t);
+        return Number.isFinite(v) ? v : null;
+    }
+    function ventilFehler(text) {
+        document.getElementById('resKv').innerText = '--';
+        document.getElementById('resCv').innerText = '';
+        const st = document.getElementById('flowStatus');
+        if (st) st.innerHTML = "<span class='status-badge status-crit'>" + text + "</span>";
+    }
+
+    function calculate() {
+        const p1 = zahl('p1'), p2 = zahl('p2'), flow = zahl('flow');
+        const rho = zahl('rho'), pv = zahl('pv'), temp = zahl('temp');
+
+        // Frueher stand hier nur die P2/P1-Pruefung. Bei leeren Feldern ist
+        // NaN >= NaN falsch, die Pruefung lief also ins Leere und es wurde
+        // NaN gerechnet und angezeigt.
+        if ([p1, p2, flow].some(x => x === null)) {
+            ventilFehler('Eingabe fehlt'); return;
+        }
+        if (rho === null) {
+            ventilFehler(currentFluidType === 'steam'
+                ? 'Spez. Volumen aus der Dampftafel eintragen (bei p1 und t1)'
+                : 'Dichte fehlt');
+            return;
+        }
+        if (p1 <= 0 || flow <= 0 || rho <= 0) {
+            ventilFehler('Druck, Durchfluss und Dichte muessen ueber null liegen'); return;
+        }
+        if (p2 < 0) {
+            ventilFehler('Ausgangsdruck darf nicht negativ sein'); return;
+        }
+        if (p2 >= p1) {
+            ventilFehler('Ausgangsdruck P2 muss kleiner als P1 sein'); return;
+        }
+
+        const dP = p1 - p2;
+        let Kv = 0;
+        let statusHtml = "";
+
+        // 1. LIQUID CALCULATION (IEC 60534-2-1)
+        if(currentFluidType === 'liquid') {
+            const SG = rho / 998; // Specific Gravity rel to water
+            
+            // Cavitation Check (Simplified)
+            const FL = zahl('FL') || 0.9;   // aus dem Datenblatt, frueher fest 0,9
+
+            const dP_choked = Math.pow(FL, 2) * (p1 - 0.96 * pv);
+
+            if (dP > dP_choked) {
+                statusHtml = "<span class='status-badge status-crit'>KAVITATION / CHOKED FLOW!</span>";
+                Kv = flow / Math.sqrt(dP_choked / SG);
+            } else {
+                statusHtml = "<span class='status-badge status-ok'>Flüssigkeit (Normal)</span>";
+                Kv = flow / Math.sqrt(dP / SG);
+            }
+
+            if(p2 < pv) {
+                statusHtml += "<br><span class='status-badge status-crit'>FLASHING! (P2 < Pv)</span>";
+            }
+        } 
+        
+        // 2. GAS CALCULATION (Simplified)
+        else if (currentFluidType === 'gas') {
+            // Nach IEC 60534-2-1:
+            //   x = dp/p1,  F_gamma = kappa/1,40,  x_krit = F_gamma * xT
+            //   Y = 1 - x/(3*F_gamma*xT),  nach unten begrenzt auf 2/3
+            // Frueher stand hier 3*1,4 im Nenner. Richtig ist 3*F_gamma*xT, fuer Luft
+            // also rund 3*0,7 = 2,1 statt 4,2 - der Nenner war doppelt so gross.
+            // Und Y wurde zwar berechnet, aber in der Kv-Zeile nie verwendet.
+            const xT = zahl('xT') || 0.70;
+            const kappa = zahl('kappa') || 1.40;
+            const F_gamma = kappa / 1.40;
+            const x_krit = F_gamma * xT;
+            const x = dP / p1;
+
+            // Bei kritischem Gefaelle steigt der Durchfluss nicht weiter. Der
+            // wirksame Druckabfall bleibt bei x_krit stehen. Vorher wurde weiter
+            // mit dem vollen dP gerechnet, wodurch Kv im choked-Fall faelschlich
+            // KLEINER wurde statt groesser.
+            let x_rech = x;
+            if (x >= x_krit) {
+                x_rech = x_krit;
+                statusHtml = "<span class='status-badge status-warn'>Kritische Stroemung (x &ge; F&gamma;&middot;x<sub>T</sub> = " + x_krit.toFixed(2) + ")</span>";
+            } else {
+                statusHtml = "<span class='status-badge status-ok'>Gasfluss (unterkritisch, x = " + x.toFixed(2) + ")</span>";
+            }
+
+            const Y = Math.max(1 - x_rech / (3 * x_krit), 2/3);
+            const T_kelvin = 273.15 + temp;
+            const rho_rel = rho / 1.29;          // bezogen auf Luft
+            const dP_rech = x_rech * p1;
+            Kv = flow / (514 * Y) * Math.sqrt((rho_rel * T_kelvin) / (dP_rech * p1));
+        }
+        
+        // 3. STEAM
+        else {
+            // Bei Dampf steht im Feld "rho" das SPEZIFISCHE VOLUMEN in m3/kg.
+            // Frueher wurde es gar nicht benutzt: die Formel nahm p1 anstelle der
+            // Dichte. Richtig ist Kv = W / (31,6 * Y * sqrt(dp * rho1)) mit
+            // rho1 = 1/v am Ventileintritt.
+            const v = rho;
+            if (!(v > 0)) {
+                ventilFehler('Spez. Volumen aus der Dampftafel eintragen (bei p1 und t1)');
+                return;
+            }
+            const rho1 = 1 / v;
+
+            const xT = zahl('xT') || 0.70;
+            const kappa = zahl('kappa') || 1.40;
+            const x_krit = (kappa / 1.40) * xT;
+            const x = dP / p1;
+
+            let x_rech = x;
+            if (x >= x_krit) {
+                x_rech = x_krit;
+                statusHtml = "<span class='status-badge status-warn'>Kritische Stroemung (x &ge; " + x_krit.toFixed(2) + ")</span>";
+            } else {
+                statusHtml = "<span class='status-badge status-ok'>Dampffluss (unterkritisch, x = " + x.toFixed(2) + ")</span>";
+            }
+
+            const Y = Math.max(1 - x_rech / (3 * x_krit), 2/3);
+            const dP_rech = x_rech * p1;
+            Kv = flow / (31.6 * Y * Math.sqrt(dP_rech * rho1));
+        }
+
+        // Display
+        const Cv = Kv * 1.156;
+        document.getElementById('resKv').innerText = Kv.toFixed(2);
+        document.getElementById('resCv').innerText = `(Cv = ${Cv.toFixed(2)})`;
+        document.getElementById('flowStatus').innerHTML = statusHtml;
+
+        populateKvsSelect(Kv);
+        // Die Zahlen stehen schon. Faellt die Diagrammbibliothek aus, bleibt es dabei.
+        if (typeof Chart !== 'undefined') updateChart(Kv);
+    }
+
+    function populateKvsSelect(reqKv) {
+        const sel = document.getElementById('selectedKvs');
+        sel.innerHTML = '';
+        
+        let found = false;
+        stdKvs.forEach(k => {
+            const opt = document.createElement('option');
+            opt.value = k;
+            opt.textContent = `Kvs ${k}`;
+            if(k > reqKv * 1.3 && !found) { // Suggest safety margin +30%
+                opt.selected = true;
+                found = true;
+            }
+            sel.appendChild(opt);
+        });
+        if(!found) sel.lastChild.selected = true; // Max
+        updateSim();
+    }
+
+    // Die Bauart setzt die Richtwerte, die Felder duerfen sie ueberschreiben.
+    function bauartWechsel() {
+        const sel = document.getElementById("ventilBauart");
+        if (!sel) return;
+        const teile = sel.value.split("|");
+        document.getElementById("FL").value = teile[0];
+        document.getElementById("xT").value = teile[1];
+        if (typeof calculate === "function") calculate();
+    }
+
+    // Ventilautoritaet.
+    //
+    //   a = dP_Ventil / (dP_Ventil + dP_Anlage)   beim Auslegungsdurchfluss
+    //
+    // Der Kv sagt, wieviel durchgeht. Die Autoritaet sagt, ob man es
+    // regeln kann. Liegt der groesste Teil des Druckverlusts in der Anlage
+    // und nicht im Ventil, verbiegt sich die Kennlinie: der Hub wirkt fast
+    // nur noch im ersten Viertel, und die Regelung schwingt oder steht.
+    // Ein sauber gerechneter Kv nuetzt dann nichts.
+    function autoritaetZeigen() {
+        const feld = document.getElementById("resAutoritaet");
+        if (!feld) return;
+        const p1 = parseFloat(document.getElementById("p1").value);
+        const p2 = parseFloat(document.getElementById("p2").value);
+        const dpAnlage = parseFloat(document.getElementById("dpAnlage").value);
+        const dpVentil = p1 - p2;
+        if (!(dpVentil > 0) || !(dpAnlage >= 0)) {
+            feld.textContent = "--"; feld.style.color = ""; return;
+        }
+        const a = dpVentil / (dpVentil + dpAnlage);
+        let text, farbe;
+        if (a >= 0.5) { text = "gut"; farbe = "var(--success)"; }
+        else if (a >= 0.3) { text = "brauchbar"; farbe = "var(--success)"; }
+        else { text = "zu klein, nicht regelbar"; farbe = "var(--warning)"; }
+        feld.textContent = a.toFixed(2) + " (" + text + ")";
+        feld.style.color = farbe;
+    }
+
+    function updateSim() {
+        autoritaetZeigen();
+        const reqKv = parseFloat(document.getElementById('resKv').innerText);
+        const kvs = parseFloat(document.getElementById('selectedKvs').value);
+        const char = document.getElementById('charType').value;
+
+        if(!reqKv || reqKv <= 0) return;
+
+        let h = 0; // 0 to 1
+        
+        if (char === 'lin') {
+            h = reqKv / kvs;
+        } else if (char === 'eq') {
+            const R = 50; // Rangeability
+            if(reqKv < kvs/R) h = 0;
+            else h = (Math.log(reqKv/kvs) / Math.log(R)) + 1;
+        } else {
+            // Quick opening approx: sqrt(h)
+            h = Math.pow(reqKv/kvs, 2); 
+        }
+
+        h = Math.min(Math.max(h, 0), 1);
+        const pct = (h * 100).toFixed(1);
+
+        document.getElementById('barFill').style.width = pct + "%";
+        document.getElementById('openingText').innerText = pct + "%";
+
+        // Warnings
+        const alertBox = document.getElementById('openingAlert');
+        if(pct > 85) alertBox.innerHTML = "<span style='color:var(--warning)'>Warnung: Ventil > 85% offen (Zu klein)</span>";
+        else if (pct < 15) alertBox.innerHTML = "<span style='color:var(--warning)'>Warnung: Ventil < 15% offen (Zu groß/Regelprobleme)</span>";
+        else alertBox.innerHTML = "<span style='color:var(--success)'>Guter Regelbereich (15-85%)</span>";
+    }
+
+    // --- CHART LOGIC ---
+    function updateChart(reqKv) {
+        const ctx = document.getElementById('valveChart').getContext('2d');
+        const kvs = parseFloat(document.getElementById('selectedKvs').value) || stdKvs[stdKvs.length-1];
+
+        // Generate Data Points (0 to 100%)
+        const labels = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
+        const dataEq = [];
+        const dataLin = [];
+        const R = 50;
+
+        labels.forEach(pct => {
+            const h = pct / 100;
+            // Linear
+            dataLin.push(kvs * h);
+            // Eq%
+            if(pct === 0) dataEq.push(0);
+            else dataEq.push(kvs * Math.pow(R, h-1));
+        });
+
+        // Parse current opening for chart point
+        const currentOpeningRaw = document.getElementById('openingText').innerText;
+        const currentOpening = parseFloat(currentOpeningRaw);
+
+        if(myChart) myChart.destroy();
+
+        myChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Lineare Kennlinie',
+                        data: dataLin,
+                        borderColor: '#00d2d3', // Cyan
+                        borderWidth: 2,
+                        tension: 0.4,
+                        pointRadius: 0
+                    },
+                    {
+                        label: 'Gleichprozentige Kennlinie',
+                        data: dataEq,
+                        borderColor: '#e14eca', // Magenta
+                        borderWidth: 2,
+                        tension: 0.4,
+                        pointRadius: 0
+                    },
+                    {
+                        label: 'Ihr Betriebspunkt',
+                        data: [{x: currentOpening, y: reqKv}],
+                        backgroundColor: 'white',
+                        borderColor: 'white',
+                        pointRadius: 6,
+                        type: 'scatter'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: { grid: {color: '#333'}, title: {display:true, text:'Öffnung %', color:'#888'} },
+                    y: { grid: {color: '#333'}, title: {display:true, text:'Kv (Durchflusskoeffizient)', color:'#888'} }
+                },
+                plugins: {
+                    legend: { labels: {color:'#fff'} }
+                }
+            }
+        });
+    }
+
+    function exportExcel() {
+        const wb = XLSX.utils.book_new();
+        const data = [
+            ["REGELVENTIL BERECHNUNGSPROTOKOLL"],
+            ["Datum", new Date().toLocaleDateString()],
+            [""],
+            ["EINGABEN"],
+            ["Medium", document.getElementById('fluidSelect').value],
+            ["P1", document.getElementById('p1').value + " bar"],
+            ["P2", document.getElementById('p2').value + " bar"],
+            ["Durchfluss", document.getElementById('flow').value],
+            [""],
+            ["ERGEBNISSE"],
+            ["Berechneter Kv", document.getElementById('resKv').innerText],
+            ["Berechneter Cv", document.getElementById('resCv').innerText],
+            ["Gewählter Kvs", document.getElementById('selectedKvs').value],
+            ["Öffnungsgrad %", document.getElementById('openingText').innerText]
+        ];
+        const ws = XLSX.utils.aoa_to_sheet(data);
+        XLSX.utils.book_append_sheet(wb, ws, "Berechnung");
+        XLSX.writeFile(wb, "Ventil_Auslegung.xlsx");
+    }
+
+    // Init
+    setFluid('liquid');
+</script>
+
+
+
+
+<script>
+function kiGoHome(ev){
+  // Das Dashboard liegt jetzt neben dem Werkzeug, der Verweis im href fuehrt
+  // hin. Frueher stand hier ein Umweg ueber eine absolute file://-Adresse mit
+  // einem Ersatzweg nach 50 ms; beides ist im Netz falsch - file:// blockiert
+  // jeder Browser, und die Ersatzdatei gibt es nicht.
+  return true;
+}
+</script>
+
+
+<!-- KI-Helfer: ordnet das Ergebnis ein, rechnet es nicht. Der
+     Schluessel steht nicht hier, sondern hinter der Edge Function
+     werkzeug-assistent. Siehe ki-helfer.js. -->
+<script src="ki-helfer.js"></script>
+<script>
+  KI_HELFER.einbauen({
+    werkzeug: "Regelventil-Auslegung",
+    modus: "deutung",
+    knopf: "Ergebnis einordnen",
+    titel: "Einordnung des Ergebnisses",
+    platzhalter: "Frage dazu, optional. Zum Beispiel: welche Stellschraube zuerst?",
+    ergebnisse: {
+      "resKv": "Kv",
+      "resCv": "Cv",
+      "flowStatus": "Stroemungszustand",
+      "openingText": "Oeffnungsgrad"
+    }
+  });
+</script>
+</body>
+</html>

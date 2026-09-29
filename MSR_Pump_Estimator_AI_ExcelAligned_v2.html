@@ -1,0 +1,2185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ART ENVI | MSR Pump Estimator AI (Excel-Aligned)</title>
+
+  <!-- Optional online libraries (safe to ignore offline) -->
+  <link rel="stylesheet" href="bibliotheken/fontawesome/css/all.min.css">
+  <script src="bibliotheken/xlsx.full.min.js"></script>
+
+  <style>
+    :root{
+      --e:#10b981; --e2:#059669; --e9:#064e3b;
+      --bg:#0b1220; --bg2:#0f172a;
+      --bd:rgba(16,185,129,.25); --bd2:rgba(16,185,129,.38);
+      --tx:#e5e7eb; --mut:#9ca3af;
+      --shadow: 0 18px 35px rgba(0,0,0,.35);
+      --r:14px; --r2:10px;
+    }
+    html, body{ height:100%; }
+    body{
+      margin:0;
+      background:
+        radial-gradient(1000px 600px at 15% 10%, rgba(6,78,59,.30), transparent 60%),
+        radial-gradient(900px 550px at 85% 20%, rgba(16,185,129,.15), transparent 60%),
+        var(--bg);
+      color: var(--tx);
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+      font-size: 12px;
+      overflow-x:hidden;
+      overflow-y:auto;
+    }
+    *{ box-sizing:border-box; }
+    ::-webkit-scrollbar{ width: 8px; height: 8px; }
+    ::-webkit-scrollbar-thumb{ background:#2c3448; border-radius: 6px; }
+
+    /* Topbar */
+    .topbar{
+      position: sticky;
+      top:0;
+      height:56px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding: 0 14px;
+      background: linear-gradient(180deg, rgba(6,78,59,0.35), rgba(15,23,42,0.92));
+      border-bottom: 1px solid var(--bd);
+      z-index: 10000;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+    }
+    .title{
+      display:flex; align-items:center; gap:10px;
+      font-size: 13px; font-weight: 900; letter-spacing:.3px;
+      min-width:0;
+    }
+    .dot{ width:10px; height:10px; border-radius:50%; background: var(--e); box-shadow: 0 0 0 3px rgba(16,185,129,0.18); flex: 0 0 10px; }
+    .sub{ color:var(--mut); font-weight:700; font-size:12px; white-space: nowrap; overflow:hidden; text-overflow: ellipsis; }
+
+    .actions{ display:flex; align-items:center; gap:10px; }
+    .iconbtn{
+      appearance:none; border:1px solid var(--bd2);
+      background: rgba(15,23,42,.55); color: var(--tx);
+      height:36px; min-width:36px; padding: 0 10px;
+      border-radius: 10px; display:flex; align-items:center; justify-content:center; gap:8px;
+      cursor:pointer; box-shadow: 0 8px 18px rgba(0,0,0,.22);
+      user-select:none;
+    }
+    .iconbtn:hover{ border-color: rgba(16,185,129,.65); background: rgba(16,185,129,.14); }
+    .iconbtn:active{ transform: translateY(1px); }
+    .iconbtn .lbl{ font-size: 12px; color: var(--mut); font-weight: 800; }
+    @media (max-width: 820px){ .iconbtn .lbl{ display:none; } }
+
+    /* Layout */
+    .shell{ display:flex; min-height: calc(100vh - 56px); }
+    .sidebar{
+      width: 410px;
+      background: rgba(17,28,49,.92);
+      border-right: 1px solid rgba(255,255,255,.06);
+      padding: 16px;
+      overflow:auto;
+      min-width: 0;
+    }
+    .main{ flex:1; min-width:0; display:flex; flex-direction: column; }
+
+    .brand{
+      font-size: 16px; font-weight: 900; color:#fff;
+      margin-bottom: 14px;
+      display:flex; align-items:center; gap:10px;
+      border-bottom: 2px solid var(--e);
+      padding-bottom: 10px;
+      letter-spacing:.25px;
+    }
+    .brand span{ color:var(--e); }
+
+    .section{
+      background: rgba(15,23,42,.55);
+      border: 1px solid rgba(16,185,129,.18);
+      border-radius: 12px;
+      padding: 12px;
+      margin-bottom: 12px;
+      box-shadow: 0 12px 24px rgba(0,0,0,.18);
+      min-width: 0;
+    }
+    .sec-title{
+      font-size: 11px;
+      font-weight: 900;
+      color: var(--e);
+      text-transform: uppercase;
+      margin-bottom: 10px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 8px;
+      letter-spacing: .35px;
+    }
+
+    label{ display:block; margin-bottom: 4px; font-size: 10px; color: var(--mut); font-weight: 900; }
+    input, select, textarea{
+      width:100%;
+      background: rgba(11,18,32,.75);
+      border: 1px solid rgba(255,255,255,.12);
+      color: var(--tx);
+      padding: 8px;
+      border-radius: 10px;
+      font-size: 11px;
+      outline:none;
+    }
+    input:focus, select:focus, textarea:focus{
+      border-color: rgba(16,185,129,.55);
+      box-shadow: 0 0 0 3px rgba(16,185,129,.10);
+    }
+    textarea{ resize: vertical; min-height: 72px; }
+
+    .row{ display:flex; gap:10px; margin-bottom: 8px; min-width:0; }
+    .grp{ flex:1; min-width:0; }
+
+    .btn{
+      width:100%;
+      padding: 10px 10px;
+      border:none;
+      border-radius: 10px;
+      cursor:pointer;
+      font-weight: 900;
+      font-size: 11px;
+      letter-spacing: .2px;
+      margin-top: 6px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:8px;
+    }
+    .btn-add{ background: var(--e); color:#04130d; }
+    .btn-calc{ background: var(--e2); color:#fff; }
+    .btn-ghost{ background: rgba(255,255,255,.06); border:1px solid rgba(16,185,129,.25); color: var(--tx); }
+    .btn-ghost:hover{ background: rgba(16,185,129,.10); border-color: rgba(16,185,129,.45); }
+    .btn-danger{ background: rgba(192,57,43,.25); border:1px solid rgba(192,57,43,.55); color: #ffd2cf; }
+
+    .hint{
+      padding: 8px 10px;
+      border-radius: 10px;
+      border: 1px solid rgba(16,185,129,.20);
+      background: rgba(6,78,59,.10);
+      color: var(--tx);
+      font-size: 11px;
+      line-height: 1.45;
+    }
+    .tiny{ font-size: 10px; color: var(--mut); line-height: 1.4; }
+
+    .pill{
+      display:inline-flex; align-items:center; gap:6px;
+      padding: 4px 8px; border-radius: 999px;
+      border: 1px solid rgba(16,185,129,.25);
+      background: rgba(16,185,129,.08);
+      color: #dffbf1; font-size: 10px; font-weight: 900;
+      user-select:none; white-space: nowrap;
+    }
+    .pill.gray{ border-color: rgba(255,255,255,.14); background: rgba(255,255,255,.06); color: var(--mut); }
+
+    .badge{ padding: 3px 6px; border-radius: 6px; font-weight: 900; font-size: 10px; letter-spacing:.2px; display:inline-block; border:1px solid transparent; }
+    .b-ok{ background: rgba(39,174,96,.16); color:#2ecc71; border-color:#2ecc71; }
+    .b-warn{ background: rgba(243,156,18,.16); color:#f39c12; border-color:#f39c12; }
+    .b-rfq{ background: rgba(231,76,60,.14); color:#ff6b6b; border-color:#ff6b6b; }
+    .mono{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+
+    /* Tabs + views */
+    .tabs{
+      height: 46px;
+      background: rgba(15,23,42,.75);
+      display:flex;
+      border-bottom: 1px solid rgba(255,255,255,.06);
+      overflow:auto;
+    }
+    .tab{
+      padding: 0 18px;
+      display:flex;
+      align-items:center;
+      cursor:pointer;
+      color: var(--mut);
+      font-weight: 900;
+      transition:.2s;
+      border-right: 1px solid rgba(255,255,255,.06);
+      gap: 8px;
+      user-select:none;
+      white-space: nowrap;
+      flex: 0 0 auto;
+    }
+    .tab.active{ background: rgba(11,18,32,.65); color: #fff; border-top: 3px solid var(--e); }
+    .tab:hover{ color:#fff; }
+    .view{ display:none; flex:1; padding: 16px; overflow:auto; min-width:0; }
+    .view.active{ display:block; }
+
+    .summary{
+      display:flex;
+      justify-content:space-between;
+      gap: 10px;
+      margin-bottom: 12px;
+      color: var(--mut);
+      font-size: 11px;
+      flex-wrap: wrap;
+    }
+    .summary b{ color:#fff; }
+    .summary .accent{ color: var(--e); }
+    .summary .warn{ color: #f39c12; }
+    .summary .bad{ color: #ff6b6b; }
+
+    .tableWrap{
+      overflow:auto;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,.07);
+      background: rgba(11,18,32,.35);
+      box-shadow: 0 12px 24px rgba(0,0,0,.18);
+      min-width:0;
+    }
+    table{ width:100%; border-collapse: collapse; font-size: 11px; min-width: 1120px; }
+    th{
+      text-align:left;
+      padding: 10px;
+      background: rgba(17,28,49,.90);
+      color: #b8c0cf;
+      position: sticky;
+      top: 0;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+      z-index: 1;
+      white-space: nowrap;
+    }
+    td{
+      padding: 8px 10px;
+      border-bottom: 1px solid rgba(255,255,255,.06);
+      color: #d3d7df;
+      vertical-align: top;
+    }
+    tr:hover{ background: rgba(255,255,255,.04); }
+
+    /* Line cards */
+    .lineList{ display:flex; flex-direction: column; gap: 8px; margin-top: 6px; }
+    .lineCard{
+      border: 1px solid rgba(255,255,255,.08);
+      background: rgba(11,18,32,.45);
+      border-radius: 12px;
+      padding: 10px;
+      box-shadow: 0 10px 18px rgba(0,0,0,.16);
+      min-width:0;
+    }
+    .lineTop{ display:flex; align-items:flex-start; justify-content:space-between; gap: 10px; min-width:0; }
+    .lineName{ font-weight: 900; color:#fff; font-size: 11px; line-height: 1.25; min-width:0; overflow:hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .lineMeta{ display:flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+    .lineBtns{ display:flex; gap: 6px; flex: 0 0 auto; }
+    .miniBtn{
+      appearance:none; border: 1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.06);
+      color: var(--tx); height: 28px; padding: 0 10px;
+      border-radius: 10px; cursor: pointer;
+      font-weight: 900; font-size: 10px;
+      display:flex; align-items:center; gap:6px;
+    }
+    .miniBtn:hover{ border-color: rgba(16,185,129,.5); background: rgba(16,185,129,.12); }
+    .miniBtn.danger{ border-color: rgba(192,57,43,.55); background: rgba(192,57,43,.16); color:#ffd2cf; }
+
+    /* Modal */
+    .modalOverlay{
+      display:none; position: fixed; inset:0;
+      background: rgba(0,0,0,.72);
+      z-index: 11000;
+      align-items: center; justify-content: center;
+      padding: 18px;
+    }
+    .modal{
+      width: min(980px, 96vw);
+      max-height: min(86vh, 980px);
+      overflow: auto;
+      border-radius: 14px;
+      background: rgba(17,28,49,0.96);
+      border: 1px solid rgba(16,185,129,0.35);
+      box-shadow: 0 30px 60px rgba(0,0,0,0.55);
+      color: var(--tx);
+    }
+    .modalHead{
+      position: sticky; top: 0;
+      background: rgba(11,18,32,0.92);
+      border-bottom: 1px solid rgba(16,185,129,0.25);
+      padding: 14px 16px;
+      display:flex; align-items: center; justify-content: space-between;
+      gap: 10px;
+      z-index: 1;
+    }
+    .modalHead h2{ margin:0; font-size: 14px; letter-spacing: .2px; }
+    .closeBtn{
+      border: 1px solid rgba(16,185,129,0.35);
+      background: rgba(15,23,42,0.55);
+      color: var(--tx);
+      height: 34px; min-width: 34px; padding: 0 10px;
+      border-radius: 10px;
+      cursor:pointer;
+      display:flex; align-items:center; justify-content:center;
+    }
+    .closeBtn:hover{ background: rgba(16,185,129,.14); }
+    .modalBody{ padding: 14px 16px 18px 16px; font-size: 13px; line-height: 1.55; }
+    .box{
+      border: 1px solid rgba(16,185,129,0.22);
+      background: rgba(6,78,59,0.10);
+      border-radius: 12px;
+      padding: 12px 12px;
+      margin: 10px 0;
+    }
+    .modal code{ background: rgba(0,0,0,0.25); border: 1px solid rgba(16,185,129,0.18); padding: 2px 6px; border-radius: 8px; }
+    .modal pre{ background: rgba(0,0,0,0.28); border: 1px solid rgba(16,185,129,0.18); padding: 10px 12px; border-radius: 12px; overflow: auto; font-size: 12px; }
+
+    @media (max-width: 1040px){
+      .shell{ flex-direction: column; }
+      .sidebar{ width: 100%; border-right:none; border-bottom: 1px solid rgba(255,255,255,.06); }
+      table{ min-width: 980px; }
+    }
+  </style>
+<!-- Ein Aussehen fuer alle Werkzeuge. Steht direkt hinter dem letzten
+     <style> dieses Werkzeugs: spaeter in der Reihenfolge, also gewinnt
+     es bei gleicher Spezifitaet - aber so frueh wie moeglich, damit die
+     Seite nicht erst in der alten Farbe erscheint und dann umfaerbt.
+     Am Ende des <body> geladen war genau das zu sehen: Knoepfe mit
+     transition faerbten sichtbar um. Faerbt nur, verschiebt nichts.
+     Siehe werkzeug-stil.css. -->
+<link rel="stylesheet" href="werkzeug-stil.css">
+<!-- Sprachumschaltung Deutsch / Persisch / Englisch. Was nicht im
+     Woerterbuch steht, bleibt Deutsch. Siehe uebersetzung.js. -->
+<script src="woerter.js"></script>
+<script src="woerter/estimator-gemeinsam.js"></script>
+<script src="woerter/MSR_Pump_Estimator_AI_ExcelAligned_v2.js"></script>
+<script src="uebersetzung.js"></script>
+
+</head>
+
+<body>
+  <div class="topbar" role="navigation" aria-label="Topbar">
+    <div class="title" title="MSR Pump Estimator AI (Excel-Aligned)">
+      <span class="dot"></span>
+      <span>MSR Pump Estimator AI</span>
+      <span class="sub">| Excel-aligned (Einzelpositionen + Summe) | Signal: XE / XI | DIDO / AIO | Pumps + VFD + Cabling + PLC</span>
+    </div>
+
+    <div class="actions">
+      <button class="iconbtn" type="button" onclick="UI.goHome(event)" title="Back to Dashboard">
+        <i class="fa-solid fa-house" style="color:var(--e)"></i>
+        <span class="lbl">Home</span>
+      </button>
+      <button class="iconbtn" type="button" onclick="UI.openInfo()" title="Info / Formulas">
+        <i class="fa-solid fa-circle-question" style="color:var(--e)"></i>
+        <span class="lbl">Info</span>
+      </button>
+      <button class="iconbtn" type="button" onclick="App.exportExcelAligned()" title="Export Excel-aligned workbook">
+        <i class="fa-solid fa-file-excel" style="color:var(--e)"></i>
+        <span class="lbl">Export XLSX</span>
+      </button>
+      <button class="iconbtn" type="button" onclick="App.resetAll()" title="Reset UI + clear saved estimates">
+        <i class="fa-solid fa-broom" style="color:var(--e)"></i>
+        <span class="lbl">Reset</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="shell">
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div class="brand"><i class="fa-solid fa-water"></i> ART ENVI <span>MSR</span></div>
+
+      <div class="section">
+        <div class="sec-title"><span>Estimate Header</span><i class="fa-solid fa-clipboard"></i></div>
+
+        <div class="grp">
+          <label>Project Name</label>
+          <input id="inProject" type="text" value="Pump Package - Estimate 001">
+        </div>
+
+        <div class="row">
+          <div class="grp">
+            <label>Signal Class (ONLY)</label>
+            <select id="inSignalClass">
+              <option value="XE">XE</option>
+              <option value="XI">XI (Intrinsic Safety)</option>
+            </select>
+          </div>
+          <div class="grp">
+            <label>Control System</label>
+            <select id="inControl">
+              <option value="SIEMENS">Siemens PLC (SIMATIC)</option>
+              <option value="HONEYWELL">Honeywell DCS (Experion)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="grp">
+            <label>Avg power cable length (m / pump)</label>
+            <input id="inPowerCablePerPump" type="number" min="0" step="1" value="60">
+          </div>
+          <div class="grp">
+            <label>Power cable type</label>
+            <select id="inPowerCableType">
+              <option value="CABLE_PWR_4C">4-core Cu (€/m)</option>
+              <option value="CABLE_PWR_4C_SHLD">4-core shielded (€/m)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="grp">
+            <label>Avg instrument cable length (m / pump)</label>
+            <input id="inInstrCablePerPump" type="number" min="0" step="1" value="80">
+          </div>
+          <div class="grp">
+            <label>Instrument cable type</label>
+            <select id="inInstrCableType">
+              <option value="CABLE_INSTR_2PR_SHLD">2PR shielded (€/m)</option>
+              <option value="CABLE_INSTR_1PR_SHLD">1PR shielded (€/m)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="grp">
+            <label>Include JB + glands (per pump)</label>
+            <select id="inIncludeJB">
+              <option value="yes">Yes</option>
+              <option value="no">No</option>
+            </select>
+          </div>
+          <div class="grp">
+            <label>Include installation material</label>
+            <select id="inIncludeInstall">
+              <option value="yes">Yes</option>
+              <option value="no">No</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="hint" style="margin-top:10px;">
+          <b>Signal rules enforced:</b><br>
+          • DIDO in <b>XE</b> → <b>Relay</b> per channel<br>
+          • DIDO in <b>XI</b> → <b>IS switching barrier</b> per channel<br>
+          • AIO in <b>XI</b> → <b>IS analog barrier</b> per channel
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="sec-title"><span>Add Pump Line</span><i class="fa-solid fa-plus"></i></div>
+
+        <div class="grp">
+          <label>Pump Template</label>
+          <select id="inTemplate"></select>
+        </div>
+
+        <div class="row">
+          <div class="grp">
+            <label>Motor Power (kW)</label>
+            <select id="inKW"></select>
+          </div>
+          <div class="grp">
+            <label>Quantity</label>
+            <input id="inLineQty" type="number" min="1" step="1" value="1">
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="grp">
+            <label>Drive Mode</label>
+            <select id="inDriveMode">
+              <option value="DOL">DOL (Contactor + OLR)</option>
+              <option value="SOFTSTART">Softstarter</option>
+              <option value="VFD_ABB">VFD (ABB)</option>
+            </select>
+          </div>
+          <div class="grp">
+            <label>Control Interface</label>
+            <select id="inCtrlIface">
+              <option value="BASIC">Basic (Start/Stop + Fault)</option>
+              <option value="STANDARD">Standard (+ Run feedback)</option>
+              <option value="ADVANCED">Advanced (VFD speed setpoint/feedback)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="grp">
+            <label>Local isolator / disconnect</label>
+            <select id="inIsolator">
+              <option value="yes">Yes</option>
+              <option value="no">No</option>
+            </select>
+          </div>
+          <div class="grp">
+            <label>Accessories</label>
+            <select id="inAccessoriesPreset">
+              <option value="std">Standard</option>
+              <option value="min">Minimal</option>
+              <option value="rich">Extended</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grp">
+          <label>Connection / Notes</label>
+          <input id="inLineNotes" type="text" placeholder="e.g., DN80, 400V, IP55, ATEX zone, seal plan, etc.">
+        </div>
+
+        <button class="btn btn-add" onclick="LineUI.addLine()">
+          <i class="fa-solid fa-plus"></i> Add Line
+        </button>
+
+        <div class="sec-title" style="margin-top:12px;"><span>Pump List (Current)</span><i class="fa-solid fa-list-check"></i></div>
+        <div id="lineList" class="lineList"></div>
+
+        <button class="btn btn-calc" onclick="App.calculateAndSave()">
+          <i class="fa-solid fa-calculator"></i> Calculate & Save Estimate
+        </button>
+
+        <button class="btn btn-ghost" onclick="UI.switchView('catalog')">
+          <i class="fa-solid fa-tags"></i> Open Price Catalog
+        </button>
+      </div>
+
+      <div class="section">
+        <div class="sec-title"><span>Engineering + Montage + IBS (Excel-aligned)</span><i class="fa-solid fa-pen-ruler"></i></div>
+
+        <div class="row">
+          <div class="grp"><label>Basic Eng (h)</label><input id="inBasicH" type="number" min="0" step="0.5" value="0"></div>
+          <div class="grp"><label>Basic Rate (€/h)</label><input id="inBasicRate" type="number" min="0" step="1" value="110"></div>
+        </div>
+        <div class="row">
+          <div class="grp"><label>Detail Eng (h)</label><input id="inDetailH" type="number" min="0" step="0.5" value="24"></div>
+          <div class="grp"><label>Detail Rate (€/h)</label><input id="inDetailRate" type="number" min="0" step="1" value="110"></div>
+        </div>
+
+        <div class="row">
+          <div class="grp"><label>Loop drawings (€/loop)</label><input id="inLoopDrawingEUR" type="number" min="0" step="1" value="90"></div>
+          <div class="grp"><label>Loop count rule</label>
+            <select id="inLoopRule">
+              <option value="MAX">max(Pumps, TotalChannels)</option>
+              <option value="CHANNELS">TotalChannels</option>
+              <option value="DEVICES">Pumps</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="grp"><label>External Eng (mode)</label>
+            <select id="inExternMode">
+              <option value="NONE">None</option>
+              <option value="HOURS">Hours × Rate</option>
+              <option value="PERCENT">Percent of (Basic+Detail)</option>
+            </select>
+          </div>
+          <div class="grp"><label>External Eng value</label><input id="inExternVal" type="number" min="0" step="0.5" value="0"></div>
+        </div>
+        <div class="row">
+          <div class="grp"><label>External Rate (€/h)</label><input id="inExternRate" type="number" min="0" step="1" value="120"></div>
+          <div class="grp"><label>Programming (€/channel)</label><input id="inProgPerCh" type="number" min="0" step="1" value="35"></div>
+        </div>
+
+        <div class="row">
+          <div class="grp"><label>Montage (€/pump)</label><input id="inMontPerPump" type="number" min="0" step="1" value="260"></div>
+          <div class="grp"><label>Montage (€/m cable)</label><input id="inMontPerM" type="number" min="0" step="0.1" value="0.9"></div>
+        </div>
+
+        <div class="row">
+          <div class="grp"><label>IBS / commissioning (€/loop)</label><input id="inIBSPerLoop" type="number" min="0" step="1" value="95"></div>
+          <div class="grp"><label>FAT/SAT (flat €)</label><input id="inFATSAT" type="number" min="0" step="1" value="0"></div>
+        </div>
+
+        <div class="row">
+          <div class="grp"><label>Handling fee (%)</label><input id="inHandlingPct" type="number" min="0" step="0.5" value="0"></div>
+          <div class="grp"><label>Contingency (%)</label><input id="inContPct" type="number" min="0" step="0.5" value="0"></div>
+        </div>
+
+        <div class="tiny">
+          Planning (Basic/Detail/Extern) + Material + Montage + IBS are exported in Excel-style sheets.
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="sec-title"><span>Saved Estimates</span><i class="fa-solid fa-folder-open"></i></div>
+        <div class="grp">
+          <label>Select</label>
+          <select id="savedEstimates" onchange="App.loadSelectedEstimate()"></select>
+        </div>
+        <button class="btn btn-ghost" onclick="App.recalculateCurrentFromSidebar()">
+          <i class="fa-solid fa-rotate"></i> Recalculate from Sidebar
+        </button>
+        <button class="btn btn-danger" onclick="App.deleteSelectedEstimate()">
+          <i class="fa-solid fa-trash"></i> Delete Selected
+        </button>
+        <div class="tiny" style="margin-top:8px;">Saved locally in this browser (LocalStorage).</div>
+      </div>
+    </div>
+
+    <!-- Main -->
+    <div class="main">
+      <div class="tabs">
+        <div class="tab active" onclick="UI.switchView('schedule')"><i class="fa-solid fa-list"></i> ESTIMATES</div>
+        <div class="tab" onclick="UI.switchView('bom')"><i class="fa-solid fa-layer-group"></i> ITEMIZED BOM</div>
+        <div class="tab" onclick="UI.switchView('summe')"><i class="fa-solid fa-table"></i> EXCEL SUMMARY</div>
+        <div class="tab" onclick="UI.switchView('positions')"><i class="fa-solid fa-grip"></i> EXCEL POSITIONS</div>
+        <div class="tab" onclick="UI.switchView('catalog')"><i class="fa-solid fa-tags"></i> PRICE CATALOG</div>
+        <div class="tab" onclick="UI.switchView('rfq')"><i class="fa-solid fa-envelope"></i> RFQ EMAIL</div>
+      </div>
+
+      <!-- Schedule -->
+      <div id="view-schedule" class="view active">
+        <div class="summary">
+          <span>Total Estimates: <b id="sumCount">0</b></span>
+          <span>Selected: <b id="sumSelected">—</b></span>
+          <span>Pumps: <b class="accent" id="sumPumps">—</b></span>
+          <span>I/O: <b class="accent" id="sumIO">—</b></span>
+          <span>Material: <b class="accent" id="sumMat">—</b></span>
+          <span>Eng: <b class="accent" id="sumEng">—</b></span>
+          <span>Montage: <b class="accent" id="sumMont">—</b></span>
+          <span>IBS: <b class="accent" id="sumIBS">—</b></span>
+          <span>Grand: <b class="accent" id="sumGrand">—</b></span>
+          <span>Status: <b class="warn" id="sumUnknown">UNKNOWN 0</b> | <b class="bad" id="sumRFQ">RFQ 0</b></span>
+          <span style="display:none">Davon unsicher: <b class="warn" id="sumVorlaeufig">—</b></span>
+        </div>
+
+        <div class="tableWrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Project</th>
+                <th>Date</th>
+                <th>Signal</th>
+                <th>Control</th>
+                <th>Pumps</th>
+                <th>AI</th><th>AO</th><th>DI</th><th>DO</th>
+                <th class="mono">Material €</th>
+                <th class="mono">Planning €</th>
+                <th class="mono">Montage €</th>
+                <th class="mono">IBS €</th>
+                <th class="mono">Grand €</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="scheduleTable"></tbody>
+          </table>
+        </div>
+
+        <div class="tiny" style="margin-top:10px;">
+          The estimator refuses to invent prices. UNKNOWN/RFQ items remain visible and get pulled into the RFQ email.
+        </div>
+      </div>
+
+      <!-- BOM -->
+      <div id="view-bom" class="view">
+        <div class="summary">
+          <span>Selected Estimate: <b id="bomTitle">—</b></span>
+          <span>Pumps: <b id="bomPumps">—</b></span>
+          <span>I/O: <b id="bomIO">—</b></span>
+          <span>Loops: <b id="bomLoops">—</b></span>
+          <span>Proc Weeks: <b id="bomProcWeeks">—</b></span>
+          <span>Total Lead: <b id="bomTotalWeeks">—</b></span>
+        </div>
+
+        <div class="tableWrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Area</th>
+                <th>Kontierung</th>
+                <th>Excel Module</th>
+                <th>Category</th>
+                <th>Item</th>
+                <th class="mono">Key</th>
+                <th class="mono">Unit €</th>
+                <th class="mono">Qty</th>
+                <th class="mono">Line €</th>
+                <th>Status / Source</th>
+              </tr>
+            </thead>
+            <tbody id="bomTable"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- EXCEL SUMMARY -->
+      <div id="view-summe" class="view">
+        <div class="summary">
+          <span>Selected: <b id="sxTitle">—</b></span>
+          <span>Like your Excel: <b class="accent">Summe Rev03</b></span>
+          <span class="tiny">Planning Basic/Detail/Extern, Material, Montage, IBS, Total per Area.</span>
+        </div>
+
+        <div class="tableWrap">
+          <table style="min-width: 980px;">
+            <thead>
+              <tr>
+                <th>Bereich</th>
+                <th>Description</th>
+                <th class="mono">Basic Planning €</th>
+                <th class="mono">Detail Planning €</th>
+                <th class="mono">Extern Planning €</th>
+                <th class="mono">Material €</th>
+                <th class="mono">Montage €</th>
+                <th class="mono">IBS €</th>
+                <th class="mono">TOTAL €</th>
+              </tr>
+            </thead>
+            <tbody id="summeTable"></tbody>
+          </table>
+        </div>
+
+        <div class="tiny" style="margin-top:10px;">
+          Allocation model: planning + IBS + montage distributed to areas (I/C/M) using material weights. You can tune all rates in the sidebar.
+        </div>
+      </div>
+
+      <!-- EXCEL POSITIONS -->
+      <div id="view-positions" class="view">
+        <div class="summary">
+          <span>Selected: <b id="pxTitle">—</b></span>
+          <span>Like your Excel: <b class="accent">Einzelpositionen</b></span>
+          <span class="tiny">Each row is “all-in” (Planung + Material + Montage + IBS) with Kontierung.</span>
+        </div>
+
+        <div class="tableWrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Bereich</th>
+                <th>Kalk.Modul</th>
+                <th>Beschreibung</th>
+                <th class="mono">Kontierung</th>
+                <th>Kontierung Bereich</th>
+                <th class="mono">Anzahl</th>
+                <th class="mono">Total (all-in) €</th>
+              </tr>
+            </thead>
+            <tbody id="positionsTable"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Catalog -->
+      <div id="view-catalog" class="view">
+        <div class="summary">
+          <span>Catalog Updated: <b id="catUpdated">—</b></span>
+          <span class="tiny">Edit prices inline. Export/Import JSON for sharing.</span>
+        </div>
+
+        <div class="row" style="max-width:1000px;">
+          <button class="btn btn-calc" style="width:auto" onclick="CatalogUI.exportJSON()"><i class="fa-solid fa-file-export"></i> Export JSON</button>
+          <button class="btn btn-ghost" style="width:auto" onclick="CatalogUI.importJSONPrompt()"><i class="fa-solid fa-file-import"></i> Import JSON</button>
+          <button class="btn btn-danger" style="width:auto" onclick="CatalogUI.resetDefaults()"><i class="fa-solid fa-rotate-left"></i> Reset Defaults</button>
+        </div>
+
+        <div class="grp" style="max-width:1000px;">
+          <label>Export / Import JSON</label>
+          <textarea id="catJSON" placeholder="Export appears here. Paste JSON here to import."></textarea>
+          <div class="row">
+            <button class="btn btn-ghost" style="width:auto" onclick="UI.copyText('catJSON')"><i class="fa-solid fa-copy"></i> Copy</button>
+            <button class="btn btn-ghost" style="width:auto" onclick="CatalogUI.importFromTextarea()"><i class="fa-solid fa-check"></i> Import from box</button>
+          </div>
+        </div>
+
+        <div class="tableWrap">
+          <table style="min-width: 980px;">
+            <thead>
+              <tr>
+                <th>Key</th>
+                <th class="mono">Price €</th>
+                <th>Status</th>
+                <th>Source</th>
+                <th>Updated</th>
+              </tr>
+            </thead>
+            <tbody id="catalogTable"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- RFQ -->
+      <div id="view-rfq" class="view">
+        <div class="summary">
+          <span>Selected Estimate: <b id="rfqTitle">—</b></span>
+          <span>Missing-price items: <b id="rfqCount">0</b></span>
+          <span class="tiny">Generate a ready-to-send RFQ when vendors don’t publish prices.</span>
+        </div>
+
+        <div class="row" style="max-width:1000px;">
+          <div class="grp">
+            <label>Email Language</label>
+            <select id="rfqLang">
+              <option value="EN">English</option>
+              <option value="DE">Deutsch</option>
+            </select>
+          </div>
+          <div class="grp">
+            <label>Recipient (optional)</label>
+            <input id="rfqTo" type="text" placeholder="e.g., sales@vendor.de">
+          </div>
+        </div>
+
+        <div class="grp" style="max-width:1000px;">
+          <label>RFQ Email</label>
+          <textarea id="rfqText" placeholder="Select an estimate, then click Generate RFQ."></textarea>
+        </div>
+
+        <div class="row" style="max-width:1000px;">
+          <button class="btn btn-add" style="width:auto" onclick="App.generateRFQ()"><i class="fa-solid fa-wand-magic-sparkles"></i> Generate RFQ</button>
+          <button class="btn btn-ghost" style="width:auto" onclick="UI.copyText('rfqText')"><i class="fa-solid fa-copy"></i> Copy</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Info modal -->
+  <div id="infoOverlay" class="modalOverlay" onclick="if(event.target===this) UI.closeInfo()">
+    <div class="modal" role="dialog" aria-modal="true" aria-label="Info">
+      <div class="modalHead">
+        <h2>Pump Estimator | Formulas, Assumptions, Traceability</h2>
+        <button class="closeBtn" type="button" onclick="UI.closeInfo()" title="Close">✕</button>
+      </div>
+      <div class="modalBody">
+        <div class="box">
+          <b>Scope:</b><br>
+          Pumps (20–100 kW) + drive (DOL / Softstarter / ABB VFD) + protection + cabling + PLC/DCS interface.
+          The tool generates a defensible BOM and exports Excel-style <code>Einzelpositionen</code> and <code>Summe Rev03</code>.
+        </div>
+
+        <div class="box">
+          <b>Signal rules (strict):</b>
+          <ul>
+            <li>Signal class is only <code>XE</code> or <code>XI</code>.</li>
+            <li><b>DIDO</b> = DI + DO:
+              <ul>
+                <li><code>XE</code> → <b>Interposing relay</b> per DIDO channel</li>
+                <li><code>XI</code> → <b>IS switching barrier/isolator</b> per DIDO channel</li>
+              </ul>
+            </li>
+            <li><b>AIO</b> = AI + AO:
+              <ul>
+                <li><code>XI</code> → <b>IS analog barrier/isolator</b> per AIO channel</li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+
+        <div class="box">
+          <b>I/O model (per pump):</b>
+          <pre><code>BASIC:
+  DO: Start/Enable (1)
+  DI: Fault (1)
+
+STANDARD:
+  DO: Start/Enable (1)
+  DI: Fault (1) + Run feedback (1)
+
+ADVANCED (typical VFD):
+  DO: Start/Enable (1)
+  DI: Fault (1) + Run (1) + Ready (1)
+  AO: Speed setpoint (1)
+  AI: Speed feedback / current (1)</code></pre>
+        </div>
+
+        <div class="box">
+          <b>Cost model:</b>
+          <pre><code>Material = sum(BOM lines)
+Montage  = (€/pump × pumps) + (€/m × (powerCableMeters + instrCableMeters))
+IBS      = €/loop × loopCount
+Programming = €/channel × totalChannels
+
+LoopCount rule = max(pumps, channels) (or chosen in sidebar)
+LoopDrawings = €/loop × loopCount
+
+Planning Basic  = BasicHours × BasicRate
+Planning Detail = DetailHours × DetailRate
+Planning Extern = (Hours×Rate) or (% of Basic+Detail)
+
+Handling fee applies to Material + Montage - a procurement markup belongs on
+purchased goods, not on your own hours.
+Contingency applies to EVERYTHING: material, montage, commissioning, planning,
+programming, FAT/SAT, loop drawings and the handling fee. Hours are less certain
+than material prices, not more.
+If any line still carries an UNKNOWN or RFQ price, the grand total is marked
+(vorlaeufig) and the amount resting on unsecured prices is shown next to it.</code></pre>
+        </div>
+
+        <div class="box">
+          <b>Price updates (reality check):</b><br>
+          Standalone HTML cannot reliably scrape vendor sites (CORS, bot protection, logins).
+          This tool tracks <code>OK / UNKNOWN / RFQ_REQUIRED</code> and generates RFQ emails instead of inventing numbers.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const LS = {
+      CATALOG: "MSR_PUMP_ESTIMATOR_CATALOG_V3",
+      ESTIMATES: "MSR_PUMP_ESTIMATOR_ESTIMATES_V3",
+      SELECTED: "MSR_PUMP_ESTIMATOR_SELECTED_ID_V3",
+      WORK_LINES: "MSR_PUMP_ESTIMATOR_WORK_LINES_V3"
+    };
+
+
+    // Dashboard navigation (same pattern as your other tools)
+    const KI_HOME_LS_KEY = "KI_HOME_URL";
+    const KI_HOME_FALLBACK = "dashboard/";
+
+    const U = {
+      nowISO: () => new Date().toISOString(),
+      deepClone: (obj) => JSON.parse(JSON.stringify(obj)),
+      clamp: (n, a, b) => Math.max(a, Math.min(b, n)),
+      eur: (n) => new Intl.NumberFormat("de-DE", { style:"currency", currency:"EUR" }).format(Number(n || 0)),
+      num: (n) => new Intl.NumberFormat("de-DE", { maximumFractionDigits: 2 }).format(Number(n || 0)),
+      esc: (s) => String(s ?? "").replace(/[&<>"']/g, (c)=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]))
+    };
+
+    const ExcelCodes = {
+      "I01": "Messeinrichtungen (incl. equipment lines here)",
+      "I08": "Ex-i Nachweise",
+      "C01": "Anlagen Steuerungssystem (PLS Leitsystem)",
+      "C08": "Programmierung (Steuerungsebene, HMI)",
+      "C10": "Abnahmen FAT/SAT",
+      "M02": "MS/NS Montagen und Zubehör allgemein",
+      "M03": "MSR Verkabelung (Kabel und Anschlüsse)",
+      "M06": "Kabelwege (Trassen, Rohre, Kabelgraben)"
+    };
+
+    const ExcelModules = {
+      "I": ["MSR-Allg.","MSR-A","MSR-P","Pneumatik","MSR-Warn"],
+      "C": ["DCS_System","DCS_CPU","DCS_MC","DCS_Warte"],
+      "M": ["Trassierung","MSR-Allg.","MSR-A","MSR-P"]
+    };
+
+    const KW_LIST = [20, 30, 40, 55, 75, 90, 100];
+
+    const Templates = [
+      { id:"PUMP_CENTRIF_ENDSUCTION", name:"Centrifugal Pump (end-suction) + Motor", family:"Pump", leadW:12, keys:{ pumpBase:"PUMP_CENTRIF_BASE", pumpPerKW:"PUMP_CENTRIF_PER_KW" }, accStd:["PUMP_BASEPLATE_COUPLING","PUMP_VIB_PAD_SET"], accRich:["PUMP_BASEPLATE_COUPLING","PUMP_VIB_PAD_SET","PUMP_SPARE_SEAL_KIT"], kont:"I01", module:"MSR-Allg." },
+      { id:"PUMP_CENTRIF_MULTISTAGE", name:"Centrifugal Pump (multistage) + Motor", family:"Pump", leadW:14, keys:{ pumpBase:"PUMP_MULTI_BASE", pumpPerKW:"PUMP_MULTI_PER_KW" }, accStd:["PUMP_BASEPLATE_COUPLING","PUMP_VIB_PAD_SET"], accRich:["PUMP_BASEPLATE_COUPLING","PUMP_VIB_PAD_SET","PUMP_SPARE_SEAL_KIT"], kont:"I01", module:"MSR-Allg." },
+      { id:"PUMP_SUBMERSIBLE", name:"Submersible Pump + Motor", family:"Pump", leadW:10, keys:{ pumpBase:"PUMP_SUB_BASE", pumpPerKW:"PUMP_SUB_PER_KW" }, accStd:["PUMP_LIFT_CHAIN_SET"], accRich:["PUMP_LIFT_CHAIN_SET","PUMP_GUIDE_RAIL_SET"], kont:"I01", module:"MSR-Allg." },
+      { id:"PUMP_DOSING", name:"Dosing Pump (metering) package", family:"Pump", leadW:8, keys:{ pumpBase:"PUMP_DOS_BASE", pumpPerKW:"PUMP_DOS_PER_KW" }, accStd:["PUMP_DOS_ACCESSORY_SET"], accRich:["PUMP_DOS_ACCESSORY_SET","PUMP_DOS_SPARE_PARTS"], kont:"I01", module:"MSR-Allg." },
+    ];
+
+    const DefaultCatalog = {
+      meta: { version: 3, currency:"EUR", createdAt: U.nowISO(), updatedAt: U.nowISO() },
+      prices: {
+        "PUMP_CENTRIF_BASE": { price: 6000, status:"RFQ_REQUIRED", source:"Pump packages are often RFQ. Use base + €/kW and replace with vendor quote when known.", updatedAt: U.nowISO() },
+        "PUMP_CENTRIF_PER_KW": { price: 180, status:"RFQ_REQUIRED", source:"€/kW rough for centrifugal package.", updatedAt: U.nowISO() },
+
+        "PUMP_MULTI_BASE": { price: 9000, status:"RFQ_REQUIRED", source:"Multistage base (rough).", updatedAt: U.nowISO() },
+        "PUMP_MULTI_PER_KW": { price: 240, status:"RFQ_REQUIRED", source:"€/kW multistage (rough).", updatedAt: U.nowISO() },
+
+        "PUMP_SUB_BASE": { price: 4500, status:"RFQ_REQUIRED", source:"Submersible base (rough).", updatedAt: U.nowISO() },
+        "PUMP_SUB_PER_KW": { price: 160, status:"RFQ_REQUIRED", source:"€/kW submersible (rough).", updatedAt: U.nowISO() },
+
+        "PUMP_DOS_BASE": { price: 2200, status:"UNKNOWN", source:"Dosing pump depends strongly on flow/pressure/material.", updatedAt: U.nowISO() },
+        "PUMP_DOS_PER_KW": { price: 120, status:"UNKNOWN", source:"€/kW dosing (rough).", updatedAt: U.nowISO() },
+
+        "PUMP_BASEPLATE_COUPLING": { price: 850, status:"UNKNOWN", source:"Baseplate + coupling guard kit.", updatedAt: U.nowISO() },
+        "PUMP_VIB_PAD_SET": { price: 120, status:"UNKNOWN", source:"Vibration pads set.", updatedAt: U.nowISO() },
+        "PUMP_SPARE_SEAL_KIT": { price: 680, status:"UNKNOWN", source:"Spare seal kit.", updatedAt: U.nowISO() },
+        "PUMP_LIFT_CHAIN_SET": { price: 210, status:"UNKNOWN", source:"Lift chain set.", updatedAt: U.nowISO() },
+        "PUMP_GUIDE_RAIL_SET": { price: 980, status:"UNKNOWN", source:"Guide rail set (submersible).", updatedAt: U.nowISO() },
+        "PUMP_DOS_ACCESSORY_SET": { price: 320, status:"UNKNOWN", source:"Dosing accessory set.", updatedAt: U.nowISO() },
+        "PUMP_DOS_SPARE_PARTS": { price: 260, status:"UNKNOWN", source:"Dosing spare parts.", updatedAt: U.nowISO() },
+
+        "DRIVE_SOFTSTART_BASE": { price: 900, status:"UNKNOWN", source:"Softstarter base (rough).", updatedAt: U.nowISO() },
+        "DRIVE_SOFTSTART_PER_KW": { price: 18, status:"UNKNOWN", source:"€/kW for softstarter (rough).", updatedAt: U.nowISO() },
+
+        "DRIVE_VFD_ABB_BASE": { price: 1500, status:"UNKNOWN", source:"ABB VFD base (ACS580/ACS880 class; adjust).", updatedAt: U.nowISO() },
+        "DRIVE_VFD_ABB_PER_KW": { price: 55, status:"UNKNOWN", source:"€/kW for ABB VFD (rough; depends on options).", updatedAt: U.nowISO() },
+
+        "MOTOR_STARTER_BASE": { price: 450, status:"UNKNOWN", source:"Starter base (contactor + overload + enclosure share).", updatedAt: U.nowISO() },
+        "MOTOR_STARTER_PER_KW": { price: 10, status:"UNKNOWN", source:"€/kW for starter sizing (rough).", updatedAt: U.nowISO() },
+        "MCCB_BASE": { price: 220, status:"UNKNOWN", source:"Breaker base (MCCB/MCB rough).", updatedAt: U.nowISO() },
+        "MCCB_PER_KW": { price: 6, status:"UNKNOWN", source:"€/kW for breaker sizing rough.", updatedAt: U.nowISO() },
+
+        "DISCONNECT_SWITCH": { price: 160, status:"UNKNOWN", source:"Local isolator / disconnect switch.", updatedAt: U.nowISO() },
+
+        "DIDO_RELAY_XE": { price: 20, status:"UNKNOWN", source:"Interposing relay per DIDO channel (XE).", updatedAt: U.nowISO() },
+        "DIDO_BARRIER_XI": { price: 190, status:"UNKNOWN", source:"IS switching barrier per DIDO channel (XI).", updatedAt: U.nowISO() },
+        "AIO_BARRIER_XI": { price: 230, status:"UNKNOWN", source:"IS analog barrier per AIO channel (XI).", updatedAt: U.nowISO() },
+
+        "SIEMENS_BASE": { price: 950, status:"UNKNOWN", source:"PLC/Head base rough.", updatedAt: U.nowISO() },
+        "SIEMENS_IO_PER_CH": { price: 50, status:"UNKNOWN", source:"Average €/channel (blend DI/DO/AI/AO).", updatedAt: U.nowISO() },
+        "HONEYWELL_BASE": { price: 0, status:"RFQ_REQUIRED", source:"DCS base often RFQ.", updatedAt: U.nowISO() },
+        "HONEYWELL_IO_PER_CH": { price: 0, status:"RFQ_REQUIRED", source:"DCS I/O often RFQ.", updatedAt: U.nowISO() },
+
+        "CABLE_PWR_4C": { price: 6.2, status:"UNKNOWN", source:"Power cable €/m (rough).", updatedAt: U.nowISO() },
+        "CABLE_PWR_4C_SHLD": { price: 7.8, status:"UNKNOWN", source:"Power cable shielded €/m (rough).", updatedAt: U.nowISO() },
+        "CABLE_INSTR_2PR_SHLD": { price: 2.8, status:"UNKNOWN", source:"Instrument cable 2PR shielded €/m.", updatedAt: U.nowISO() },
+        "CABLE_INSTR_1PR_SHLD": { price: 2.1, status:"UNKNOWN", source:"Instrument cable 1PR shielded €/m.", updatedAt: U.nowISO() },
+
+        "JB_IP66": { price: 65, status:"UNKNOWN", source:"Junction box IP66.", updatedAt: U.nowISO() },
+        "ACC_CABLE_GLAND_SET": { price: 18, status:"UNKNOWN", source:"Cable glands set.", updatedAt: U.nowISO() },
+        "INSTALL_MAT_PER_PUMP": { price: 55, status:"UNKNOWN", source:"Labels, lugs, ties, hardware per pump.", updatedAt: U.nowISO() },
+
+        "CABLE_TRAY_PER_M": { price: 18, status:"UNKNOWN", source:"Cable tray €/m (rough).", updatedAt: U.nowISO() },
+      }
+    };
+
+    const Catalog = {
+      data: null,
+      load(){
+        const raw = localStorage.getItem(LS.CATALOG);
+        if(!raw){
+          this.data = U.deepClone(DefaultCatalog);
+          this.save();
+          return;
+        }
+        try{ this.data = JSON.parse(raw); }
+        catch{ this.data = U.deepClone(DefaultCatalog); this.save(); }
+      },
+      save(){
+        this.data.meta.updatedAt = U.nowISO();
+        localStorage.setItem(LS.CATALOG, JSON.stringify(this.data, null, 2));
+      },
+      get(key){
+        const p = this.data.prices[key];
+        if(!p) return { price: 0, status:"UNKNOWN", source:"Missing key in catalog", updatedAt:"—" };
+        return p;
+      },
+      set(key, price, status, source){
+        if(!this.data.prices[key]) this.data.prices[key] = { price:0, status:"UNKNOWN", source:"", updatedAt: U.nowISO() };
+        this.data.prices[key].price = Number(price || 0);
+        this.data.prices[key].status = status || "UNKNOWN";
+        this.data.prices[key].source = source || "";
+        this.data.prices[key].updatedAt = U.nowISO();
+        this.save();
+      }
+    };
+
+    const WorkLines = {
+      lines: [],
+      load(){
+        const raw = localStorage.getItem(LS.WORK_LINES);
+        if(!raw){ this.lines = []; return; }
+        try{ this.lines = JSON.parse(raw) || []; }
+        catch{ this.lines = []; }
+      },
+      save(){ localStorage.setItem(LS.WORK_LINES, JSON.stringify(this.lines, null, 2)); },
+      clear(){ this.lines = []; this.save(); }
+    };
+
+    const Store = {
+      estimates: [],
+      load(){
+        const raw = localStorage.getItem(LS.ESTIMATES);
+        if(!raw){ this.estimates = []; return; }
+        try{ this.estimates = JSON.parse(raw) || []; }
+        catch{ this.estimates = []; }
+      },
+      save(){ localStorage.setItem(LS.ESTIMATES, JSON.stringify(this.estimates, null, 2)); },
+      selectedId(){ return localStorage.getItem(LS.SELECTED) || ""; },
+      setSelected(id){ localStorage.setItem(LS.SELECTED, id); }
+    };
+
+    const UI = {
+      switchView(v){
+        document.querySelectorAll(".view").forEach(el=>el.classList.remove("active"));
+        document.querySelectorAll(".tab").forEach(el=>el.classList.remove("active"));
+        const view = document.getElementById("view-"+v);
+        if(view) view.classList.add("active");
+        const tab = Array.from(document.querySelectorAll(".tab")).find(t => (t.getAttribute("onclick")||"").includes(`'${v}'`));
+        if(tab) tab.classList.add("active");
+      },
+      openInfo(){ document.getElementById("infoOverlay").style.display="flex"; },
+      closeInfo(){ document.getElementById("infoOverlay").style.display="none"; },
+      goHome(ev){
+        try{ if(ev) ev.preventDefault(); }catch{}
+        const url = localStorage.getItem(KI_HOME_LS_KEY) || KI_HOME_FALLBACK;
+        window.location.href = url;
+      },
+      copyText(id){
+        const el = document.getElementById(id); if(!el) return;
+        el.select(); el.setSelectionRange(0, 999999);
+        try{ document.execCommand("copy"); }catch{}
+      }
+    };
+
+    const T = {
+      byId(id){ return Templates.find(t=>t.id===id); },
+      accessoriesFor(template, preset){
+        if(preset==="min") return [];
+        if(preset==="rich") return template.accRich || template.accStd || [];
+        return template.accStd || [];
+      }
+    };
+
+    const LineUI = {
+      refreshTemplateDropdown(){
+        const sel = document.getElementById("inTemplate");
+        sel.innerHTML = "";
+        Templates.forEach(t=>{
+          const opt = document.createElement("option");
+          opt.value = t.id;
+          opt.textContent = t.name;
+          sel.appendChild(opt);
+        });
+      },
+      refreshKW(){
+        const sel = document.getElementById("inKW");
+        sel.innerHTML = "";
+        KW_LIST.forEach(k=>{
+          const opt = document.createElement("option");
+          opt.value = String(k);
+          opt.textContent = `${k} kW`;
+          sel.appendChild(opt);
+        });
+        sel.value = "30";
+      },
+      renderLineList(){
+        const box = document.getElementById("lineList");
+        box.innerHTML = "";
+        if(WorkLines.lines.length === 0){
+          box.innerHTML = `<div class="tiny" style="color:#777; padding:8px;">No lines yet. Add pumps above.</div>`;
+          return;
+        }
+        WorkLines.lines.forEach((ln, idx)=>{
+          const t = T.byId(ln.templateId);
+          const name = t ? t.name : ln.templateId;
+          const io = ln.io || {AI:0,AO:0,DI:0,DO:0};
+          box.insertAdjacentHTML("beforeend", `
+            <div class="lineCard">
+              <div class="lineTop">
+                <div style="min-width:0">
+                  <div class="lineName" title="${U.esc(name)}">${U.esc(name)}</div>
+                  <div class="lineMeta">
+                    <span class="pill">${ln.kw} kW</span>
+                    <span class="pill">Qty ${ln.qty}</span>
+                    <span class="pill gray">${U.esc(ln.driveMode)}</span>
+                    <span class="pill gray">${U.esc(ln.ctrlIface)}</span>
+                    <span class="pill gray">AI ${io.AI}</span>
+                    <span class="pill gray">AO ${io.AO}</span>
+                    <span class="pill gray">DI ${io.DI}</span>
+                    <span class="pill gray">DO ${io.DO}</span>
+                    <span class="pill gray">${U.esc(ln.accessoriesPreset || "std")}</span>
+                  </div>
+                  ${ln.notes ? `<div class="tiny" style="margin-top:6px;">${U.esc(ln.notes)}</div>` : ``}
+                </div>
+                <div class="lineBtns">
+                  <button class="miniBtn" onclick="LineUI.editLine(${idx})" title="Edit I/O / Qty">
+                    <i class="fa-solid fa-pen"></i>
+                  </button>
+                  <button class="miniBtn danger" onclick="LineUI.removeLine(${idx})" title="Remove">
+                    <i class="fa-solid fa-trash"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          `);
+        });
+      },
+      computeIO(driveMode, ctrlIface){
+        let io = {AI:0,AO:0,DI:0,DO:0};
+        if(ctrlIface === "BASIC"){ io.DO=1; io.DI=1; }
+        if(ctrlIface === "STANDARD"){ io.DO=1; io.DI=2; }
+        if(ctrlIface === "ADVANCED"){
+          io.DO=1; io.DI=3; io.AO=1; io.AI=1;
+        }
+        if((driveMode === "DOL" || driveMode === "SOFTSTART") && (ctrlIface !== "BASIC")){
+          io.DI += 1; // overload trip
+        }
+        return io;
+      },
+      addLine(){
+        const templateId = document.getElementById("inTemplate").value;
+        const kw = parseInt(document.getElementById("inKW").value || "30", 10);
+        const qty = U.clamp(parseInt(document.getElementById("inLineQty").value || "1", 10), 1, 99999);
+        const notes = (document.getElementById("inLineNotes").value || "").trim();
+        const accessoriesPreset = document.getElementById("inAccessoriesPreset").value;
+        const driveMode = document.getElementById("inDriveMode").value;
+        const ctrlIface = document.getElementById("inCtrlIface").value;
+        const isolator = document.getElementById("inIsolator").value === "yes";
+
+        const t = T.byId(templateId);
+        if(!t) return;
+
+        const io = this.computeIO(driveMode, ctrlIface);
+
+        WorkLines.lines.push({
+          templateId, kw, qty, notes, accessoriesPreset, driveMode, ctrlIface, isolator, io
+        });
+        WorkLines.save();
+        this.renderLineList();
+      },
+      editLine(idx){
+        const ln = WorkLines.lines[idx];
+        const t = T.byId(ln.templateId);
+        const name = t ? t.name : ln.templateId;
+
+        const newQty = prompt(`Edit quantity for:\n${name} (${ln.kw} kW)`, String(ln.qty));
+        if(newQty === null) return;
+        const q = U.clamp(parseInt(newQty || "1", 10), 1, 99999);
+
+        const newIO = prompt(
+`Edit I/O per pump (comma-separated): AI,AO,DI,DO
+Current: ${ln.io.AI},${ln.io.AO},${ln.io.DI},${ln.io.DO}`,
+`${ln.io.AI},${ln.io.AO},${ln.io.DI},${ln.io.DO}`
+        );
+        if(newIO === null) return;
+
+        const parts = (newIO || "").split(",").map(x=>parseInt(x.trim()||"0",10));
+        if(parts.length !== 4 || parts.some(n=>Number.isNaN(n) || n<0)){
+          alert("Invalid I/O format. Expected: AI,AO,DI,DO as non-negative integers.");
+          return;
+        }
+
+        ln.qty = q;
+        ln.io = {AI:parts[0], AO:parts[1], DI:parts[2], DO:parts[3]};
+
+        WorkLines.save();
+        this.renderLineList();
+      },
+      removeLine(idx){
+        WorkLines.lines.splice(idx, 1);
+        WorkLines.save();
+        this.renderLineList();
+      }
+    };
+
+    const Engine = {
+      addItem(items, area, kont, excelModule, category, itemName, key, unitPrice, qty, status, source){
+        const line = Number(unitPrice || 0) * Number(qty || 0);
+        items.push({
+          area, kont, excelModule,
+          category, itemName, key,
+          unitPrice:Number(unitPrice||0), qty:Number(qty||0),
+          line, status, source
+        });
+      },
+
+      compute(inputs){
+        const items = [];
+        let pumpCount = 0;
+        let sumAI=0, sumAO=0, sumDI=0, sumDO=0;
+        let procurementWeeks = 4;
+
+        inputs.lines.forEach((ln)=>{
+          const t = T.byId(ln.templateId);
+          if(!t) return;
+
+          pumpCount += ln.qty;
+          sumAI += (ln.io.AI || 0) * ln.qty;
+          sumAO += (ln.io.AO || 0) * ln.qty;
+          sumDI += (ln.io.DI || 0) * ln.qty;
+          sumDO += (ln.io.DO || 0) * ln.qty;
+
+          procurementWeeks = Math.max(procurementWeeks, t.leadW || 4);
+
+          const base = Catalog.get(t.keys.pumpBase);
+          const per = Catalog.get(t.keys.pumpPerKW);
+          const pumpUnit = base.price + (per.price * ln.kw);
+
+          const status = (base.status === "RFQ_REQUIRED" || per.status === "RFQ_REQUIRED") ? "RFQ_REQUIRED"
+                        : (base.status === "UNKNOWN" || per.status === "UNKNOWN") ? "UNKNOWN" : "OK";
+          const source = `Pump model: ${t.name}. Price = ${t.keys.pumpBase} + (${t.keys.pumpPerKW} × kW). ${base.source} | ${per.source}`;
+
+          this.addItem(items, "I", "I01", t.module || "MSR-Allg.", "Pump", `${t.name} (${ln.kw} kW)`, `${t.id}_${ln.kw}KW`, pumpUnit, ln.qty, status, source);
+
+          const accKeys = T.accessoriesFor(t, ln.accessoriesPreset);
+          accKeys.forEach(ak=>{
+            const ap = Catalog.get(ak);
+            this.addItem(items, "I", "I01", t.module || "MSR-Allg.", "Accessories", ak.replaceAll("_"," "), ak, ap.price, ln.qty, ap.status, ap.source);
+          });
+
+          const kW = ln.kw;
+          if(ln.driveMode === "DOL"){
+            const stB = Catalog.get("MOTOR_STARTER_BASE");
+            const stP = Catalog.get("MOTOR_STARTER_PER_KW");
+            const brB = Catalog.get("MCCB_BASE");
+            const brP = Catalog.get("MCCB_PER_KW");
+            this.addItem(items, "M", "M02", "MSR-Allg.", "Motor Control", "Motor starter (DOL) base + sizing", "MOTOR_STARTER_MODEL",
+              stB.price + stP.price*kW, ln.qty,
+              (stB.status==="RFQ_REQUIRED"||stP.status==="RFQ_REQUIRED")?"RFQ_REQUIRED":(stB.status==="UNKNOWN"||stP.status==="UNKNOWN")?"UNKNOWN":"OK",
+              "Starter model: base + €/kW");
+            this.addItem(items, "M", "M02", "MSR-Allg.", "Motor Protection", "Breaker/MCCB base + sizing", "MCCB_MODEL",
+              brB.price + brP.price*kW, ln.qty,
+              (brB.status==="RFQ_REQUIRED"||brP.status==="RFQ_REQUIRED")?"RFQ_REQUIRED":(brB.status==="UNKNOWN"||brP.status==="UNKNOWN")?"UNKNOWN":"OK",
+              "Breaker model: base + €/kW");
+          }
+          if(ln.driveMode === "SOFTSTART"){
+            const ssB = Catalog.get("DRIVE_SOFTSTART_BASE");
+            const ssP = Catalog.get("DRIVE_SOFTSTART_PER_KW");
+            const brB = Catalog.get("MCCB_BASE");
+            const brP = Catalog.get("MCCB_PER_KW");
+            this.addItem(items, "M", "M02", "MSR-Allg.", "Drive", "Softstarter base + sizing", "SOFTSTART_MODEL",
+              ssB.price + ssP.price*kW, ln.qty,
+              (ssB.status==="RFQ_REQUIRED"||ssP.status==="RFQ_REQUIRED")?"RFQ_REQUIRED":(ssB.status==="UNKNOWN"||ssP.status==="UNKNOWN")?"UNKNOWN":"OK",
+              "Softstarter model: base + €/kW");
+            this.addItem(items, "M", "M02", "MSR-Allg.", "Motor Protection", "Breaker/MCCB base + sizing", "MCCB_MODEL",
+              brB.price + brP.price*kW, ln.qty,
+              (brB.status==="RFQ_REQUIRED"||brP.status==="RFQ_REQUIRED")?"RFQ_REQUIRED":(brB.status==="UNKNOWN"||brP.status==="UNKNOWN")?"UNKNOWN":"OK",
+              "Breaker model: base + €/kW");
+          }
+          if(ln.driveMode === "VFD_ABB"){
+            const vB = Catalog.get("DRIVE_VFD_ABB_BASE");
+            const vP = Catalog.get("DRIVE_VFD_ABB_PER_KW");
+            const brB = Catalog.get("MCCB_BASE");
+            const brP = Catalog.get("MCCB_PER_KW");
+            this.addItem(items, "M", "M02", "MSR-Allg.", "Drive", "ABB VFD (base + sizing)", "ABB_VFD_MODEL",
+              vB.price + vP.price*kW, ln.qty,
+              (vB.status==="RFQ_REQUIRED"||vP.status==="RFQ_REQUIRED")?"RFQ_REQUIRED":(vB.status==="UNKNOWN"||vP.status==="UNKNOWN")?"UNKNOWN":"OK",
+              "ABB VFD model: base + €/kW (ACS class).");
+            this.addItem(items, "M", "M02", "MSR-Allg.", "Motor Protection", "Breaker/MCCB base + sizing", "MCCB_MODEL",
+              brB.price + brP.price*kW, ln.qty,
+              (brB.status==="RFQ_REQUIRED"||brP.status==="RFQ_REQUIRED")?"RFQ_REQUIRED":(brB.status==="UNKNOWN"||brP.status==="UNKNOWN")?"UNKNOWN":"OK",
+              "Breaker model: base + €/kW");
+            procurementWeeks = Math.max(procurementWeeks, 8);
+          }
+
+          if(ln.isolator){
+            const iso = Catalog.get("DISCONNECT_SWITCH");
+            this.addItem(items, "M", "M02", "MSR-Allg.", "Motor Control", "Local isolator/disconnect", "DISCONNECT_SWITCH", iso.price, ln.qty, iso.status, iso.source);
+          }
+
+          if(inputs.includeJB){
+            const jb = Catalog.get("JB_IP66");
+            this.addItem(items, "M", "M02", "MSR-Allg.", "Wiring", "Junction box IP66", "JB_IP66", jb.price, ln.qty, jb.status, jb.source);
+            const gl = Catalog.get("ACC_CABLE_GLAND_SET");
+            this.addItem(items, "M", "M02", "MSR-Allg.", "Wiring", "Cable glands set", "ACC_CABLE_GLAND_SET", gl.price, ln.qty, gl.status, gl.source);
+          }
+          if(inputs.includeInstall){
+            const im = Catalog.get("INSTALL_MAT_PER_PUMP");
+            this.addItem(items, "M", "M02", "MSR-Allg.", "Installation", "Installation material (per pump)", "INSTALL_MAT_PER_PUMP", im.price, ln.qty, im.status, im.source);
+          }
+        });
+
+        const didoCh = sumDI + sumDO;
+        const aioCh  = sumAI + sumAO;
+
+        if(inputs.signalClass === "XE"){
+          if(didoCh > 0){
+            const r = Catalog.get("DIDO_RELAY_XE");
+            this.addItem(items, "I", "I01", "MSR-Allg.", "Signal Interface", "DIDO interposing relay (XE)", "DIDO_RELAY_XE", r.price, didoCh, r.status, r.source);
+          }
+        }else{
+          if(didoCh > 0){
+            const b = Catalog.get("DIDO_BARRIER_XI");
+            this.addItem(items, "I", "I08", "MSR-Allg.", "Signal Interface", "DIDO IS switching barrier/isolator (XI)", "DIDO_BARRIER_XI", b.price, didoCh, b.status, b.source);
+          }
+          if(aioCh > 0){
+            const ab = Catalog.get("AIO_BARRIER_XI");
+            this.addItem(items, "I", "I08", "MSR-Allg.", "Signal Interface", "AIO IS analog barrier/isolator (XI)", "AIO_BARRIER_XI", ab.price, aioCh, ab.status, ab.source);
+          }
+          procurementWeeks += 1;
+        }
+
+        const pwrMeters = inputs.powerCablePerPump * pumpCount;
+        const instrMeters = inputs.instrCablePerPump * pumpCount;
+
+        if(pwrMeters > 0){
+          const ck = inputs.powerCableType;
+          const cp = Catalog.get(ck);
+          this.addItem(items, "M", "M03", "Trassierung", "Power Cabling", `Power cable (${ck})`, ck, cp.price, pwrMeters, cp.status, cp.source);
+        }
+        if(instrMeters > 0){
+          const ck = inputs.instrCableType;
+          const cp = Catalog.get(ck);
+          this.addItem(items, "M", "M03", "Trassierung", "Instrumentation Cabling", `Instrument cable (${ck})`, ck, cp.price, instrMeters, cp.status, cp.source);
+        }
+
+        const totalCh = sumAI + sumAO + sumDI + sumDO;
+        if(inputs.control === "SIEMENS"){
+          const base = Catalog.get("SIEMENS_BASE");
+          const per  = Catalog.get("SIEMENS_IO_PER_CH");
+          this.addItem(items, "C", "C01", "DCS_System", "Control System", "Siemens base (CPU/Head rough)", "SIEMENS_BASE", base.price, 1, base.status, base.source);
+          this.addItem(items, "C", "C01", "DCS_System", "Control System", "Siemens I/O (avg €/channel)", "SIEMENS_IO_PER_CH", per.price, totalCh, per.status, per.source);
+        }else{
+          const base = Catalog.get("HONEYWELL_BASE");
+          const per  = Catalog.get("HONEYWELL_IO_PER_CH");
+          this.addItem(items, "C", "C01", "DCS_System", "Control System", "Honeywell base (rough)", "HONEYWELL_BASE", base.price, 1, base.status, base.source);
+          this.addItem(items, "C", "C01", "DCS_System", "Control System", "Honeywell I/O (€/channel rough)", "HONEYWELL_IO_PER_CH", per.price, totalCh, per.status, per.source);
+        }
+
+        const areaMat = { I:0, C:0, M:0 };
+        items.forEach(it=>{
+          if(it.area==="I" || it.area==="C" || it.area==="M"){
+            areaMat[it.area] += it.line;
+          }
+        });
+        const materialTotal = items.reduce((a,b)=>a + b.line, 0);
+
+        let loopCount = 0;
+        if(inputs.loopRule === "CHANNELS") loopCount = totalCh;
+        else if(inputs.loopRule === "DEVICES") loopCount = pumpCount;
+        else loopCount = Math.max(pumpCount || 0, totalCh || 0, 0);
+
+        const loopDrawCost = loopCount * inputs.loopDrawingEUR;
+
+        const basicPlanning = inputs.basicH * inputs.basicRate;
+        const detailPlanning = inputs.detailH * inputs.detailRate;
+
+        let externPlanning = 0;
+        if(inputs.externMode === "HOURS") externPlanning = inputs.externVal * inputs.externRate;
+        if(inputs.externMode === "PERCENT") externPlanning = (inputs.externVal/100) * (basicPlanning + detailPlanning);
+
+        const programmingCost = inputs.progPerCh * totalCh;
+        const fatSatCost = inputs.fatSatFlat;
+
+        const totalCableMeters = pwrMeters + instrMeters;
+        const montageTotal = (inputs.montPerPump * pumpCount) + (inputs.montPerM * totalCableMeters);
+        const ibsTotal = inputs.ibsPerLoop * loopCount;
+
+        // Handlingzuschlag: der gilt der Beschaffung, also dem eingekauften
+        // Material. Auf die eigenen Stunden nimmt niemand einen
+        // Beschaffungszuschlag; das bleibt wie es war.
+        const baseForHandling = materialTotal + montageTotal;
+        const handlingCost = baseForHandling * (inputs.handlingPct/100);
+
+        // Contingency ist der Risikozuschlag auf das ganze Angebot. Frueher lag
+        // er nur auf Material und Montage; Planung, Programmierung, FAT/SAT,
+        // Loop-Blaetter und Inbetriebnahme blieben aussen vor. Das ist falsch
+        // herum: Stunden sind unsicherer als Materialpreise, nicht sicherer.
+        const baseBeforeCont = materialTotal + montageTotal + ibsTotal
+          + basicPlanning + detailPlanning + externPlanning
+          + programmingCost + fatSatCost + loopDrawCost + handlingCost;
+        const contingencyCost = baseBeforeCont * (inputs.contPct/100);
+
+        const grandTotal = baseBeforeCont + contingencyCost;
+
+        const statusCounts = items.reduce((acc, it)=>{
+          acc[it.status] = (acc[it.status] || 0) + 1;
+          return acc;
+        }, { OK:0, UNKNOWN:0, RFQ_REQUIRED:0 });
+
+        // Wieviel Geld auf ungesicherten Preisen steht. Die Anzahl allein sagt
+        // das nicht: drei UNKNOWN-Positionen koennen 200 Euro sein oder 200.000.
+        const unsicherEUR = items.reduce((a, it) =>
+          a + ((it.status === "UNKNOWN" || it.status === "RFQ_REQUIRED") ? it.line : 0), 0);
+        const unsicherAnteil = materialTotal > 0 ? (unsicherEUR / materialTotal) : 0;
+        const istVorlaeufig = unsicherEUR > 0;
+
+        const hasUnknown = items.some(it => it.status === "UNKNOWN");
+        const hasRFQ = items.some(it => it.status === "RFQ_REQUIRED");
+        if(hasUnknown || hasRFQ) procurementWeeks += 1;
+
+        const areaWeight = (a)=> Math.max(areaMat[a] || 0, 1e-9);
+        const wI = areaWeight("I"), wC = areaWeight("C"), wM = areaWeight("M");
+        const wSum = wI + wC + wM;
+        const allocArea = (cost, area) => cost * (areaWeight(area)/wSum);
+
+        const areaAlloc = {
+          I: { basic: allocArea(basicPlanning,"I"), detail: allocArea(detailPlanning,"I"), extern: allocArea(externPlanning,"I"), montage: allocArea(montageTotal,"I"), ibs: allocArea(ibsTotal,"I"), handling: allocArea(handlingCost,"I"), cont: allocArea(contingencyCost,"I") },
+          C: { basic: allocArea(basicPlanning,"C"), detail: allocArea(detailPlanning,"C"), extern: allocArea(externPlanning,"C"), montage: allocArea(montageTotal,"C"), ibs: allocArea(ibsTotal,"C"), handling: allocArea(handlingCost,"C"), cont: allocArea(contingencyCost,"C") },
+          M: { basic: allocArea(basicPlanning,"M"), detail: allocArea(detailPlanning,"M"), extern: allocArea(externPlanning,"M"), montage: allocArea(montageTotal,"M"), ibs: allocArea(ibsTotal,"M"), handling: allocArea(handlingCost,"M"), cont: allocArea(contingencyCost,"M") },
+        };
+
+        function areaShare(it){
+          const denom = Math.max(areaMat[it.area] || 0, 1e-9);
+          return (it.line || 0) / denom;
+        }
+
+        const posMap = new Map();
+        function posAdd(area, module, desc, kont, qty, total){
+          const k = `${area}|${module}|${kont}|${desc}|${qty}`;
+          posMap.set(k, (posMap.get(k) || 0) + total);
+        }
+
+        items.forEach(it=>{
+          if(!(it.area==="I" || it.area==="C" || it.area==="M")) return;
+          const sh = areaShare(it);
+          const add =
+            (areaAlloc[it.area].basic + areaAlloc[it.area].detail + areaAlloc[it.area].extern) * sh +
+            (areaAlloc[it.area].montage + areaAlloc[it.area].ibs + areaAlloc[it.area].handling + areaAlloc[it.area].cont) * sh;
+          posAdd(it.area, it.excelModule || "MSR-Allg.", it.itemName, it.kont, it.qty, it.line + add);
+        });
+
+        if(loopDrawCost > 0) posAdd("I", "MSR-Allg.", "Loop drawings", "I01", loopCount, loopDrawCost);
+        if(programmingCost > 0) posAdd("C", "DCS_System", "Programming (control level + HMI)", "C08", totalCh, programmingCost);
+        if(fatSatCost > 0) posAdd("C", "DCS_System", "FAT/SAT", "C10", 1, fatSatCost);
+
+        const positions = [];
+        for(const [k, total] of posMap.entries()){
+          const [area, module, kont, desc, qtyStr] = k.split("|");
+          const qty = Number(qtyStr || 1);
+          positions.push({
+            Bereich: area,
+            KalkModul: module,
+            Beschreibung: desc,
+            KontierungNummer: kont,
+            KontierungBereich: ExcelCodes[kont] || "—",
+            Anzahl: qty,
+            Total: total
+          });
+        }
+        positions.sort((a,b)=>{
+          const aa = `${a.Bereich}|${a.KontierungNummer}|${a.KalkModul}|${a.Beschreibung}`;
+          const bb = `${b.Bereich}|${b.KontierungNummer}|${b.KalkModul}|${b.Beschreibung}`;
+          return aa.localeCompare(bb);
+        });
+
+        const handlingAndCont = handlingCost + contingencyCost;
+        const handlingToArea = { I: allocArea(handlingAndCont,"I"), C: allocArea(handlingAndCont,"C"), M: allocArea(handlingAndCont,"M") };
+
+        const summe = [
+          { Bereich:"I", Desc:"Pumps + signal interface", Basic: areaAlloc.I.basic, Detail: areaAlloc.I.detail, Extern: areaAlloc.I.extern, Material: areaMat.I + handlingToArea.I, Montage: areaAlloc.I.montage, IBS: areaAlloc.I.ibs, Total: 0 },
+          { Bereich:"C", Desc:"Control System incl. I/O", Basic: areaAlloc.C.basic, Detail: areaAlloc.C.detail, Extern: areaAlloc.C.extern, Material: areaMat.C + handlingToArea.C, Montage: areaAlloc.C.montage, IBS: areaAlloc.C.ibs, Total: 0 },
+          { Bereich:"M", Desc:"Drive, wiring, mounting material", Basic: areaAlloc.M.basic, Detail: areaAlloc.M.detail, Extern: areaAlloc.M.extern, Material: areaMat.M + handlingToArea.M, Montage: areaAlloc.M.montage, IBS: areaAlloc.M.ibs, Total: 0 },
+        ];
+
+        summe[0].Detail += loopDrawCost;
+        summe[1].Detail += programmingCost;
+        summe[1].Extern += fatSatCost;
+
+        summe.forEach(s=> s.Total = s.Basic + s.Detail + s.Extern + s.Material + s.Montage + s.IBS );
+
+        const totalWeeks = procurementWeeks + Math.ceil((inputs.detailH/8)/5);
+
+        return {
+          items,
+          positions,
+          summe,
+          totals: { pumpCount, AI:sumAI, AO:sumAO, DI:sumDI, DO:sumDO, channels: totalCh },
+          materialTotal,
+          planning: { basicPlanning, detailPlanning, externPlanning, programmingCost, loopDrawCost, fatSatCost },
+          montageTotal,
+          ibsTotal,
+          overhead: { handlingCost, contingencyCost },
+          grandTotal,
+          loopCount,
+          procurementWeeks,
+          totalWeeks,
+          statusCounts,
+          unsicherEUR,
+          unsicherAnteil,
+          istVorlaeufig
+        };
+      }
+    };
+
+    function badge(status){
+      if(status === "OK") return `<span class="badge b-ok">OK</span>`;
+      if(status === "RFQ_REQUIRED") return `<span class="badge b-rfq">RFQ</span>`;
+      return `<span class="badge b-warn">UNKNOWN</span>`;
+    }
+
+    const App = {
+      init(){
+        Catalog.load();
+        WorkLines.load();
+        Store.load();
+
+        LineUI.refreshTemplateDropdown();
+        LineUI.refreshKW();
+        LineUI.renderLineList();
+
+        this.refreshEstimatesDropdown();
+        this.renderCatalogTable();
+        document.getElementById("catUpdated").textContent = Catalog.data.meta.updatedAt;
+
+        // restore selected estimate if possible
+        const lastId = Store.selectedId();
+        if(lastId && Store.estimates.find(e=>e.id===lastId)){
+          document.getElementById("savedEstimates").value = lastId;
+          const est = Store.estimates.find(e=>e.id===lastId);
+          this.renderSchedule();
+          this.renderBOM(est);
+          this.renderSumme(est);
+          this.renderPositions(est);
+          this.renderRFQMeta(est);
+        }else{
+          this.renderSchedule();
+        }
+      },
+
+      readHeaderInputs(){
+        return {
+          project: (document.getElementById("inProject").value || "").trim() || "—",
+          signalClass: document.getElementById("inSignalClass").value,
+          control: document.getElementById("inControl").value,
+
+          powerCablePerPump: U.clamp(Number(document.getElementById("inPowerCablePerPump").value || 0), 0, 1e9),
+          powerCableType: document.getElementById("inPowerCableType").value,
+
+          instrCablePerPump: U.clamp(Number(document.getElementById("inInstrCablePerPump").value || 0), 0, 1e9),
+          instrCableType: document.getElementById("inInstrCableType").value,
+
+          includeJB: document.getElementById("inIncludeJB").value === "yes",
+          includeInstall: document.getElementById("inIncludeInstall").value === "yes",
+
+          basicH: U.clamp(Number(document.getElementById("inBasicH").value || 0), 0, 1e6),
+          basicRate: U.clamp(Number(document.getElementById("inBasicRate").value || 0), 0, 1e6),
+          detailH: U.clamp(Number(document.getElementById("inDetailH").value || 0), 0, 1e6),
+          detailRate: U.clamp(Number(document.getElementById("inDetailRate").value || 0), 0, 1e6),
+
+          loopDrawingEUR: U.clamp(Number(document.getElementById("inLoopDrawingEUR").value || 0), 0, 1e9),
+          loopRule: document.getElementById("inLoopRule").value,
+
+          externMode: document.getElementById("inExternMode").value,
+          externVal: U.clamp(Number(document.getElementById("inExternVal").value || 0), 0, 1e9),
+          externRate: U.clamp(Number(document.getElementById("inExternRate").value || 0), 0, 1e6),
+
+          progPerCh: U.clamp(Number(document.getElementById("inProgPerCh").value || 0), 0, 1e6),
+
+          montPerPump: U.clamp(Number(document.getElementById("inMontPerPump").value || 0), 0, 1e6),
+          montPerM: U.clamp(Number(document.getElementById("inMontPerM").value || 0), 0, 1e6),
+
+          ibsPerLoop: U.clamp(Number(document.getElementById("inIBSPerLoop").value || 0), 0, 1e6),
+          fatSatFlat: U.clamp(Number(document.getElementById("inFATSAT").value || 0), 0, 1e9),
+
+          handlingPct: U.clamp(Number(document.getElementById("inHandlingPct").value || 0), 0, 100),
+          contPct: U.clamp(Number(document.getElementById("inContPct").value || 0), 0, 100),
+        };
+      },
+
+      writeHeaderInputs(inputs){
+        document.getElementById("inProject").value = inputs.project || "";
+        document.getElementById("inSignalClass").value = inputs.signalClass || "XE";
+        document.getElementById("inControl").value = inputs.control || "SIEMENS";
+
+        document.getElementById("inPowerCablePerPump").value = inputs.powerCablePerPump ?? 60;
+        document.getElementById("inPowerCableType").value = inputs.powerCableType || "CABLE_PWR_4C";
+        document.getElementById("inInstrCablePerPump").value = inputs.instrCablePerPump ?? 80;
+        document.getElementById("inInstrCableType").value = inputs.instrCableType || "CABLE_INSTR_2PR_SHLD";
+
+        document.getElementById("inIncludeJB").value = inputs.includeJB ? "yes" : "no";
+        document.getElementById("inIncludeInstall").value = inputs.includeInstall ? "yes" : "no";
+
+        document.getElementById("inBasicH").value = inputs.basicH ?? 0;
+        document.getElementById("inBasicRate").value = inputs.basicRate ?? 110;
+        document.getElementById("inDetailH").value = inputs.detailH ?? 24;
+        document.getElementById("inDetailRate").value = inputs.detailRate ?? 110;
+
+        document.getElementById("inLoopDrawingEUR").value = inputs.loopDrawingEUR ?? 90;
+        document.getElementById("inLoopRule").value = inputs.loopRule || "MAX";
+
+        document.getElementById("inExternMode").value = inputs.externMode || "NONE";
+        document.getElementById("inExternVal").value = inputs.externVal ?? 0;
+        document.getElementById("inExternRate").value = inputs.externRate ?? 120;
+
+        document.getElementById("inProgPerCh").value = inputs.progPerCh ?? 35;
+
+        document.getElementById("inMontPerPump").value = inputs.montPerPump ?? 260;
+        document.getElementById("inMontPerM").value = inputs.montPerM ?? 0.9;
+
+        document.getElementById("inIBSPerLoop").value = inputs.ibsPerLoop ?? 95;
+        document.getElementById("inFATSAT").value = inputs.fatSatFlat ?? 0;
+
+        document.getElementById("inHandlingPct").value = inputs.handlingPct ?? 0;
+        document.getElementById("inContPct").value = inputs.contPct ?? 0;
+      },
+
+      refreshEstimatesDropdown(){
+        const sel = document.getElementById("savedEstimates");
+        const current = sel.value || Store.selectedId();
+        sel.innerHTML = "";
+        if(Store.estimates.length === 0){
+          const opt = document.createElement("option");
+          opt.value = "";
+          opt.textContent = "— None saved —";
+          sel.appendChild(opt);
+          return;
+        }
+        Store.estimates.forEach(e=>{
+          const opt = document.createElement("option");
+          opt.value = e.id;
+          const dt = (e.createdAt || e.updatedAt || "").slice(0,19).replace("T"," ");
+          opt.textContent = `${e.inputs?.project || "Estimate"}  (${dt})`;
+          sel.appendChild(opt);
+        });
+        if(current && Store.estimates.find(e=>e.id===current)){
+          sel.value = current;
+        }else{
+          sel.value = Store.estimates[0].id;
+        }
+      },
+
+      calculateAndSave(){
+        const header = this.readHeaderInputs();
+        const lines = U.deepClone(WorkLines.lines || []);
+        if(lines.length === 0){
+          alert("No pump lines. Add at least one line.");
+          return;
+        }
+        const inputs = { ...header, lines };
+        const result = Engine.compute(inputs);
+
+        const id = "EST_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2,7).toUpperCase();
+        const est = {
+          id,
+          createdAt: U.nowISO(),
+          updatedAt: U.nowISO(),
+          inputs,
+          result
+        };
+
+        Store.estimates.unshift(est);
+        Store.save();
+        Store.setSelected(id);
+
+        this.refreshEstimatesDropdown();
+        document.getElementById("savedEstimates").value = id;
+
+        this.renderSchedule();
+        this.renderBOM(est);
+        this.renderSumme(est);
+        this.renderPositions(est);
+        this.renderRFQMeta(est);
+
+        UI.switchView("bom");
+      },
+
+      loadSelectedEstimate(){
+        const id = document.getElementById("savedEstimates").value;
+        this.selectEstimateById(id);
+      },
+
+      selectEstimateById(id){
+        if(!id) return;
+        const est = Store.estimates.find(e=>e.id === id);
+        if(!est) return;
+        document.getElementById("savedEstimates").value = id;
+        Store.setSelected(id);
+
+        // Load header + work lines into sidebar so user can tweak and recalc
+        this.writeHeaderInputs(est.inputs || {});
+        WorkLines.lines = U.deepClone(est.inputs.lines || []);
+        WorkLines.save();
+        LineUI.renderLineList();
+
+        this.renderSchedule();
+        this.renderBOM(est);
+        this.renderSumme(est);
+        this.renderPositions(est);
+        this.renderRFQMeta(est);
+      },
+
+      recalculateCurrentFromSidebar(){
+        const id = document.getElementById("savedEstimates").value || Store.selectedId();
+        const est = Store.estimates.find(e=>e.id === id);
+        if(!est) return;
+
+        const header = this.readHeaderInputs();
+        const lines = U.deepClone(WorkLines.lines || []);
+        if(lines.length === 0){
+          alert("No pump lines. Add at least one line.");
+          return;
+        }
+
+        est.inputs = { ...header, lines };
+        est.result = Engine.compute(est.inputs);
+        est.updatedAt = U.nowISO();
+
+        Store.save();
+        Store.setSelected(est.id);
+
+        this.renderSchedule();
+        this.renderBOM(est);
+        this.renderSumme(est);
+        this.renderPositions(est);
+        this.renderRFQMeta(est);
+
+        UI.switchView("bom");
+      },
+
+      deleteSelectedEstimate(){
+        const id = document.getElementById("savedEstimates").value || Store.selectedId();
+        if(!id) return;
+        const idx = Store.estimates.findIndex(e=>e.id === id);
+        if(idx < 0) return;
+        if(!confirm("Delete selected estimate?")) return;
+
+        Store.estimates.splice(idx, 1);
+        Store.save();
+
+        if(Store.selectedId() === id) Store.setSelected(Store.estimates[0]?.id || "");
+        this.refreshEstimatesDropdown();
+        this.renderSchedule();
+
+        const newId = document.getElementById("savedEstimates").value || Store.selectedId();
+        const est = Store.estimates.find(e=>e.id === newId);
+        if(est){
+          this.renderBOM(est);
+          this.renderSumme(est);
+          this.renderPositions(est);
+          this.renderRFQMeta(est);
+        }else{
+          document.getElementById("bomTable").innerHTML = "";
+          document.getElementById("summeTable").innerHTML = "";
+          document.getElementById("positionsTable").innerHTML = "";
+          document.getElementById("rfqText").value = "";
+          this.renderRFQMeta(null);
+        }
+      },
+
+      resetAll(){
+        if(!confirm("Reset everything? This clears local saved estimates and catalog edits.")) return;
+        localStorage.removeItem(LS.CATALOG);
+        localStorage.removeItem(LS.ESTIMATES);
+        localStorage.removeItem(LS.SELECTED);
+        localStorage.removeItem(LS.WORK_LINES);
+        location.reload();
+      },
+
+      renderSchedule(){
+        const tbody = document.getElementById("scheduleTable");
+        tbody.innerHTML = "";
+
+        document.getElementById("sumCount").textContent = String(Store.estimates.length);
+
+        const selId = document.getElementById("savedEstimates").value || Store.selectedId();
+        const sel = Store.estimates.find(e=>e.id === selId);
+
+        document.getElementById("sumSelected").textContent = sel ? sel.inputs.project : "—";
+        document.getElementById("sumPumps").textContent = sel ? String(sel.result.totals.pumpCount) : "—";
+        document.getElementById("sumIO").textContent = sel ? `AI${sel.result.totals.AI}/AO${sel.result.totals.AO}/DI${sel.result.totals.DI}/DO${sel.result.totals.DO}` : "—";
+        document.getElementById("sumMat").textContent = sel ? U.eur(sel.result.materialTotal) : "—";
+
+        const planningTotal = sel ? (
+          (sel.result.planning.basicPlanning || 0) +
+          (sel.result.planning.detailPlanning || 0) +
+          (sel.result.planning.externPlanning || 0) +
+          (sel.result.planning.programmingCost || 0) +
+          (sel.result.planning.loopDrawCost || 0) +
+          (sel.result.planning.fatSatCost || 0)
+        ) : 0;
+
+        document.getElementById("sumEng").textContent = sel ? U.eur(planningTotal) : "—";
+        document.getElementById("sumMont").textContent = sel ? U.eur(sel.result.montageTotal) : "—";
+        document.getElementById("sumIBS").textContent = sel ? U.eur(sel.result.ibsTotal) : "—";
+        // Eine Summe mit ungesicherten Preisen darin ist vorlaeufig, und das
+        // steht jetzt an der Summe selbst. Wer ein Angebot unterschreibt, liest
+        // die grosse Zahl - nicht die Fussnote darunter.
+        const grandEl = document.getElementById("sumGrand");
+        grandEl.textContent = sel ? U.eur(sel.result.grandTotal) : "—";
+        const vorl = document.getElementById("sumVorlaeufig");
+        if(sel && sel.result.istVorlaeufig){
+          grandEl.textContent += " (vorläufig)";
+          grandEl.className = "warn";
+          vorl.textContent = `${U.eur(sel.result.unsicherEUR)} auf ungesicherten Preisen `
+            + `(${(sel.result.unsicherAnteil*100).toFixed(0)} % des Materials)`;
+          vorl.parentElement.style.display = "";
+        } else {
+          grandEl.className = "accent";
+          if(vorl) vorl.parentElement.style.display = "none";
+        }
+        document.getElementById("sumUnknown").textContent = sel ? `UNKNOWN ${sel.result.statusCounts.UNKNOWN || 0}` : "UNKNOWN 0";
+        document.getElementById("sumRFQ").textContent = sel ? `RFQ ${sel.result.statusCounts.RFQ_REQUIRED || 0}` : "RFQ 0";
+
+        Store.estimates.forEach(e=>{
+          const dt = (e.createdAt || e.updatedAt || "").slice(0,19).replace("T"," ");
+          const plan = (
+            (e.result.planning.basicPlanning || 0) +
+            (e.result.planning.detailPlanning || 0) +
+            (e.result.planning.externPlanning || 0) +
+            (e.result.planning.programmingCost || 0) +
+            (e.result.planning.loopDrawCost || 0) +
+            (e.result.planning.fatSatCost || 0)
+          );
+          const st = `OK ${e.result.statusCounts.OK||0} | UNKNOWN ${e.result.statusCounts.UNKNOWN||0} | RFQ ${e.result.statusCounts.RFQ_REQUIRED||0}`;
+
+          const isSel = (e.id === selId);
+          const row = document.createElement("tr");
+          row.style.cursor = "pointer";
+          if(isSel) row.style.background = "rgba(16,185,129,.10)";
+          row.onclick = ()=>{ App.selectEstimateById(e.id); UI.switchView("bom"); };
+
+          row.innerHTML = `
+            <td>${U.esc(e.inputs.project)}</td>
+            <td class="mono">${U.esc(dt)}</td>
+            <td>${U.esc(e.inputs.signalClass)}</td>
+            <td>${U.esc(e.inputs.control)}</td>
+            <td class="mono">${U.num(e.result.totals.pumpCount)}</td>
+            <td class="mono">${U.num(e.result.totals.AI)}</td>
+            <td class="mono">${U.num(e.result.totals.AO)}</td>
+            <td class="mono">${U.num(e.result.totals.DI)}</td>
+            <td class="mono">${U.num(e.result.totals.DO)}</td>
+            <td class="mono">${U.eur(e.result.materialTotal)}</td>
+            <td class="mono">${U.eur(plan)}</td>
+            <td class="mono">${U.eur(e.result.montageTotal)}</td>
+            <td class="mono">${U.eur(e.result.ibsTotal)}</td>
+            <td class="mono">${U.eur(e.result.grandTotal)}</td>
+            <td>${U.esc(st)}</td>
+          `;
+          tbody.appendChild(row);
+        });
+      },
+
+      renderBOM(est){
+        const tbody = document.getElementById("bomTable");
+        tbody.innerHTML = "";
+        if(!est){ return; }
+
+        document.getElementById("bomTitle").textContent = est.inputs.project || "—";
+        document.getElementById("bomPumps").textContent = String(est.result.totals.pumpCount || 0);
+        document.getElementById("bomIO").textContent = `AI${est.result.totals.AI}/AO${est.result.totals.AO}/DI${est.result.totals.DI}/DO${est.result.totals.DO}`;
+        document.getElementById("bomLoops").textContent = String(est.result.loopCount || 0);
+        document.getElementById("bomProcWeeks").textContent = String(est.result.procurementWeeks || 0);
+        document.getElementById("bomTotalWeeks").textContent = String(est.result.totalWeeks || 0);
+
+        (est.result.items || []).forEach(it=>{
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${U.esc(it.area)}</td>
+            <td class="mono">${U.esc(it.kont)}</td>
+            <td>${U.esc(it.excelModule || "—")}</td>
+            <td>${U.esc(it.category)}</td>
+            <td>${U.esc(it.itemName)}</td>
+            <td class="mono">${U.esc(it.key)}</td>
+            <td class="mono">${U.num(it.unitPrice)}</td>
+            <td class="mono">${U.num(it.qty)}</td>
+            <td class="mono">${U.num(it.line)}</td>
+            <td>${badge(it.status)} <span class="tiny">${U.esc(it.source || "")}</span></td>
+          `;
+          tbody.appendChild(tr);
+        });
+      },
+
+      renderSumme(est){
+        const tbody = document.getElementById("summeTable");
+        tbody.innerHTML = "";
+        if(!est){ return; }
+        document.getElementById("sxTitle").textContent = est.inputs.project || "—";
+
+        (est.result.summe || []).forEach(r=>{
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td class="mono">${U.esc(r.Bereich)}</td>
+            <td>${U.esc(r.Desc)}</td>
+            <td class="mono">${U.num(r.Basic)}</td>
+            <td class="mono">${U.num(r.Detail)}</td>
+            <td class="mono">${U.num(r.Extern)}</td>
+            <td class="mono">${U.num(r.Material)}</td>
+            <td class="mono">${U.num(r.Montage)}</td>
+            <td class="mono">${U.num(r.IBS)}</td>
+            <td class="mono">${U.num(r.Total)}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+      },
+
+      renderPositions(est){
+        const tbody = document.getElementById("positionsTable");
+        tbody.innerHTML = "";
+        if(!est){ return; }
+        document.getElementById("pxTitle").textContent = est.inputs.project || "—";
+
+        (est.result.positions || []).forEach(r=>{
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td class="mono">${U.esc(r.Bereich)}</td>
+            <td>${U.esc(r.KalkModul)}</td>
+            <td>${U.esc(r.Beschreibung)}</td>
+            <td class="mono">${U.esc(r.KontierungNummer)}</td>
+            <td>${U.esc(r.KontierungBereich)}</td>
+            <td class="mono">${U.num(r.Anzahl)}</td>
+            <td class="mono">${U.num(r.Total)}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+      },
+
+      renderRFQMeta(est){
+        if(!est){
+          document.getElementById("rfqTitle").textContent = "—";
+          document.getElementById("rfqCount").textContent = "0";
+          return;
+        }
+        document.getElementById("rfqTitle").textContent = est.inputs.project || "—";
+        const missing = (est.result.items || []).filter(it=>it.status==="UNKNOWN" || it.status==="RFQ_REQUIRED");
+        document.getElementById("rfqCount").textContent = String(missing.length);
+      },
+
+      generateRFQ(){
+        const id = document.getElementById("savedEstimates").value || Store.selectedId();
+        const est = Store.estimates.find(e=>e.id === id);
+        if(!est){ alert("No estimate selected."); return; }
+
+        const missing = (est.result.items || []).filter(it=>it.status==="UNKNOWN" || it.status==="RFQ_REQUIRED");
+        if(missing.length === 0){
+          document.getElementById("rfqText").value = "No RFQ required. All items have prices (or at least not marked missing).";
+          return;
+        }
+
+        const lang = document.getElementById("rfqLang").value || "EN";
+        const to = (document.getElementById("rfqTo").value || "").trim();
+        const subj = `RFQ | ${est.inputs.project} | Pump package`;
+
+        const lines = (est.inputs.lines || []).map((ln, i)=>{
+          const t = T.byId(ln.templateId);
+          const name = t ? t.name : ln.templateId;
+          return `- ${name}, ${ln.kw} kW, Qty ${ln.qty}, Drive ${ln.driveMode}, Interface ${ln.ctrlIface}${ln.notes?(" | "+ln.notes):""}`;
+        }).join("\n");
+
+        const itemsTxt = missing.map((it, i)=>{
+          return `${i+1}) ${it.itemName}\n   Key: ${it.key}\n   Qty: ${it.qty}\n   Notes/Source: ${it.source || ""}`;
+        }).join("\n\n");
+
+        let body = "";
+        if(lang === "DE"){
+          body =
+`To: ${to || "[Vendor email]"}\nSubject: ${subj}\n\nSehr geehrte Damen und Herren,\n\nbitte senden Sie uns ein Angebot (Preis + Lieferzeit) für die unten aufgeführten Positionen.\nProjekt: ${est.inputs.project}\nSignalklasse: ${est.inputs.signalClass} | Leitsystem: ${est.inputs.control}\n\nPumpenübersicht:\n${lines}\n\nBenötigte Positionen (Preis fehlt / RFQ):\n${itemsTxt}\n\nBitte geben Sie folgende Informationen an:\n- Artikelnummer / Typ\n- Einheitspreis (EUR) und Rabatte\n- Lieferzeit (Wochen) und Incoterms\n- Gültigkeit des Angebots\n\nVielen Dank und freundliche Grüße\n`;
+        }else{
+          body =
+`To: ${to || "[Vendor email]"}\nSubject: ${subj}\n\nDear Sales Team,\n\nPlease provide a quotation (price + lead time) for the items listed below.\nProject: ${est.inputs.project}\nSignal class: ${est.inputs.signalClass} | Control system: ${est.inputs.control}\n\nPump summary:\n${lines}\n\nRequested items (missing price / RFQ):\n${itemsTxt}\n\nPlease include:\n- Part number / type\n- Unit price (EUR) and discounts\n- Lead time (weeks) and Incoterms\n- Offer validity\n\nBest regards\n`;
+        }
+
+        document.getElementById("rfqText").value = body;
+        UI.switchView("rfq");
+      },
+
+      exportExcelAligned(){
+        const id = document.getElementById("savedEstimates").value || Store.selectedId();
+        const est = Store.estimates.find(e=>e.id === id);
+        if(!est){ alert("No estimate selected."); return; }
+        if(typeof XLSX === "undefined"){
+          alert("XLSX library not loaded (offline/CDN blocked). Export not available.");
+          return;
+        }
+
+        const posRows = (est.result.positions || []).map(r=>({
+          "Bereich": r.Bereich,
+          "Kalk. Modul": r.KalkModul,
+          "Beschreibung": r.Beschreibung,
+          "Kontierung Nummer": r.KontierungNummer,
+          "Kontierung Bereich": r.KontierungBereich,
+          "Anzahl": r.Anzahl,
+          "Total (Planung, Material, Montage, IBS)": r.Total
+        }));
+
+        const sumRows = (est.result.summe || []).map(r=>({
+          "Bereich": r.Bereich,
+          "Beschreibnung": r.Desc,
+          "EMSR Planung Basic": r.Basic,
+          "EMSR Detail Planung": r.Detail,
+          "EMSR Planung Extern": r.Extern,
+          "Summe Materialkosten": r.Material,
+          "Summe Montagekosten": r.Montage,
+          "Inbetriebnahme": r.IBS,
+          "Gesamt Projekt Kosten (€)": r.Total
+        }));
+        const sumTotal = (est.result.summe || []).reduce((s,r)=>s+r.Total,0);
+        sumRows.push({
+          "Bereich": "",
+          "Beschreibnung": "Projektkosten:",
+          "EMSR Planung Basic": "",
+          "EMSR Detail Planung": "",
+          "EMSR Planung Extern": "",
+          "Summe Materialkosten": "",
+          "Summe Montagekosten": "",
+          "Inbetriebnahme": "",
+          "Gesamt Projekt Kosten (€)": sumTotal
+        });
+
+        const bomRows = (est.result.items || []).map(it=>({
+          "Area": it.area,
+          "Kontierung": it.kont,
+          "Excel Module": it.excelModule,
+          "Category": it.category,
+          "Item": it.itemName,
+          "Key": it.key,
+          "Unit EUR": it.unitPrice,
+          "Qty": it.qty,
+          "Line EUR": it.line,
+          "Status": it.status,
+          "Source": it.source || ""
+        }));
+
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(sumRows), "Summe Rev03");
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(posRows), "Einzelpositionen");
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(bomRows), "BOM");
+
+        const safeName = (est.inputs.project || "estimate").replace(/[^\w\-]+/g, "_").slice(0,40);
+        XLSX.writeFile(wb, `EMSR_Pump_Estimate_${safeName}.xlsx`);
+      },
+
+      renderCatalogTable(){
+        const tbody = document.getElementById("catalogTable");
+        tbody.innerHTML = "";
+
+        const keys = Object.keys(Catalog.data.prices || {}).sort((a,b)=>a.localeCompare(b));
+        keys.forEach(key=>{
+          const p = Catalog.get(key);
+          const tr = document.createElement("tr");
+          const statusSel = `
+            <select onchange="CatalogUI.updatePrice('${key}', null, this.value, null)">
+              <option value="OK" ${p.status==="OK"?"selected":""}>OK</option>
+              <option value="UNKNOWN" ${p.status==="UNKNOWN"?"selected":""}>UNKNOWN</option>
+              <option value="RFQ_REQUIRED" ${p.status==="RFQ_REQUIRED"?"selected":""}>RFQ_REQUIRED</option>
+            </select>
+          `;
+          tr.innerHTML = `
+            <td class="mono">${U.esc(key)}</td>
+            <td class="mono"><input type="number" step="0.01" value="${Number(p.price||0)}" oninput="CatalogUI.updatePrice('${key}', this.value, null, null)" /></td>
+            <td>${statusSel}</td>
+            <td><input type="text" value="${U.esc(p.source||"")}" oninput="CatalogUI.updatePrice('${key}', null, null, this.value)" /></td>
+            <td class="mono">${U.esc(p.updatedAt||"")}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+        document.getElementById("catUpdated").textContent = Catalog.data.meta.updatedAt;
+      },
+
+      recalculateSelectedFromStored(){
+        const id = document.getElementById("savedEstimates").value || Store.selectedId();
+        const est = Store.estimates.find(e=>e.id === id);
+        if(!est) return;
+        est.result = Engine.compute(est.inputs);
+        est.updatedAt = U.nowISO();
+        Store.save();
+        this.renderSchedule();
+        this.renderBOM(est);
+        this.renderSumme(est);
+        this.renderPositions(est);
+        this.renderRFQMeta(est);
+      }
+    };
+
+    // Compatibility alias (CatalogUI calls this)
+    App.recalculateSelectedFromStored = App.recalculateSelectedFromStored.bind(App);
+
+    const CatalogUI = {
+      updatePrice(key, price, status, source){
+        const p = Catalog.get(key);
+        const newPrice = (price === null || price === undefined) ? p.price : Number(price);
+        const newStatus = (status === null || status === undefined) ? p.status : status;
+        const newSource = (source === null || source === undefined) ? p.source : source;
+
+        Catalog.set(key, newPrice, newStatus, newSource);
+        document.getElementById("catUpdated").textContent = Catalog.data.meta.updatedAt;
+
+        App.recalculateSelectedFromStored();
+      },
+
+      exportJSON(){ document.getElementById("catJSON").value = JSON.stringify(Catalog.data, null, 2); },
+      importJSONPrompt(){
+        UI.switchView("catalog");
+        const box = document.getElementById("catJSON");
+        box.focus(); box.scrollIntoView({behavior:"smooth", block:"center"});
+      },
+      importFromTextarea(){
+        const raw = document.getElementById("catJSON").value.trim();
+        if(!raw) return;
+        try{
+          Catalog.data = JSON.parse(raw);
+          Catalog.save();
+          App.renderCatalogTable();
+          App.renderSchedule();
+          alert("Catalog imported.");
+        }catch(e){
+          alert("Invalid JSON: " + (e && e.message ? e.message : e));
+        }
+      },
+      resetDefaults(){
+        if(!confirm("Reset catalog to defaults?")) return;
+        Catalog.data = U.deepClone(DefaultCatalog);
+        Catalog.save();
+        App.renderCatalogTable();
+        App.renderSchedule();
+        App.recalculateSelectedFromStored();
+      }
+    };
+
+    // Boot
+    (function(){
+      try{
+        App.init();
+      }catch(e){
+        console.error(e);
+        alert("Initialization error. Check console for details.");
+      }
+    })();
+  </script>
+</body>
+</html>

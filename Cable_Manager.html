@@ -1,0 +1,906 @@
+<!-- FILE: Cable_Manager.html -->
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ART ENVI | Cable Manager AI</title>
+    
+    <link rel="stylesheet" href="bibliotheken/fontawesome/css/all.min.css">
+    <script src="bibliotheken/xlsx.full.min.js"></script>
+  <script src="strombelastbarkeit.js"></script>
+    <script src="bibliotheken/chart.umd.js"></script>
+
+    <style>
+/* === KI Dashboard Unified Topbar (Emerald) === */
+:root {
+  --ki-emerald: #10b981;
+  --ki-emerald-600: #059669;
+  --ki-emerald-900: #064e3b;
+  --ki-surface: #0b1220;
+  --ki-surface-2: #0f172a;
+  --ki-panel: #111c31;
+  --ki-border: rgba(16,185,129,0.25);
+  --ki-text: #e5e7eb;
+  --ki-muted: #9ca3af;
+}
+
+.ki-topbar {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 14px;
+  background: linear-gradient(180deg, rgba(6,78,59,0.35), rgba(15,23,42,0.92));
+  border-bottom: 1px solid var(--ki-border);
+  z-index: 10000;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-sizing: border-box;
+}
+
+.ki-topbar .ki-title {
+  display:flex; align-items:center; gap:10px;
+  color: var(--ki-text);
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+
+.ki-topbar .ki-title .ki-dot {
+  width:10px; height:10px; border-radius:50%;
+  background: var(--ki-emerald);
+  box-shadow: 0 0 0 3px rgba(16,185,129,0.18);
+}
+
+.ki-topbar .ki-actions {
+  display:flex; align-items:center; gap:10px;
+}
+
+.ki-iconbtn {
+  appearance: none;
+  border: 1px solid rgba(16,185,129,0.35);
+  background: rgba(15,23,42,0.55);
+  color: var(--ki-text);
+  height: 36px;
+  min-width: 36px;
+  padding: 0 10px;
+  border-radius: 10px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  cursor:pointer;
+  box-shadow: 0 8px 18px rgba(0,0,0,0.22);
+  user-select: none;
+}
+
+.ki-iconbtn:hover {
+  border-color: rgba(16,185,129,0.65);
+  background: rgba(16,185,129,0.14);
+}
+
+.ki-iconbtn:active {
+  transform: translateY(1px);
+}
+
+.ki-iconbtn svg {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+  color: var(--ki-emerald);
+}
+
+.ki-iconbtn .ki-label {
+  font-size: 12px;
+  color: var(--ki-muted);
+  font-weight: 600;
+}
+
+@media (max-width: 720px) {
+  .ki-iconbtn .ki-label { display:none; }
+  .ki-topbar .ki-title { max-width: 50vw; overflow:hidden; text-overflow: ellipsis; }
+}
+
+.ki-modal-overlay {
+  display:none;
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.72);
+  z-index: 11000;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  box-sizing: border-box;
+}
+
+.ki-modal {
+  width: min(860px, 96vw);
+  max-height: min(86vh, 900px);
+  overflow: auto;
+  border-radius: 14px;
+  background: rgba(17,28,49,0.96);
+  border: 1px solid rgba(16,185,129,0.35);
+  box-shadow: 0 30px 60px rgba(0,0,0,0.55);
+  color: var(--ki-text);
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+}
+
+.ki-modal .ki-modal-head {
+  position: sticky;
+  top: 0;
+  background: rgba(11,18,32,0.92);
+  border-bottom: 1px solid rgba(16,185,129,0.25);
+  padding: 14px 16px;
+  display:flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  z-index: 1;
+}
+
+.ki-modal h2 {
+  margin: 0;
+  font-size: 15px;
+  letter-spacing: 0.2px;
+}
+
+.ki-modal .ki-close {
+  border: 1px solid rgba(16,185,129,0.35);
+  background: rgba(15,23,42,0.55);
+  color: var(--ki-text);
+  height: 34px;
+  min-width: 34px;
+  padding: 0 10px;
+  border-radius: 10px;
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+.ki-modal .ki-close:hover {
+  background: rgba(16,185,129,0.14);
+}
+
+.ki-modal .ki-modal-body {
+  padding: 14px 16px 18px 16px;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.ki-modal .ki-box {
+  border: 1px solid rgba(16,185,129,0.22);
+  background: rgba(6,78,59,0.10);
+  border-radius: 12px;
+  padding: 12px 12px;
+  margin: 10px 0;
+}
+
+.ki-modal code {
+  background: rgba(0,0,0,0.25);
+  border: 1px solid rgba(16,185,129,0.18);
+  padding: 2px 6px;
+  border-radius: 8px;
+}
+
+.ki-modal pre {
+  background: rgba(0,0,0,0.28);
+  border: 1px solid rgba(16,185,129,0.18);
+  padding: 10px 12px;
+  border-radius: 12px;
+  overflow: auto;
+}
+
+
+/* Layout shell to prevent overlap with fixed topbar */
+.ki-app-shell{
+  position: relative;
+  margin-top: 56px; /* reserve space for fixed topbar */
+  height: calc(100vh - 56px);
+  display: flex;
+  overflow: hidden;
+  min-height: 0;
+}
+body{
+  flex-direction: column !important;
+  height: 100vh !important;
+  overflow: hidden !important;
+}
+.sidebar, .main{ min-height:0; }
+/* enforce emerald vibe on interactive accents */
+.btn-calc{ background: var(--ki-emerald-600) !important; }
+.btn-add{ background: var(--ki-emerald) !important; color:#04130d !important; }
+.tab.active{ border-top-color: var(--ki-emerald) !important; }
+.brand span{ color: var(--ki-emerald) !important; }
+
+        :root {
+            --bg: #121212;
+            --panel: #1e1e1e;
+            --accent: #10b981; /* Emerald */nt-dim: rgba(241, 196, 15, 0.1);
+            --text: #e0e0e0;
+            --border: #333;
+            --copper: #d35400;
+        }
+
+        body { margin: 0; background: var(--bg); color: var(--text); font-family: 'Segoe UI', monospace; height: 100vh; display: flex; overflow: hidden; font-size:12px; }
+        
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-thumb { background: #444; border-radius: 4px; }
+
+        /* SIDEBAR */
+        .sidebar { width: 340px; background: #181818; border-right: 1px solid var(--border); display: flex; flex-direction: column; z-index: 10; padding: 20px; overflow-y: auto; }
+        
+        .brand { font-size: 18px; font-weight: 800; color: #fff; margin-bottom: 20px; display:flex; align-items:center; gap:10px; border-bottom: 2px solid var(--accent); padding-bottom: 10px; }
+        .brand span { color: var(--accent); }
+
+        .section { background: var(--panel); padding: 15px; border-radius: 6px; margin-bottom: 15px; border: 1px solid #333; }
+        .sec-title { font-size: 11px; font-weight: bold; color: var(--accent); text-transform: uppercase; margin-bottom: 10px; display: flex; justify-content: space-between; }
+
+        .inp-row { display: flex; gap: 10px; margin-bottom: 8px; }
+        .inp-group { flex: 1; }
+        label { display: block; margin-bottom: 4px; font-size: 10px; color: #888; }
+        
+        input, select { 
+            width: 100%; background: #111; border: 1px solid #444; color: #fff; padding: 8px; border-radius: 4px; font-size: 11px; outline: none; box-sizing: border-box;
+        }
+        input:focus, select:focus { border-color: var(--accent); }
+
+        .btn { width: 100%; padding: 10px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; margin-top: 5px; font-size: 11px; }
+        .btn-add { background: var(--accent); color: #000; }
+        .btn-calc { background: #27ae60; color: #fff; }
+        .btn-exp { background: #217346; color: #fff; }
+
+        /* MAIN CONTENT */
+        .main { flex: 1; display: flex; flex-direction: column; background: var(--bg); overflow: hidden; }
+        
+        /* TABS */
+        .tabs { height: 45px; background: #202020; display: flex; border-bottom: 1px solid #000; }
+        .tab { padding: 0 20px; display: flex; align-items: center; cursor: pointer; color: #888; font-weight: bold; transition:0.2s; border-right: 1px solid #333; }
+        .tab.active { background: var(--bg); color: #fff; border-top: 3px solid var(--accent); }
+        .tab:hover { color: #fff; }
+
+        .view { display: none; flex: 1; padding: 20px; overflow-y: auto; }
+        .view.active { display: block; }
+
+        /* TABLE */
+        table { width: 100%; border-collapse: collapse; font-size: 11px; }
+        th { text-align: left; padding: 10px; background: #252526; color: #aaa; position: sticky; top: 0; border-bottom: 1px solid #444; }
+        td { padding: 8px 10px; border-bottom: 1px solid #333; color: #ccc; }
+        tr:hover { background: #2a2a2a; }
+        
+        .badge { padding: 3px 6px; border-radius: 3px; font-weight: bold; font-size: 9px; }
+        .b-ok { background: rgba(39, 174, 96, 0.2); color: #2ecc71; border: 1px solid #2ecc71; }
+        .b-warn { background: rgba(243, 156, 18, 0.2); color: #f39c12; border: 1px solid #f39c12; }
+
+        /* DRUM VISUALIZER */
+        .drum-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+        .drum-card { background: var(--panel); border: 1px solid #444; border-radius: 6px; padding: 15px; position: relative; }
+        .drum-head { display: flex; justify-content: space-between; margin-bottom: 10px; font-weight: bold; color: #fff; }
+        
+        .cable-reel { height: 20px; background: #333; margin-bottom: 2px; border-radius: 2px; position: relative; overflow: hidden; display: flex; align-items: center; padding-left: 5px; font-size: 10px; color: #fff; }
+        .cable-reel.filled { background: var(--copper); }
+        
+        .progress-bar { height: 8px; background: #333; border-radius: 4px; overflow: hidden; margin-top: 10px; }
+        .progress-fill { height: 100%; background: var(--accent); width: 0%; }
+
+    </style>
+<!-- Ein Aussehen fuer alle Werkzeuge. Steht direkt hinter dem letzten
+     <style> dieses Werkzeugs: spaeter in der Reihenfolge, also gewinnt
+     es bei gleicher Spezifitaet - aber so frueh wie moeglich, damit die
+     Seite nicht erst in der alten Farbe erscheint und dann umfaerbt.
+     Am Ende des <body> geladen war genau das zu sehen: Knoepfe mit
+     transition faerbten sichtbar um. Faerbt nur, verschiebt nichts.
+     Siehe werkzeug-stil.css. -->
+<link rel="stylesheet" href="werkzeug-stil.css">
+<!-- Sprachumschaltung Deutsch / Persisch / Englisch. Was nicht im
+     Woerterbuch steht, bleibt Deutsch. Siehe uebersetzung.js. -->
+<script src="woerter.js"></script>
+<script src="woerter/Cable_Manager.js"></script>
+<script src="uebersetzung.js"></script>
+
+</head>
+<body>
+
+<div class="ki-topbar" role="navigation" aria-label="KI Engineering Topbar">
+  <div class="ki-title" title="Cable Manager AI">
+    <span class="ki-dot"></span>
+    <span>Cable Manager AI</span>
+  </div>
+  <div class="ki-actions">
+    <button class="ki-iconbtn" type="button" onclick="KI_OpenInfo()" title="Info / Anleitung">
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 17v-6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M12 7.5h.01" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><path d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" stroke="currentColor" stroke-width="1.8"/></svg>
+      <span class="ki-label">Info</span>
+    </button>
+    <a class="ki-iconbtn" href="dashboard/" title="Zurück zum KI-Engineering Dashboard">
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5v10a1.5 1.5 0 0 1-1.5 1.5H15a1 1 0 0 1-1-1v-5H10v5a1 1 0 0 1-1 1H4.5A1.5 1.5 0 0 1 3 20.5v-10Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+      <span class="ki-label">Home</span>
+    </a>
+  </div>
+</div>
+
+<div id="appShell" class="ki-app-shell">
+<div class="sidebar">
+    <div class="brand"><i class="fas fa-network-wired"></i> CABLE <span>MANAGER AI</span></div>
+
+    <div class="section">
+        <div class="sec-title"><span>Neues Kabel (Single Entry)</span> <i class="fas fa-plus"></i></div>
+        
+        <div class="inp-group">
+            <label>Tag Number (Kabel-Nr.)</label>
+            <input type="text" id="tag" value="C-101">
+        </div>
+        
+        <div class="inp-row">
+            <div class="inp-group"><label>Von (Source)</label><input type="text" id="from" value="MCC-01"></div>
+            <div class="inp-group"><label>Nach (Dest)</label><input type="text" id="to" value="M-101"></div>
+        </div>
+
+        <div class="inp-row">
+            <div class="inp-group"><label>Wellenleistung (kW)</label><input type="number" id="kw" value="30"></div>
+            <div class="inp-group"><label>Länge (m)</label><input type="number" id="len" value="120"></div>
+        </div>
+
+        <div class="inp-group">
+            <label>Spannung / Phasen</label>
+            <select id="volt">
+                <option value="400">400V (3-Phasen)</option>
+                <option value="230">230V (1-Phase)</option>
+                <option value="690">690V (Industrie)</option>
+            </select>
+        </div>
+
+        <div class="inp-group">
+            <label>Verlegeart (Installation)</label>
+            <div class="inp-group"><label>Verbraucher</label>
+                <select id="vtyp" onchange="typWechsel()">
+                    <option value="motor">Motor (Wellenleistung)</option>
+                    <option value="last">Allgemeine Last (elektrisch)</option>
+                </select>
+            </div>
+            <div class="inp-group"><label>Wirkungsgrad &eta; (%)</label>
+                <input type="number" id="eta" value="93.6" step="0.1"></div>
+            <div class="inp-group"><label>cos &phi;</label>
+                <input type="number" id="cosphi" value="0.86" step="0.01"></div>
+
+            <select id="install">
+                <option value="tray">Kabeltrasse (Luft) - 100%</option>
+                <option value="ground">Erdverlegung - 80%</option>
+                <option value="conduit">Schutzrohr - 70%</option>
+            </select>
+        </div>
+
+        <div class="inp-group">
+            <label>Leitertemperatur</label>
+            <select id="leiterTemp">
+                <option value="70" selected>70 °C - PVC im Betrieb</option>
+                <option value="90">90 °C - XLPE / EPR im Betrieb</option>
+                <option value="20">20 °C - Tabellenwert, kalt</option>
+            </select>
+        </div>
+
+        <button class="btn btn-add" onclick="addCable()">Hinzufügen & Berechnen</button>
+    </div>
+
+    <div class="section">
+        <div class="sec-title"><span>Massenimport</span> <i class="fas fa-file-csv"></i></div>
+        <textarea id="bulkInput" style="width:100%; height:60px; background:#111; border:1px solid #444; color:#ccc; font-size:10px; resize:none;" placeholder="Paste CSV: Tag,kW,Len..."></textarea>
+        <button class="btn btn-add" style="background:#444; color:#fff;" onclick="parseBulk()">Bulk Import</button>
+    </div>
+
+    <div class="section">
+        <div class="sec-title"><span>Projekt Aktionen</span></div>
+        <button class="btn btn-calc" onclick="optimizeDrums()"><i class="fas fa-cut"></i> Trommel-Optimierung (AI)</button>
+        <button class="btn btn-exp" onclick="exportExcel()"><i class="fas fa-file-excel"></i> Export Schedule</button>
+    </div>
+    
+    <div style="margin-top:auto; text-align:center;">
+        <!-- Removed redundant dashboard link -->
+    </div>
+</div>
+
+<div class="main">
+    <div class="tabs">
+        <div class="tab active" onclick="switchView('schedule')"><i class="fas fa-list"></i> &nbsp; KABEL-LISTE (SCHEDULE)</div>
+        <div class="tab" onclick="switchView('drums')"><i class="fas fa-circle-notch"></i> &nbsp; TROMMELN (DRUMS)</div>
+        <div class="tab" onclick="switchView('stats')"><i class="fas fa-chart-pie"></i> &nbsp; STATISTIK</div>
+    </div>
+
+    <div id="view-schedule" class="view active">
+        <div style="display:flex; justify-content:space-between; margin-bottom:10px; color:#aaa; font-size:11px;">
+            <span>Total Cables: <b id="totalCnt" style="color:#fff">0</b></span>
+            <span>Total Copper: <b id="totalWeight" style="color:#d35400">0 kg</b></span>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Tag</th>
+                    <th>From / To</th>
+                    <th>Load (kW)</th>
+                    <th>Length (m)</th>
+                    <th>Calc. Current</th>
+                    <th>Cable Size</th>
+                    <th>Voltage Drop</th>
+                    <th>Gland</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="cableTable"></tbody>
+        </table>
+    </div>
+
+    <div id="view-drums" class="view">
+        <div style="margin-bottom:15px; display:flex; gap:10px; align-items:center;">
+            <label style="color:#aaa;">Standard Trommellänge:</label>
+            <input type="number" id="drumSize" value="1000" style="width:80px; padding:5px;">
+            <button class="btn btn-calc" style="width:auto; margin:0;" onclick="optimizeDrums()">Neu Berechnen</button>
+        </div>
+        <div id="drumResult" class="drum-container">
+            <div style="color:#555; width:100%; text-align:center; padding-top:50px;">
+                Fügen Sie Kabel hinzu und klicken Sie auf "Optimierung" um Schnittpläne zu generieren.
+            </div>
+        </div>
+    </div>
+
+    <div id="view-stats" class="view">
+        <div style="width: 400px; height: 300px; margin:auto;">
+            <canvas id="typeChart"></canvas>
+        </div>
+    </div>
+</div>
+</div>
+<script>
+    // --- DATABASE ---
+    let cables = [];
+    
+    // Cable Data (NYY-J approx)
+    // Leitfaehigkeit von Kupfer: 56 m/(Ohm*mm2) gilt bei 20 Grad. Im Betrieb wird der
+    // Leiter warm, der Widerstand steigt und die Leitfaehigkeit sinkt:
+    //   kappa(theta) = 56 / (1 + alpha * (theta - 20)),  alpha_Cu = 0,00393 1/K
+    // Bei 70 Grad sind das 46,8 statt 56, der Spannungsfall also rund 20 Prozent hoeher.
+    // Vorher stand hier fest 56, gerechnet wurde also mit dem kalten Kabel.
+    // Dieselbe Rechnung steht in Kabeldimensionierung_Spannungsfall.html, damit beide
+    // Werkzeuge dieselbe Groesse gleich behandeln.
+    const ALPHA_CU = 0.00393;
+    function kappaBetrieb(theta) {
+        return 56 / (1 + ALPHA_CU * (theta - 20));
+    }
+
+    // Strombelastbarkeit und Leiterdaten kommen aus strombelastbarkeit.js.
+    //
+    // Frueher stand hier eine eigene Tabelle, die 14 bis 26 Prozent unter der
+    // in Kabeldimensionierung_Spannungsfall.html lag. Dieselbe Groesse, zwei
+    // Antworten, kein Hinweis welche gilt. Jetzt gibt es nur noch eine.
+    //
+    // Die Minderung fuer Erde und Rohr steht ebenfalls dort, damit beide
+    // Werkzeuge mit denselben Faktoren rechnen.
+    const CABLE_DATA = {};
+    STROMBELASTBARKEIT.WERTE.forEach(w => {
+      CABLE_DATA[w.q] = {
+        amp:   w.iz,
+        amp_g: Math.round(w.iz * STROMBELASTBARKEIT.MINDERUNG.erde.f),
+        od:    w.d,
+        weight: w.kg
+      };
+    });
+
+    // Gland Mapping
+    function getGland(od) {
+        if(od <= 13) return "M20";
+        if(od <= 18) return "M25";
+        if(od <= 25) return "M32";
+        if(od <= 32) return "M40";
+        if(od <= 38) return "M50";
+        if(od <= 44) return "M63";
+        return "M75";
+    }
+
+    // --- LOGIC ---
+
+    /* Bei einer allgemeinen Last ist die eingegebene Leistung schon die
+       elektrische. Das Feld bleibt stehen, damit man sieht, dass es das gibt,
+       wird aber gesperrt - ein Wirkungsgrad, der nichts tut, waere eine
+       Falle. */
+    function typWechsel() {
+        const motor = document.getElementById('vtyp').value === 'motor';
+        const eta = document.getElementById('eta');
+        eta.disabled = !motor;
+        eta.style.opacity = motor ? '' : '0.45';
+        document.querySelector('label[for="kw"], .inp-group label');
+        const kwLabel = [...document.querySelectorAll('.inp-group label')]
+            .find(l => /Wellenleistung|Leistung \(kW\)/.test(l.textContent));
+        if (kwLabel) kwLabel.textContent = motor ? 'Wellenleistung (kW)' : 'Leistung (kW)';
+    }
+
+    
+    function addCable() {
+        const tag = document.getElementById('tag').value;
+        const kw = parseFloat(document.getElementById('kw').value);
+        const len = parseFloat(document.getElementById('len').value);
+        const volt = parseFloat(document.getElementById('volt').value);
+        const install = document.getElementById('install').value;
+        const from = document.getElementById('from').value;
+        const to = document.getElementById('to').value;
+
+        /* 1. Strom.
+
+           Frueher stand hier P/(sqrt3 * U * cos phi) mit fest verdrahtetem
+           cos phi = 0,85 und OHNE Wirkungsgrad. Bei einem Motor ist die
+           Leistung auf dem Typenschild die mechanische Wellenleistung; die
+           Maschine zieht elektrisch P/eta. Der Strom kam damit 5 bis 10 %
+           zu niedrig heraus - und weil der Querschnitt aus genau diesem
+           Strom gewaehlt wird, war das Kabel zu klein. Zu klein ist bei
+           einem Kabel die gefaehrliche Richtung.
+
+           Load.html rechnet dieselbe Groesse seit jeher richtig. Zwei
+           Werkzeuge, zwei Ergebnisse fuer denselben Motor - die Pruefung
+           haelt die beiden jetzt gegeneinander. */
+        const vtyp = document.getElementById('vtyp').value;
+        const pf = parseFloat(document.getElementById('cosphi').value);
+        const etaP = parseFloat(document.getElementById('eta').value);
+        if (!(pf > 0 && pf <= 1)) { alert('cos phi muss zwischen 0 und 1 liegen.'); return; }
+        // Bei einer allgemeinen Last ist die angegebene Leistung bereits die
+        // elektrische; ein Wirkungsgrad gehoert dort nicht hinein.
+        const eta = (vtyp === 'motor') ? etaP / 100 : 1;
+        if (!(eta > 0 && eta <= 1)) { alert('Wirkungsgrad muss zwischen 0 und 100 % liegen.'); return; }
+        const P_elec = kw / eta;
+        const I = (P_elec * 1000) / (Math.sqrt(3) * volt * pf);
+
+        // 2. Select Cable Size (Derating)
+        let derating = 1.0;
+        if(install === 'ground') derating = 0.8;
+        if(install === 'conduit') derating = 0.7;
+        
+        const I_req = I / derating;
+        let size = 1.5;
+        let cableInfo = CABLE_DATA[1.5];
+
+        // Find smallest size that handles I_req
+        for (const [s, data] of Object.entries(CABLE_DATA)) {
+            if(data.amp >= I_req) {
+                size = s;
+                cableInfo = data;
+                break;
+            }
+            size = 150; // Max out
+            cableInfo = CABLE_DATA[150];
+        }
+
+        // 3. Check Voltage Drop (dU = sqrt3 * I * L * (R*cos + X*sin))
+        // Simplified: dU% = (P * L) / (C * S * V^2) ? No, simpler approx:
+        // dU (V) approx = (L * I * 0.019) / S (for copper)
+        // dU% = (dU / V) * 100
+        const kappa = kappaBetrieb(parseFloat(document.getElementById('leiterTemp').value) || 70);
+        let dU_val = (Math.sqrt(3) * len * I * (1 / (kappa * size)));
+        let dU_perc = (dU_val / volt) * 100;
+
+        // Upsize if dU > 3% (Motor) or 5% (Feeder)
+        // Simple loop to upsize
+        let loops = 0;
+        while(dU_perc > 3.0 && loops < 5) {
+            // Find next size
+            const keys = Object.keys(CABLE_DATA).map(parseFloat);
+            const nextIdx = keys.indexOf(parseFloat(size)) + 1;
+            if(nextIdx < keys.length) {
+                size = keys[nextIdx];
+                cableInfo = CABLE_DATA[size];
+                // Recalc dU
+                dU_val = (Math.sqrt(3) * len * I * (1 / (kappa * size)));
+                dU_perc = (dU_val / volt) * 100;
+            } else { break; }
+            loops++;
+        }
+
+        // 4. Store
+        cables.push({
+            id: Date.now(),
+            tag, from, to, kw, len, volt, install,
+            I: I.toFixed(1),
+            size: size,
+            type: `NYY-J 4x${size} mm²`, // Assuming 4-core
+            dU: dU_perc.toFixed(2),
+            od: cableInfo.od,
+            weight: cableInfo.weight * len,
+            gland: getGland(cableInfo.od)
+        });
+
+        // Auto increment tag
+        const num = parseInt(tag.replace(/\D/g,'')) || 0;
+        document.getElementById('tag').value = tag.replace(num, num+1);
+
+        renderTable();
+        updateStats();
+    }
+
+    function renderTable() {
+        const tbody = document.getElementById('cableTable');
+        tbody.innerHTML = '';
+        cables.forEach(c => {
+            const tr = document.createElement('tr');
+            
+            // Badge for dU
+            let dUClass = c.dU < 3 ? 'b-ok' : 'b-warn';
+            
+            tr.innerHTML = `
+                <td style="font-weight:bold; color:#fff">${c.tag}</td>
+                <td>${c.from} <i class="fas fa-arrow-right" style="font-size:8px;"></i> ${c.to}</td>
+                <td>${c.kw}</td>
+                <td>${c.len}</td>
+                <td>${c.I} A</td>
+                <td style="color:var(--accent)">${c.type}</td>
+                <td><span class="badge ${dUClass}">${c.dU}%</span></td>
+                <td>${c.gland}</td>
+                <td><i class="fas fa-trash" style="cursor:pointer; color:#c0392b" onclick="removeCable(${c.id})"></i></td>
+            `;
+            tbody.appendChild(tr);
+        });
+        
+        document.getElementById('totalCnt').innerText = cables.length;
+        const w = cables.reduce((a,b)=>a+b.weight,0);
+        document.getElementById('totalWeight').innerText = w.toFixed(0) + " kg";
+    }
+
+    window.removeCable = (id) => {
+        cables = cables.filter(c => c.id !== id);
+        renderTable();
+    };
+
+    // --- DRUM OPTIMIZATION (AI ALGORITHM) ---
+    // Simple 1D Bin Packing (Best Fit Decreasing)
+    window.optimizeDrums = function() {
+        if(cables.length === 0) return;
+        const drumCap = parseFloat(document.getElementById('drumSize').value);
+        
+        // Group cables by Type first (Cannot mix 4x10 and 4x2.5 on same drum)
+        const groups = {};
+        cables.forEach(c => {
+            if(!groups[c.type]) groups[c.type] = [];
+            groups[c.type].push(c);
+        });
+
+        const container = document.getElementById('drumResult');
+        container.innerHTML = '';
+
+        for(const [type, list] of Object.entries(groups)) {
+            // Sort Descending
+            list.sort((a,b) => b.len - a.len);
+            
+            let drums = []; // Array of { remaining: number, contents: [] }
+
+            list.forEach(cab => {
+                // Find best drum
+                let bestDrum = -1;
+                let minSpace = drumCap + 1;
+
+                for(let i=0; i<drums.length; i++) {
+                    if(drums[i].rem >= cab.len) {
+                        const space = drums[i].rem - cab.len;
+                        if(space < minSpace) {
+                            minSpace = space;
+                            bestDrum = i;
+                        }
+                    }
+                }
+
+                if(bestDrum !== -1) {
+                    drums[bestDrum].contents.push(cab);
+                    drums[bestDrum].rem -= cab.len;
+                } else {
+                    // New Drum
+                    if(cab.len > drumCap) {
+                        alert(`Warnung: Kabel ${cab.tag} (${cab.len}m) ist länger als Trommel (${drumCap}m)!`);
+                    }
+                    drums.push({ rem: drumCap - cab.len, contents: [cab] });
+                }
+            });
+
+            // Render Drums for this Type
+            const typeHeader = document.createElement('div');
+            typeHeader.innerHTML = `<h4 style="grid-column:1/-1; border-bottom:1px solid #333; padding:5px; color:var(--accent)">${type}</h4>`;
+            container.appendChild(typeHeader);
+
+            drums.forEach((d, i) => {
+                const used = drumCap - d.rem;
+                const usedPerc = (used / drumCap) * 100;
+                
+                let cutsHtml = d.contents.map(c => 
+                    `<div class="cable-reel filled" style="width:${(c.len/drumCap)*100}%" title="${c.tag} (${c.len}m)">${c.tag}</div>`
+                ).join('');
+
+                const card = document.createElement('div');
+                card.className = 'drum-card';
+                card.innerHTML = `
+                    <div class="drum-head">
+                        <span>Trommel #${i+1}</span>
+                        <span>${used} / ${drumCap} m</span>
+                    </div>
+                    <div style="display:flex; height:20px; background:#222; overflow:hidden; border-radius:3px;">
+                        ${cutsHtml}
+                    </div>
+                    <div class="progress-bar"><div class="progress-fill" style="width:${usedPerc}%"></div></div>
+                    <div style="font-size:10px; color:#777; margin-top:5px;">
+                        Rest: ${d.rem.toFixed(1)} m (${(d.rem/drumCap*100).toFixed(1)}%)
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+    };
+
+    // --- BULK PARSER ---
+    window.parseBulk = function() {
+        const txt = document.getElementById('bulkInput').value;
+        const lines = txt.split('\n');
+        lines.forEach(l => {
+            const p = l.split(','); // Tag, kW, Len
+            if(p.length >= 3) {
+                // Inject values into inputs temporarily and call add
+                document.getElementById('tag').value = p[0];
+                document.getElementById('kw').value = p[1];
+                document.getElementById('len').value = p[2];
+                addCable();
+            }
+        });
+        document.getElementById('bulkInput').value = '';
+    };
+
+    // --- STATS ---
+    function updateStats() {
+        // Simple type count
+        // (Chart.js integration placeholder)
+    }
+
+    // --- EXCEL ---
+    window.exportExcel = function() {
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.json_to_sheet(cables);
+        XLSX.utils.book_append_sheet(wb, ws, "Cable Schedule");
+        XLSX.writeFile(wb, "Cable_Schedule.xlsx");
+    };
+
+    // --- TABS ---
+    window.switchView = function(v) {
+        document.querySelectorAll('.view').forEach(e=>e.classList.remove('active'));
+        document.getElementById('view-'+v).classList.add('active');
+        document.querySelectorAll('.tab').forEach(e=>e.classList.remove('active'));
+        event.currentTarget.classList.add('active');
+    };
+
+
+    // --- PATCH: safer tab switching (browser-safe) ---
+    (function(){
+        const _orig = window.switchView;
+        window.switchView = function(v){
+            // Keep original behavior if it exists
+            try {
+                document.querySelectorAll('.view').forEach(e=>e.classList.remove('active'));
+                const target = document.getElementById('view-'+v);
+                if(target) target.classList.add('active');
+                document.querySelectorAll('.tab').forEach(e=>e.classList.remove('active'));
+                const ev = window.event;
+                const ct = ev && ev.currentTarget ? ev.currentTarget : null;
+                if(ct && ct.classList) ct.classList.add('active');
+            } catch(err){
+                // Fallback to original if anything weird happens
+                if(typeof _orig === 'function') return _orig(v);
+            }
+        };
+    })();
+
+</script>
+
+<div id="kiInfoOverlay" class="ki-modal-overlay" onclick="if(event.target===this) KI_CloseInfo()" aria-hidden="true">
+  <div class="ki-modal" role="dialog" aria-modal="true" aria-label="Info">
+    <div class="ki-modal-head">
+      <h2>Cable Manager AI | Anleitung & Formeln</h2>
+      <button class="ki-close" type="button" onclick="KI_CloseInfo()" title="Schließen">✕</button>
+    </div>
+    <div class="ki-modal-body">
+      
+<div class="ki-box">
+  <b>Anwendung dieser Seite:</b><br>
+  Dieses Tool dient zum Erstellen von <b>Kabelisten (Cable Schedule)</b>, zur Vorschlagung von <b>Kabelquerschnitten</b> und <b>Spannungsfallberechnungen</b> sowie zur <b>Optimierung der Zuschnitte auf Trommeln</b>.
+</div>
+
+<div class="ki-box">
+  <b>Nutzung:</b>
+  <ol style="margin:8px 0 0 18px;">
+    <li>Geben Sie im Bereich <code>Neues Kabel</code> die Daten Tag, Von/Nach, kW, Länge, Spannung/Phase und Verlegeart ein.</li>
+    <li>Klicken Sie auf <code>Hinzufügen & Berechnen</code>, um Strom, Kabelgröße, Spannungsfall und Verschraubung zu berechnen.</li>
+    <li>Für Massenimport nutzen Sie <code>Bulk Import</code> (CSV zeilenweise).</li>
+    <li>Zur Optimierung der Trommelzuschnitte wechseln Sie zum Tab <code>TROMMELN</code> und führen Sie <code>Trommel-Optimierung</code> aus.</li>
+    <li>Excel-Export: <code>Export Schedule</code>.</li>
+  </ol>
+</div>
+
+<div class="ki-box">
+  <b>Formeln und Berechnungslogik (entspricht dem Code dieser Seite):</b>
+  <pre><code>1) Strom Drehstrom:
+I = P_el / (√3 × U × cos φ)
+P_el = kW / η   bei Motor (Wellenleistung durch Wirkungsgrad)
+P_el = kW       bei allgemeiner Last (schon elektrisch)
+cos φ und η stehen in den Feldern, sie sind nicht fest.
+
+2) Derating (Abminderung) basierend auf Installation:
+tray   → derating = 1.0
+ground → derating = 0.8
+conduit→ derating = 0.7
+I_req = I / derating
+
+3) Querschnittswahl:
+Kleinster S, sodass amp(S) ≥ I_req (aus Datenbank CABLE_DATA)
+
+4) Spannungsfall bei Betriebstemperatur:
+κ(θ) = 56 / (1 + 0,00393 × (θ - 20))   [m/(Ω·mm²), Kupfer]
+dU(V) = √3 × L × I × (1 / (κ(θ) × S))
+dU(%) = (dU / U) × 100
+
+5) Wenn dU% > 3%: Querschnitt erhöhen (bis zu 5 Stufen)</code></pre>
+  <div style="color:var(--ki-muted); font-size:12px; margin-top:8px;">
+    Hinweis: Der Spannungsfall ist hier ein vereinfachtes Modell (ohne vollständige X/R-Werte). Für kritische Projekte bitte Normparameter (IEC/VDE) berücksichtigen.
+  </div>
+</div>
+
+<div class="ki-box">
+  <b>Trommel-Optimierung (AI in dieser Datei):</b><br>
+  Der Algorithmus <b>Bin Packing (Best Fit Decreasing)</b> wird für jeden Kabeltyp separat ausgeführt (unterschiedliche Kabeltypen werden nicht auf derselben Trommel gemischt).
+</div>
+
+      <div class="ki-box">
+        <b>Dashboard Link (fix):</b> <code>dashboard/</code><br>
+        Falls der Browser bei <code>file:///</code> blockiert, öffnen Sie die Datei lokal und nicht über die Adressleiste per Copy-Paste.
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* === KI Topbar Modal Control (non-destructive) === */
+(function(){
+  function qs(sel){ return document.querySelector(sel); }
+  function openModal(){
+    var ov = qs('#kiInfoOverlay');
+    if(!ov) return;
+    ov.style.display = 'flex';
+    document.documentElement.style.overflow = 'hidden';
+  }
+  function closeModal(){
+    var ov = qs('#kiInfoOverlay');
+    if(!ov) return;
+    ov.style.display = 'none';
+    document.documentElement.style.overflow = '';
+  }
+  window.KI_OpenInfo = openModal;
+  window.KI_CloseInfo = closeModal;
+
+  document.addEventListener('keydown', function(e){
+    if(e.key === 'Escape') closeModal();
+  });
+})();
+</script>
+
+
+<!-- KI-Helfer: ordnet das Ergebnis ein, rechnet es nicht. Der
+     Schluessel steht nicht hier, sondern hinter der Edge Function
+     werkzeug-assistent. Siehe ki-helfer.js. -->
+<script src="ki-helfer.js"></script>
+<script>
+  KI_HELFER.einbauen({
+    werkzeug: "Cable Manager",
+    modus: "deutung",
+    knopf: "Ergebnis einordnen",
+    titel: "Einordnung des Ergebnisses",
+    platzhalter: "Frage dazu, optional. Zum Beispiel: welche Stellschraube zuerst?",
+    ergebnisse: {
+      "totalCnt": "Anzahl Kabel",
+      "totalWeight": "Gesamtgewicht",
+      "drumResult": "Trommelbelegung"
+    }
+  });
+</script>
+</body>
+</html>

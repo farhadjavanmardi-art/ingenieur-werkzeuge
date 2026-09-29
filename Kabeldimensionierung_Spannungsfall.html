@@ -1,0 +1,927 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <title>ART ENVI | Kabeldimensionierung</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  
+  <script src="bibliotheken/xlsx.full.min.js"></script>
+  <script src="strombelastbarkeit.js"></script>
+  <link rel="stylesheet" href="bibliotheken/fontawesome/css/all.min.css" />
+
+  <style>
+    :root {
+      font-family: 'Segoe UI', sans-serif;
+      color-scheme: dark;
+      
+      /* Dashboard Colors */
+      --bg: #121212;
+      --card-bg: #1e272e;
+      --sidebar: #0a0a0a;
+      --accent: #00c389; /* Cyan Accent */
+      --accent-hover: #00a97a;
+      --text: #ecf0f1;
+      --border: #333;
+      
+      --warn: #f1c40f;
+      --error: #ff4757;
+      --heat: #e67e22; /* Color for Thermal */
+      --success: #2ecc71;
+    }
+
+    body { margin: 0; padding: 0; background: var(--bg); color: var(--text); }
+
+    .page {
+      max-width: 1400px;
+      margin: 20px auto;
+      padding: 20px;
+    }
+
+    /* HEADER */
+    .header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding-bottom: 20px; border-bottom: 2px solid var(--accent); margin-bottom: 25px;
+      flex-wrap: wrap; gap: 15px;
+    }
+
+    .brand-group {
+        display: flex; align-items: center; gap: 20px;
+    }
+
+    .brand-text { font-size: 24px; font-weight: 800; color: #fff; }
+    .brand-text span { font-size: 14px; color: var(--accent); font-weight: 400; display:block; margin-top:5px; text-transform: uppercase; letter-spacing: 1px;}
+
+    /* LINK BUTTON REMOVED HERE */
+
+    /* GENERAL LAYOUT */
+    .content { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 24px; }
+    @media (max-width: 900px) { .content { grid-template-columns: 1fr; } }
+
+    .card {
+      background: var(--card-bg); border-radius: 12px; padding: 25px;
+      border: 1px solid var(--border); box-shadow: 0 10px 30px rgba(0,0,0,0.2); margin-bottom: 20px;
+    }
+    .card-title { font-size: 18px; font-weight: bold; margin-bottom: 20px; color: var(--accent); border-bottom: 1px solid var(--border); padding-bottom: 10px; display: flex; align-items: center; gap: 10px; }
+
+    .grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 15px 20px; }
+    label { display: block; font-size: 12px; margin-bottom: 6px; color:#aaa; text-transform: uppercase; letter-spacing: 0.5px; }
+    input, select {
+      width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #555;
+      background: #121212; color: #fff; font-size: 14px; box-sizing: border-box; transition: 0.3s;
+    }
+    input:focus, select:focus { outline: none; border-color: var(--accent); }
+
+    .actions button {
+      width: 100%;
+      border-radius: 6px; border: none; padding: 12px; font-size: 14px; font-weight: bold; cursor: pointer;
+      background: var(--accent); color: #000; 
+      margin-top: 25px;
+      transition: 0.3s;
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+    }
+    .actions button:hover { background: #fff; }
+
+    /* RESULTS */
+    .results-main { font-size: 14px; line-height: 1.6; color: #ccc; }
+    
+    /* Badges */
+    .badge { display: inline-flex; align-items: center; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; text-transform: uppercase; }
+    .badge-ok { background: rgba(46, 204, 113, 0.1); color: var(--success); border: 1px solid var(--success); }
+    .badge-warn { background: rgba(241, 196, 15, 0.1); color: var(--warn); border: 1px solid var(--warn); }
+    .badge-bad { background: rgba(231, 76, 60, 0.1); color: var(--error); border: 1px solid var(--error); }
+
+    /* Tables */
+    table.std-table { width: 100%; border-collapse: collapse; margin-top: 14px; font-size: 13px; }
+    table.std-table th, table.std-table td { padding: 12px; text-align: left; border-bottom: 1px solid var(--border); }
+    table.std-table th { background: #2f3542; color: #fff; font-weight: 600; font-size: 12px; }
+    table.std-table td { color: #ccc; }
+    .row-highlight { background: rgba(0, 210, 211, 0.1); border-left: 3px solid var(--accent); }
+
+    .hint { font-size: 11px; opacity: 0.5; margin-left: 4px; font-style: italic; }
+  
+/* ==== KI Engineering Unified Topbar (Emerald) ==== */
+*, *::before, *::after { box-sizing: border-box; }
+
+:root{
+  --ki-accent: #00c389;      /* emerald/teal */
+  --ki-accent-2: #00a97a;
+  --ki-topbar-h: 56px;
+  --ki-topbar-bg: rgba(13,17,23,0.92);
+  --ki-topbar-border: rgba(0,195,137,0.35);
+  --ki-modal-bg: rgba(0,0,0,0.55);
+}
+
+body{
+  padding-top: var(--ki-topbar-h);
+}
+
+/* Topbar */
+.ki-topbar{
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: var(--ki-topbar-h);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 14px;
+  background: var(--ki-topbar-bg);
+  border-bottom: 1px solid var(--ki-topbar-border);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  z-index: 99999;
+}
+
+.ki-topbar-left{ display:flex; align-items:center; gap:10px; min-width: 0; }
+.ki-topbar-badge{
+  width: 10px; height: 10px; border-radius: 999px;
+  background: var(--ki-accent);
+  box-shadow: 0 0 0 4px rgba(0,195,137,0.12);
+  flex: 0 0 auto;
+}
+.ki-topbar-title{
+  color: #fff;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ki-topbar-sub{
+  color: rgba(236,240,241,0.65);
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ki-topbar-actions{ display:flex; align-items:center; gap:10px; }
+.ki-icon-btn{
+  height: 36px; width: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  border: 1px solid rgba(0,195,137,0.35);
+  background: rgba(15,17,21,0.35);
+  color: var(--ki-accent);
+  cursor: pointer;
+  text-decoration: none;
+  transition: 0.15s ease;
+  user-select: none;
+}
+.ki-icon-btn:hover{
+  background: rgba(0,195,137,0.10);
+  border-color: rgba(0,195,137,0.65);
+}
+.ki-icon-btn:active{ transform: translateY(1px); }
+.ki-icon-btn svg{ width: 18px; height: 18px; display:block; }
+
+.ki-icon-label{
+  display:none;
+}
+
+/* Modal */
+.ki-modal{ position: fixed; inset: 0; display:none; z-index: 100000; }
+.ki-modal.open{ display:block; }
+.ki-modal-backdrop{ position:absolute; inset:0; background: var(--ki-modal-bg); }
+.ki-modal-dialog{
+  position: relative;
+  width: min(900px, calc(100% - 28px));
+  max-height: calc(100% - 28px);
+  margin: 14px auto;
+  background: rgba(22,27,34,0.98);
+  border: 1px solid rgba(0,195,137,0.35);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+}
+.ki-modal-head{
+  display:flex;
+  align-items:center;
+  justify-content: space-between;
+  padding: 14px 14px;
+  border-bottom: 1px solid rgba(0,195,137,0.20);
+  background: rgba(13,17,23,0.85);
+}
+.ki-modal-title{
+  font-weight: 800;
+  color: #fff;
+  font-size: 14px;
+  letter-spacing: 0.4px;
+}
+.ki-close-btn{
+  width: 36px; height: 36px;
+  border-radius: 10px;
+}
+.ki-modal-body{
+  padding: 14px 14px 18px 14px;
+  overflow: auto;
+  max-height: calc(100vh - 56px - 28px);
+  color: rgba(236,240,241,0.88);
+  line-height: 1.55;
+  font-size: 13px;
+}
+.ki-modal-body h3{
+  margin: 12px 0 8px 0;
+  color: var(--ki-accent);
+  font-size: 13px;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+.ki-modal-body code{
+  background: rgba(0,0,0,0.35);
+  border: 1px solid rgba(0,195,137,0.18);
+  padding: 2px 6px;
+  border-radius: 6px;
+  color: #fff;
+}
+.ki-modal-body pre{
+  background: rgba(0,0,0,0.35);
+  border: 1px solid rgba(0,195,137,0.18);
+  padding: 10px;
+  border-radius: 10px;
+  overflow: auto;
+  color: #fff;
+}
+.ki-modal-body ul{ margin: 6px 0 12px 18px; }
+.ki-modal-body li{ margin: 6px 0; }
+
+
+</style>
+<!-- Ein Aussehen fuer alle Werkzeuge. Steht direkt hinter dem letzten
+     <style> dieses Werkzeugs: spaeter in der Reihenfolge, also gewinnt
+     es bei gleicher Spezifitaet - aber so frueh wie moeglich, damit die
+     Seite nicht erst in der alten Farbe erscheint und dann umfaerbt.
+     Am Ende des <body> geladen war genau das zu sehen: Knoepfe mit
+     transition faerbten sichtbar um. Faerbt nur, verschiebt nichts.
+     Siehe werkzeug-stil.css. -->
+<link rel="stylesheet" href="werkzeug-stil.css">
+<!-- Sprachumschaltung Deutsch / Persisch / Englisch. Was nicht im
+     Woerterbuch steht, bleibt Deutsch. Siehe uebersetzung.js. -->
+<script src="woerter.js"></script>
+<script src="woerter/Kabeldimensionierung_Spannungsfall.js"></script>
+<script src="uebersetzung.js"></script>
+
+</head>
+<body>
+<div class="ki-topbar" role="navigation" aria-label="KI Engineering Navigation">
+  <div class="ki-topbar-left">
+    <span class="ki-topbar-badge" aria-hidden="true"></span>
+    <div style="min-width:0; display:flex; flex-direction:column;">
+      <div class="ki-topbar-title">KI Engineering Dashboard</div>
+      <div class="ki-topbar-sub">Kabeldimensionierung & Spannungsfall</div>
+    </div>
+  </div>
+  <div class="ki-topbar-actions">
+    <button class="ki-icon-btn" id="kiInfoBtn" type="button" title="Info / Nutzung / Formeln" aria-label="Info / Nutzung / Formeln">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2a10 10 0 1 0 .001 20.001A10 10 0 0 0 12 2Zm0 4.4a1.3 1.3 0 1 1 0 2.6a1.3 1.3 0 0 1 0-2.6ZM10.7 10.2h2.6c.44 0 .8.36.8.8v7.2c0 .44-.36.8-.8.8h-2.6c-.44 0-.8-.36-.8-.8v-.8c0-.44.36-.8.8-.8h.8v-4.8h-.8c-.44 0-.8-.36-.8-.8v-.8c0-.44.36-.8.8-.8Z"/></svg>
+    </button>
+    <a class="ki-icon-btn" id="kiHomeBtn"
+       href="dashboard/"
+       title="Zurück zum KI-Engineering-Dashboard"
+       aria-label="Zurück zum KI-Engineering-Dashboard">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 3.1 3 10.5v10.4c0 .55.45 1 1 1h5.5v-7.2c0-.55.45-1 1-1h3c.55 0 1 .45 1 1V22H20c.55 0 1-.45 1-1V10.5l-9-7.4Zm0 2.57 7 5.76V20h-2.5v-6.2c0-1.66-1.34-3-3-3h-3c-1.66 0-3 1.34-3 3V20H5v-8.57l7-5.76Z"/></svg>
+    </a>
+  </div>
+</div>
+
+<div class="ki-modal" id="kiInfoModal" aria-hidden="true">
+  <div class="ki-modal-backdrop" data-ki-close="1"></div>
+  <div class="ki-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="kiInfoTitle">
+    <div class="ki-modal-head">
+      <div class="ki-modal-title" id="kiInfoTitle">Info: Kabeldimensionierung & Spannungsfall</div>
+      <button class="ki-icon-btn ki-close-btn" type="button" data-ki-close="1" aria-label="Close">
+        <span style="font-size:18px; line-height:1; color: var(--ki-accent);">✕</span>
+      </button>
+    </div>
+    <div class="ki-modal-body">
+      
+<h3>Zweck dieser Seite</h3>
+<ul>
+  <li>Berechnung des Kabelquerschnitts (Cu/Al) unter gleichzeitiger Berücksichtigung der Strombelastbarkeit (Iz) und des Spannungsfalls (ΔU).</li>
+  <li>Vorschlag des 'optimalen' Kabels basierend auf der ersten Option, die beide Bedingungen erfüllt.</li>
+  <li>Berechnung der thermischen Verlustleistung (Joule-Verluste) für HVAC/Trassenbelegung.</li>
+  <li>Speicherung der Ergebnisse im Verlauf und Export als CSV/Excel.</li>
+</ul>
+
+<h3>Anleitung</h3>
+<ul>
+  <li>Geben Sie System (3ph/1ph/DC), Spannung, Länge, Leistung oder Strom ein.</li>
+  <li>Stellen Sie cosφ (für AC), Reserveprozentsatz, Häufung (Minderungsfaktor) und zulässigen Spannungsfall ein.</li>
+  <li><b>Der gewählte Kabeltyp (NYM / NYY / NHXH / H07RN-F) geht nicht in die Rechnung ein.</b>
+      Er erscheint nur im Empfehlungstext. Iz und ΔU sind für alle Typen gleich, obwohl sich
+      z.&nbsp;B. NYM (PVC, 70&nbsp;°C) und NHXH (90&nbsp;°C) real unterscheiden.</li>
+  <li>Klicken Sie auf <code>Querschnitt berechnen</code>, um die Ergebnistabelle und die finale Empfehlung anzuzeigen.</li>
+</ul>
+
+<h3>Formeln und Berechnungslogik</h3>
+<ul>
+  <li><b>Berechnung des Laststroms</b>:
+<pre>Wenn I gegeben: I_load = I_given
+Wenn P gegeben:
+  3ph: I_load = (P(kW)*1000) / (sqrt(3) * U * pf)
+  1ph: I_load = (P(kW)*1000) / (U * pf)
+  DC : I_load = (P(kW)*1000) / U</pre>
+  </li>
+  <li><b>Stromreserve für Iz-Prüfung</b>:
+<pre>reserveFactor = 1 + reservePerc/100
+I_check = I_load * reserveFactor</pre>
+  </li>
+  <li><b>Derating und zulässige Kapazität</b>:
+<pre>ImaxEff = Imax * derating
+Bedingung: I_check <= ImaxEff</pre>
+  </li>
+  <li><b>Spannungsfall</b> (R in Ω/km und L in m):
+<pre>R(theta) = R20 * (1 + alpha * (theta - 20))   alpha: Cu 0,00393  Al 0,00403
+3ph: dU = sqrt(3) * I_load * R(theta) * (L/1000)
+1ph/DC: dU = 2 * I_load * R * (L/1000)
+vdPerc = (dU / U) * 100</pre>
+  </li>
+  <li><b>Thermische Analyse</b>:
+<pre>loadedCores = (3ph ? 3 : 2)
+R_per_meter = R / 1000
+P_loss_total = loadedCores * I_load^2 * R_per_meter * L
+P_loss_per_m = P_loss_total / L</pre>
+  </li>
+</ul>
+
+      <div style="margin-top:14px; opacity:0.7; font-size:12px;">
+        Hinweis: Formeln/Logik sind exakt aus dem Code dieser HTML-Seite abgeleitet.
+      </div>
+    </div>
+  </div>
+</div>
+
+  <div class="page">
+    
+    <header class="header">
+      <div class="brand-group">
+        <div class="brand-text">
+            ART ENVI 
+            <span>Kabeldimensionierung & Spannungsfall (V3.2)</span>
+        </div>
+      </div>
+      </header>
+
+    <div class="content">
+        <section class="card">
+          <div class="card-title"><i class="fas fa-sliders-h"></i> System- & Lastparameter</div>
+          <div class="grid-2">
+            <div>
+              <label>Systemspannung</label>
+              <select id="systemType" onchange="onSystemTypeChange()">
+                <option value="3ph">400V (3-Phasen Drehstrom)</option>
+                <option value="1ph">230V (1-Phase Wechselstrom)</option>
+                <option value="dc">DC System (Gleichstrom)</option>
+              </select>
+            </div>
+            <div>
+                <label>Spannung U<sub>n</sub> [V]</label>
+                <input id="voltage" type="number" value="400" min="1" />
+            </div>
+            
+            <div>
+                <label>Leistung P [kW]</label>
+                <input id="power" type="number" step="0.1" placeholder="z.B. 45" />
+            </div>
+            <div>
+                <label>Stromstärke I [A] <span class="hint">(Überschreibt P)</span></label>
+                <input id="current" type="number" step="0.1" placeholder="Optional" />
+            </div>
+            
+            <div>
+                <label>Leistungsfaktor (cos φ)</label>
+                <input id="pf" type="number" step="0.01" value="0.95" min="0.1" max="1" />
+            </div>
+            <div>
+                <label>Streckenlänge [m]</label>
+                <input id="length" type="number" value="50" min="1" />
+            </div>
+            
+            <div style="grid-column: span 2; border-top: 1px solid var(--border); margin-top: 10px; padding-top: 10px;"></div>
+
+            <div>
+              <label>Leitermaterial</label>
+              <select id="material" onchange="updateCableModels()">
+                <option value="cu">Kupfer (Cu)</option>
+                <option value="al">Aluminium (Al)</option>
+              </select>
+            </div>
+            <div>
+                <label>Kabeltyp <span class="hint">(Kategorie)</span></label>
+                <select id="cableModel">
+                    </select>
+            </div>
+
+            <div>
+                <label>Häufung <span class="hint">(Minderungsfaktor)</span></label>
+                <select id="installGroup">
+                    <option value="1.0">Einzeln verlegt (1,00)</option>
+                    <option value="0.9">2 Kabel, mit Abstand (0,90)</option>
+                    <option value="0.8">2 Kabel, gebündelt (0,80)</option>
+                    <option value="0.7">3 Kabel, gebündelt (0,70)</option>
+                </select>
+            </div>
+
+            <div>
+                <label>Leitertemperatur <span class="hint">(fuer den Widerstand)</span></label>
+                <select id="leiterTemp">
+                    <option value="70" selected>70 &deg;C - PVC im Betrieb</option>
+                    <option value="90">90 &deg;C - XLPE / EPR im Betrieb</option>
+                    <option value="20">20 &deg;C - Tabellenwert, kalt</option>
+                </select>
+            </div>
+
+            <div>
+                <label>Max. Spannungsfall [%]</label>
+                <input id="vdMax" type="number" value="3" min="0.5" step="0.1" />
+            </div>
+
+            <div>
+                <label>Reaktanzbelag X' [&Omega;/km] <span class="hint">(Datenblatt)</span></label>
+                <input id="reaktanz" type="number" value="0.08" min="0" max="0.5" step="0.005" />
+            </div>
+
+            <div>
+                <label>I<sub>z</sub> Reservezuschlag [%] <span class="hint">(Sicherheitsfaktor)</span></label>
+                <input id="reservePerc" type="number" value="10" min="0" step="1" />
+            </div>
+            <div style="grid-column: span 2;">
+              <label>Kennzeichnung / Beschreibung</label>
+              <input id="description" type="text" placeholder="z.B. Hauptzuleitung Halle B" />
+            </div>
+          </div>
+
+          <div class="actions">
+            <button type="button" onclick="calculateCable()"><i class="fas fa-calculator"></i> Querschnitt berechnen</button>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="card-title"><i class="fas fa-chart-line"></i> Berechnungsergebnisse</div>
+          
+          <div id="resultsMain" class="results-main" style="padding: 20px; text-align: center; border: 1px dashed #444; border-radius: 8px;">
+             Geben Sie Leistung und Länge ein und klicken Sie auf <strong>Berechnen</strong>, um den passenden Querschnitt zu ermitteln.
+          </div>
+
+          <div id="resultTableContainer" style="display:none; margin-top: 10px;">
+              <div id="izHinweis" style="display:none; margin-bottom:14px; padding:12px 14px; background:rgba(241,196,15,0.08); border:1px solid var(--warn); border-radius:8px; font-size:12.5px; line-height:1.55; color:#e8d9a0;">
+                  <b style="color:var(--warn);"><i class="fas fa-triangle-exclamation"></i> Grundlage der Strombelastbarkeit ungeprueft</b><br>
+                  <span id="izHinweisText"></span>
+              </div>
+              <div id="tempHinweis" style="margin-bottom:12px; font-size:11.5px; color:#8a9ba8;"></div>
+              <table id="resultsTable" class="std-table">
+                <thead>
+                    <tr>
+                        <th>Querschnitt</th>
+                        <th>I<sub>z</sub> (Belastbarkeit)</th>
+                        <th>ΔU (Spannungsfall)</th>
+                        <th>Außen-Ø</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+
+              <div style="margin-top: 20px; padding: 15px; background: rgba(0, 210, 211, 0.05); border: 1px solid var(--accent); border-radius: 8px;">
+                  <h4 style="margin:0 0 10px 0; color:var(--accent);">Empfehlung</h4>
+                  <div id="finalRecommendation" style="font-size: 1.2em; font-weight: bold; color: #fff;"></div>
+                  <div id="recommendedDiameter" style="margin-top: 5px; font-size: 1.1em; color: #ccc;"></div>
+                  <div style="margin-top: 10px; font-size: 0.9em; color: #aaa;">
+                      <i class="fas fa-info-circle"></i> Notieren Sie diesen Querschnitt und wechseln Sie anschließend zum <strong>Trassenrechner</strong>, um die Belegung zu planen.
+                  </div>
+              </div>
+
+              <div id="thermalAnalysis" style="margin-top: 20px; padding: 15px; background: rgba(230, 126, 34, 0.08); border: 1px solid var(--heat); border-radius: 8px; display: none;">
+                  <h4 style="margin:0 0 15px 0; color:var(--heat);"><i class="fas fa-temperature-high"></i> Thermische Verlustleistungsanalyse</h4>
+                  
+                  <div class="grid-2">
+                      <div style="background: rgba(0,0,0,0.3); padding: 10px; border-radius: 6px;">
+                          <label style="color:var(--heat); opacity:0.9;">Wärmeemission (Gesamt)</label>
+                          <div id="heatTotal" style="font-size: 1.4em; font-weight: bold; color: #fff;">0 W</div>
+                          <div class="hint">Gesamtverlust über die Länge</div>
+                      </div>
+                      <div style="background: rgba(0,0,0,0.3); padding: 10px; border-radius: 6px;">
+                          <label style="color:var(--heat); opacity:0.9;">Wärmeemission (pro Meter)</label>
+                          <div id="heatPerMeter" style="font-size: 1.4em; font-weight: bold; color: #fff;">0 W/m</div>
+                          <div class="hint">Wichtig für Trassenbelegung & HVAC</div>
+                      </div>
+                  </div>
+                  <div style="margin-top: 10px; font-size: 0.85em; opacity: 0.6; font-style: italic;">
+                      Berechnet basierend auf Joulescher Erwärmung P = I²·R·N (aktive Leiter).
+                  </div>
+              </div>
+
+          </div>
+        </section>
+    </div>
+
+    <div class="card">
+        <div class="card-title" style="justify-content:space-between; border-bottom:none;">
+            <span><i class="fas fa-history"></i> Verlauf (Session History)</span>
+            <button onclick="exportCableExcel()" style="background: var(--wz-akzent, #10b981); color:#05221a; border:none; padding: 8px 15px; border-radius: var(--wz-radius-klein, 6px); cursor:pointer; font-size:12px; font-weight:bold; width:auto; margin:0;">
+                <i class="fas fa-file-excel"></i> Excel Export
+            </button>
+        </div>
+        <table id="historyTable" class="std-table">
+            <thead>
+                <tr>
+                    <th>Tag</th>
+                    <th>Kabeltyp</th>
+                    <th>Größe</th>
+                    <th>Außen-Ø</th>
+                    <th>Last [A]</th>
+                    <th>Länge [m]</th>
+                    <th>Wärme/m [W]</th>
+                </tr>
+            </thead>
+            <tbody id="historyBody">
+                </tbody>
+        </table>
+    </div>
+
+  </div>
+
+  <script>
+    // --- CABLE DATA ENGINE (UPDATED with Diameter) ---
+    
+    // Strombelastbarkeit und Leiterdaten kommen aus strombelastbarkeit.js.
+    //
+    // Frueher stand hier eine eigene Tabelle, die 14 bis 26 Prozent ueber der in
+    // Cable_Manager.html lag - dieselbe Groesse, zwei Antworten. Jetzt gibt es
+    // nur noch eine Tabelle, und wo die beiden sich widersprachen, gilt der
+    // kleinere Wert: eine zu klein angenommene Belastbarkeit fuehrt zu einem
+    // groesseren Leiter, nie zu einem zu kleinen.
+    //
+    // Die Aluminium-Spalte ist weiterhin kein eigener Datensatz, sondern das
+    // 0,75-fache von Kupfer. Das Verhaeltnis stimmt physikalisch, erbt aber
+    // jeden Fehler der Kupferspalte.
+    const IZ_GRUNDLAGE = {
+      geprueft: STROMBELASTBARKEIT.GRUNDLAGE.geprueft,
+      text: STROMBELASTBARKEIT.GRUNDLAGE.warnung
+    };
+
+    // Der Leiterwiderstand in cableData ist der Gleichstromwert bei 20 Grad nach
+    // IEC 60228. Im Betrieb wird der Leiter warm und der Widerstand steigt:
+    //   R(theta) = R20 * (1 + alpha * (theta - 20))
+    // alpha: Kupfer 0,00393 1/K, Aluminium 0,00403 1/K.
+    // Bei 70 Grad sind das rund 20 Prozent mehr. Vorher wurde mit dem kalten Wert
+    // gerechnet, der Spannungsfall kam dadurch systematisch zu klein heraus.
+    const ALPHA = { cu: 0.00393, al: 0.00403 };
+    function tempFaktor(material, theta) {
+      const a = ALPHA[material] || ALPHA.cu;
+      return 1 + a * (theta - 20);
+    }
+
+    // Aluminium hat rund 61 Prozent der Leitfaehigkeit von Kupfer, der
+    // Widerstand ist also der 1/0,61-fache. Die Belastbarkeit wird mit 0,75
+    // angesetzt - ein Richtwert, kein gemessener Datensatz.
+    const AL_STROM = 0.75;
+    const AL_WIDERSTAND = 1 / 0.61;
+
+    const cableData = {
+      cu: STROMBELASTBARKEIT.WERTE.map(w => ({
+        size: w.q, imax: w.iz, r: w.r, d: w.d
+      })),
+      al: STROMBELASTBARKEIT.WERTE.filter(w => w.q >= 16).map(w => ({
+        size: w.q,
+        imax: Math.round(w.iz * AL_STROM),
+        r:    Math.round(w.r * AL_WIDERSTAND * 10000) / 10000,
+        d:    w.d + 2
+      }))
+    };
+
+    // Die Kabeltyp-Auswahl aenderte an der Rechnung nichts, sie stand nur im
+    // Ergebnistext. Was die Isolierung wirklich festlegt, ist die hoechste
+    // zulaessige Leitertemperatur im Betrieb (DIN VDE 0298-4, IEC 60502-1).
+    // Das ist eine Eigenschaft des Werkstoffs, keine geschaetzte Tabelle.
+    const T_MAX_ISOLIERUNG = {
+      nym:  { t: 70, text: "PVC" },
+      nyy:  { t: 70, text: "PVC" },
+      nhxh: { t: 90, text: "halogenfrei, vernetzt" },
+      h07:  { t: 60, text: "Gummi" },
+      nayy: { t: 70, text: "PVC" }
+    };
+
+    const cableModels = {
+      cu: [
+        { id: "nym", name: "NYM-J (Hausinstallation / Indoor)" },
+        { id: "nyy", name: "NYY-J (Starkstrom / Outdoor)" },
+        { id: "nhxh", name: "NHXH (Halogenfrei / E90)" },
+        { id: "h07", name: "H07RN-F (Gummi / Flexibel)" }
+      ],
+      al: [
+        { id: "nayy", name: "NAYY-J (Aluminium Outdoor)" }
+      ]
+    };
+
+    function updateCableModels() {
+      const mat = document.getElementById("material").value;
+      const select = document.getElementById("cableModel");
+      select.innerHTML = "";
+      cableModels[mat].forEach(m => {
+        const opt = document.createElement("option"); 
+        opt.value = m.id; 
+        opt.textContent = m.name; 
+        select.appendChild(opt);
+      });
+    }
+
+    function onSystemTypeChange() {
+      const systemType = document.getElementById("systemType").value;
+      const pfInput = document.getElementById("pf");
+      const vInput = document.getElementById("voltage");
+      
+      if (systemType === "dc") {
+          pfInput.value = 1;
+          pfInput.disabled = true;
+          vInput.value = 24;
+      } else if (systemType === "1ph") {
+          pfInput.disabled = false;
+          vInput.value = 230;
+      } else {
+          pfInput.disabled = false;
+          vInput.value = 400;
+      }
+    }
+
+    function calculateCable() {
+      // 1. Get Inputs
+      const systemType = document.getElementById("systemType").value;
+      const U = Number(document.getElementById("voltage").value);
+      const PkW = Number(document.getElementById("power").value);
+      const Igiven = Number(document.getElementById("current").value);
+      const pf = Number(document.getElementById("pf").value);
+      const L = Number(document.getElementById("length").value);
+      const vdMax = Number(document.getElementById("vdMax").value);
+      const material = document.getElementById("material").value;
+      const modelId = document.getElementById("cableModel").value;
+      const derating = Number(document.getElementById("installGroup").value);
+      const leiterTemp = Number(document.getElementById("leiterTemp").value);
+      // Bei Gleichstrom gibt es keine Reaktanz; das cos-phi-Feld steht dort
+      // ohnehin auf 1 und ist gesperrt.
+      const X_belag = (systemType === "dc") ? 0 : Number(document.getElementById("reaktanz").value);
+      const cosPhi = (systemType === "dc") ? 1 : pf;
+      const sinPhi = Math.sqrt(Math.max(0, 1 - cosPhi * cosPhi));
+      
+      // ** NEW: Reserve Percentage **
+      const reservePerc = Number(document.getElementById("reservePerc").value);
+      const reserveFactor = 1 + (reservePerc / 100);
+
+      if (!U || !L) { alert("Bitte Spannung und Länge eingeben."); return; }
+
+      // 2. Calculate Load Current (I_load)
+      let I_load;
+      if (Igiven > 0) {
+          I_load = Igiven;
+      } else if (PkW > 0) {
+        if (systemType === "3ph") I_load = (PkW * 1000) / (Math.sqrt(3) * U * pf);
+        else if (systemType === "1ph") I_load = (PkW * 1000) / (U * pf);
+        else I_load = (PkW * 1000) / U; // DC
+      } else {
+          alert("Bitte Leistung (kW) oder Stromstärke (A) eingeben.");
+          return;
+      }
+      
+      // ** NEW: Current required for Ampacity Check (I_check) **
+      const I_check = I_load * reserveFactor;
+
+      // 3. Calculation Loop
+      const kT = tempFaktor(material, leiterTemp);
+      const cables = cableData[material];
+      const tbody = document.querySelector("#resultsTable tbody");
+      tbody.innerHTML = "";
+      
+      let bestFound = null;
+      let bestAnteile = null;
+
+      cables.forEach(c => {
+        // Ampacity Check (Must be greater than I_load + Reserve)
+        const ImaxEff = c.imax * derating;
+        const okCurrent = I_check <= ImaxEff;
+
+        // Spannungsfall.
+        // Frueher stand hier dU = sqrt(3) * I * R * L - ohne cos phi und ohne
+        // den induktiven Anteil. Beides fehlte, und die Fehler zeigen in
+        // verschiedene Richtungen: ohne cos phi kommt zu viel heraus, ohne
+        // X * sin phi zu wenig. Bis etwa 70 mm2 ueberwiegt der erste Fehler und
+        // das Ergebnis liegt auf der sicheren Seite; ab etwa 95 mm2 ueberwiegt
+        // der zweite, und dann ist der Querschnitt zu klein gewaehlt.
+        //   dU = sqrt(3) * I * L * (R' * cos phi + X' * sin phi)   Drehstrom
+        //   dU = 2       * I * L * (R' * cos phi + X' * sin phi)   Wechselstrom
+        //   dU = 2       * I * L *  R'                             Gleichstrom
+        const rBetrieb = c.r * kT;   // Widerstand bei Leitertemperatur
+        const faktor = (systemType === "3ph") ? Math.sqrt(3) : 2;
+        const ohmsch   = faktor * I_load * rBetrieb * cosPhi * (L / 1000);
+        const induktiv = faktor * I_load * X_belag  * sinPhi * (L / 1000);
+        const vdVolts  = ohmsch + induktiv;
+
+        const vdPerc = (vdVolts / U) * 100;
+        const okDrop = vdPerc <= vdMax;
+
+        // Determine Row Style
+        let statusHtml = "";
+        let isBest = false;
+
+        if (okCurrent && okDrop) {
+            if (!bestFound) {
+                bestFound = c;
+                bestAnteile = { ohmsch: ohmsch, induktiv: induktiv, gesamt: vdVolts };
+                isBest = true;
+                statusHtml = "<span class='badge badge-ok'>Optimal</span>";
+            } else {
+                statusHtml = "<span class='badge' style='border:1px solid #555; color:#aaa'>OK</span>";
+            }
+        } else {
+            let reasons = [];
+            if(!okCurrent) reasons.push("I+Res > Iz");
+            if(!okDrop) reasons.push("Zu hoher ΔU");
+            statusHtml = `<span class='badge badge-bad'>${reasons.join(", ")}</span>`;
+        }
+        
+        // Show status based on whether it passes both checks
+        const rowOpacity = (okCurrent && okDrop) ? "1" : "0.5";
+
+        const row = document.createElement("tr");
+        if(isBest) row.classList.add("row-highlight");
+        row.style.opacity = rowOpacity;
+
+        row.innerHTML = `
+            <td style="${isBest ? 'font-weight:bold; color:var(--accent); font-size:1.1em' : ''}">${c.size} mm²</td>
+            <td>${ImaxEff.toFixed(1)} A</td>
+            <td>${vdPerc.toFixed(2)} %</td>
+            <td>${c.d.toFixed(1)} mm</td>
+            <td>${statusHtml}</td>
+        `;
+        tbody.appendChild(row);
+      });
+
+      // 4. Update UI
+      document.getElementById("resultsMain").style.display = "none";
+      document.getElementById("resultTableContainer").style.display = "block";
+      // Grundlage der Iz-Werte anzeigen, solange sie nicht geprueft ist
+      const izBox = document.getElementById("izHinweis");
+      if (izBox) {
+        izBox.style.display = IZ_GRUNDLAGE.geprueft ? "none" : "block";
+        document.getElementById("izHinweisText").textContent = IZ_GRUNDLAGE.text;
+      }
+      const tHinweis = document.getElementById("tempHinweis");
+      if (tHinweis) {
+        let zeilen = ["Spannungsfall gerechnet mit dem Leiterwiderstand bei "
+          + leiterTemp + " \u00B0C, Faktor " + kT.toFixed(3) + " auf den 20-\u00B0C-Wert."];
+        if (systemType === "dc") {
+          zeilen.push("Gleichstrom: kein induktiver Anteil.");
+        } else {
+          zeilen.push("cos \u03C6 = " + cosPhi.toFixed(2) + ", Reaktanzbelag X' = "
+            + X_belag.toFixed(3) + " \u03A9/km.");
+          if (bestAnteile) {
+            const p_ind = bestAnteile.gesamt > 0
+              ? (bestAnteile.induktiv / bestAnteile.gesamt * 100) : 0;
+            zeilen.push("Davon ohmsch " + bestAnteile.ohmsch.toFixed(2) + " V, induktiv "
+              + bestAnteile.induktiv.toFixed(2) + " V (" + p_ind.toFixed(0) + " %).");
+          }
+        }
+        const iso = T_MAX_ISOLIERUNG[modelId];
+        if (iso && leiterTemp > iso.t) {
+          zeilen.push("Achtung: " + iso.text + " ist bis " + iso.t
+            + " \u00B0C zugelassen, gerechnet wird mit " + leiterTemp + " \u00B0C.");
+        }
+        tHinweis.textContent = zeilen.join(" ");
+      }
+      
+      const recDiv = document.getElementById("finalRecommendation");
+      const diameterDiv = document.getElementById("recommendedDiameter");
+      const thermalDiv = document.getElementById("thermalAnalysis");
+      
+      if (bestFound) {
+          const modelName = document.getElementById("cableModel").options[document.getElementById("cableModel").selectedIndex].text;
+          recDiv.innerHTML = `${modelName.split('(')[0]} <span style="background:var(--accent); color:#000; padding:2px 8px; border-radius:4px;">${bestFound.size} mm²</span>`;
+          diameterDiv.innerHTML = `Außendurchmesser: <span style="color:var(--success);">${bestFound.d.toFixed(1)} mm</span> (Wichtig für Trassenbelegung)`;
+          
+          // --- THERMAL CALCULATION LOGIC ---
+          // Use I_load for P_loss calculation
+          const loadedCores = (systemType === "3ph") ? 3 : 2;
+          const R_per_meter = bestFound.r / 1000;
+          const heatTotalVal = loadedCores * Math.pow(I_load, 2) * R_per_meter * L;
+          const heatPerMeterVal = heatTotalVal / L;
+          
+          // Display
+          document.getElementById("heatTotal").innerText = heatTotalVal.toFixed(1) + " W";
+          document.getElementById("heatPerMeter").innerText = heatPerMeterVal.toFixed(2) + " W/m";
+          thermalDiv.style.display = "block";
+          
+          // Add to history
+          addToHistory(modelName, bestFound.size, bestFound.d, I_load, L, heatPerMeterVal);
+      } else {
+          recDiv.innerHTML = "<span style='color:var(--error)'>Kein passendes Kabel gefunden. Prüfen Sie parallele Leitungen oder größere Querschnitte.</span>";
+          diameterDiv.innerHTML = "";
+          thermalDiv.style.display = "none";
+      }
+    }
+
+    function addToHistory(type, size, diameter, load, len, heat) {
+        const desc = document.getElementById("description").value || "-";
+        const tbody = document.getElementById("historyBody");
+        const row = document.createElement("tr");
+        row.innerHTML = `
+            <td>${desc}</td>
+            <td>${type}</td>
+            <td>${size} mm²</td>
+            <td>${diameter.toFixed(1)} mm</td>
+            <td>${load.toFixed(1)}</td>
+            <td>${len}</td>
+            <td style="color:var(--heat)">${heat.toFixed(2)} W/m</td>
+        `;
+        tbody.insertBefore(row, tbody.firstChild);
+    }
+
+    function exportCableExcel() {
+      const rows = document.querySelectorAll("#historyTable tr");
+      if(rows.length < 2) { alert("Verlauf ist leer."); return; }
+      
+      let csv = "";
+      rows.forEach(r => {
+        const cols = r.querySelectorAll("th, td");
+        let rowData = [];
+        cols.forEach(c => rowData.push('"' + c.innerText + '"'));
+        csv += rowData.join(";") + "\r\n";
+      });
+      
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = "Kabelberechnungen.csv";
+      link.click();
+    }
+
+    // Initialize
+    window.onload = function() {
+        updateCableModels();
+        onSystemTypeChange();
+    };
+  </script>
+
+<script>
+(function(){
+  const modal = document.getElementById('kiInfoModal');
+  const openBtn = document.getElementById('kiInfoBtn');
+
+  function openModal(){
+    if(!modal) return;
+    modal.classList.add('open');
+    modal.setAttribute('aria-hidden','false');
+  }
+  function closeModal(){
+    if(!modal) return;
+    modal.classList.remove('open');
+    modal.setAttribute('aria-hidden','true');
+  }
+
+  if(openBtn){
+    openBtn.addEventListener('click', function(e){
+      e.preventDefault();
+      openModal();
+    });
+  }
+
+  if(modal){
+    modal.addEventListener('click', function(e){
+      const t = e.target;
+      if(t && t.dataset && t.dataset.kiClose){
+        closeModal();
+      }
+    });
+  }
+
+  document.addEventListener('keydown', function(e){
+    if(e.key === 'Escape' && modal && modal.classList.contains('open')){
+      closeModal();
+    }
+  });
+})();
+</script>
+
+
+<!-- KI-Helfer: ordnet das Ergebnis ein, rechnet es nicht. Der
+     Schluessel steht nicht hier, sondern hinter der Edge Function
+     werkzeug-assistent. Siehe ki-helfer.js. -->
+<script src="ki-helfer.js"></script>
+<script>
+  KI_HELFER.einbauen({
+    werkzeug: "Kabeldimensionierung & Spannungsfall",
+    modus: "deutung",
+    knopf: "Ergebnis einordnen",
+    titel: "Einordnung des Ergebnisses",
+    platzhalter: "Frage dazu, optional. Zum Beispiel: welche Stellschraube zuerst?",
+    ergebnisse: {
+      "recommendedDiameter": "Empfohlener Querschnitt",
+      "finalRecommendation": "Empfehlung",
+      "heatPerMeter": "Verlustleistung je Meter",
+      "heatTotal": "Verlustleistung gesamt",
+      "izHinweisText": "Hinweis zur Strombelastbarkeit"
+    }
+  });
+</script>
+</body>
+</html>

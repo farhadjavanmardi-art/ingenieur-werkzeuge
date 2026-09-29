@@ -1,0 +1,1044 @@
+<!-- FILE: Cause_Effect.html -->
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ART ENVI | C&E Matrix Pro</title>
+    <link rel="stylesheet" href="bibliotheken/fontawesome/css/all.min.css">
+    <!-- SheetJS for Excel Import/Export -->
+    <script src="bibliotheken/xlsx.full.min.js"></script>
+
+    <style>
+/* === KI Dashboard Unified Topbar (Emerald) === */
+:root {
+  --ki-emerald: #10b981;
+  --ki-emerald-600: #059669;
+  --ki-emerald-900: #064e3b;
+  --ki-surface: #0b1220;
+  --ki-surface-2: #0f172a;
+  --ki-panel: #111c31;
+  --ki-border: rgba(16,185,129,0.25);
+  --ki-text: #e5e7eb;
+  --ki-muted: #9ca3af;
+}
+
+.ki-topbar {
+  position: relative;
+  top: 0; left: 0; right: 0;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 14px;
+  background: linear-gradient(180deg, rgba(6,78,59,0.35), rgba(15,23,42,0.92));
+  border-bottom: 1px solid var(--ki-border);
+  z-index: 10000;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-sizing: border-box;
+}
+
+.ki-topbar .ki-title {
+  display:flex; align-items:center; gap:10px;
+  color: var(--ki-text);
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+
+.ki-topbar .ki-title .ki-dot {
+  width:10px; height:10px; border-radius:50%;
+  background: var(--ki-emerald);
+  box-shadow: 0 0 0 3px rgba(16,185,129,0.18);
+}
+
+.ki-topbar .ki-actions {
+  display:flex; align-items:center; gap:10px;
+}
+
+.ki-iconbtn {
+  appearance: none;
+  border: 1px solid rgba(16,185,129,0.35);
+  background: rgba(15,23,42,0.55);
+  color: var(--ki-text);
+  height: 36px;
+  min-width: 36px;
+  padding: 0 10px;
+  border-radius: 10px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  cursor:pointer;
+  box-shadow: 0 8px 18px rgba(0,0,0,0.22);
+  user-select: none;
+}
+
+.ki-iconbtn:hover {
+  border-color: rgba(16,185,129,0.65);
+  background: rgba(16,185,129,0.14);
+}
+
+.ki-iconbtn:active {
+  transform: translateY(1px);
+}
+
+.ki-iconbtn svg {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+  color: var(--ki-emerald);
+}
+
+.ki-iconbtn .ki-label {
+  font-size: 12px;
+  color: var(--ki-muted);
+  font-weight: 600;
+}
+
+@media (max-width: 720px) {
+  .ki-iconbtn .ki-label { display:none; }
+  .ki-topbar .ki-title { max-width: 50vw; overflow:hidden; text-overflow: ellipsis; }
+}
+
+.ki-modal-overlay {
+  display:none;
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.72);
+  z-index: 11000;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  box-sizing: border-box;
+}
+
+.ki-modal {
+  width: min(860px, 96vw);
+  max-height: min(86vh, 900px);
+  overflow: auto;
+  border-radius: 14px;
+  background: rgba(17,28,49,0.96);
+  border: 1px solid rgba(16,185,129,0.35);
+  box-shadow: 0 30px 60px rgba(0,0,0,0.55);
+  color: var(--ki-text);
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+}
+
+.ki-modal .ki-modal-head {
+  position: sticky;
+  top: 0;
+  background: rgba(11,18,32,0.92);
+  border-bottom: 1px solid rgba(16,185,129,0.25);
+  padding: 14px 16px;
+  display:flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  z-index: 1;
+}
+
+.ki-modal h2 {
+  margin: 0;
+  font-size: 15px;
+  letter-spacing: 0.2px;
+}
+
+.ki-modal .ki-close {
+  border: 1px solid rgba(16,185,129,0.35);
+  background: rgba(15,23,42,0.55);
+  color: var(--ki-text);
+  height: 34px;
+  min-width: 34px;
+  padding: 0 10px;
+  border-radius: 10px;
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+.ki-modal .ki-close:hover {
+  background: rgba(16,185,129,0.14);
+}
+
+.ki-modal .ki-modal-body {
+  padding: 14px 16px 18px 16px;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.ki-modal .ki-box {
+  border: 1px solid rgba(16,185,129,0.22);
+  background: rgba(6,78,59,0.10);
+  border-radius: 12px;
+  padding: 12px 12px;
+  margin: 10px 0;
+}
+
+.ki-modal code {
+  background: rgba(0,0,0,0.25);
+  border: 1px solid rgba(16,185,129,0.18);
+  padding: 2px 6px;
+  border-radius: 8px;
+}
+
+.ki-modal pre {
+  background: rgba(0,0,0,0.28);
+  border: 1px solid rgba(16,185,129,0.18);
+  padding: 10px 12px;
+  border-radius: 12px;
+  overflow: auto;
+}
+
+
+/* Ensure existing header/toolbar never overlap with new topbar */
+body{
+  padding-top: 0 !important;
+}
+.ki-topbar{
+  margin: 0;
+}
+/* Harmonize components with emerald palette */
+header .brand i{ color: var(--accent) !important; }
+.btn-primary{ background: var(--primary) !important; }
+.btn-primary:hover{ background: var(--primary-hover) !important; }
+.btn-back:hover{ background: var(--accent) !important; border-color: var(--accent) !important; color:#04130d !important; }
+/* Keep sticky layers above matrix without icon overlap */
+header{ position: relative; z-index: 20; }
+.toolbar{ position: relative; z-index: 15; }
+.matrix-wrapper{ position: relative; z-index: 1; }
+
+        :root {
+            /* Professional Dark Theme */
+            --bg: #0f172a;
+            --panel: #1e293b;
+            --border: #334155;
+            --text: #f1f5f9;
+            --text-muted: #94a3b8;
+            
+            --primary: #10b981; /* Emerald */nt: #22d3ee; /* Cyan */
+            
+            --cause-bg: #1e293b;
+            --effect-bg: #1e293b;
+            
+            /* Status Colors */
+            --trip: #ef4444;    /* Red */
+            --alarm: #eab308;   /* Yellow */
+            --delay: #a855f7;   /* Purple */
+            --reset: #22c55e;   /* Green */
+        }
+
+        body { 
+            margin: 0; padding: 0; background: var(--bg); color: var(--text); 
+            font-family: 'Inter', 'Segoe UI', sans-serif; height: 100vh; 
+            display: flex; flex-direction: column; overflow: hidden; 
+        }
+
+        /* --- HEADER --- */
+        header { 
+            height: 60px; background: #020617; border-bottom: 1px solid var(--border); 
+            display: flex; justify-content: space-between; align-items: center; padding: 0 20px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        
+        .brand { font-size: 18px; font-weight: 700; color: #fff; letter-spacing: 0.5px; display: flex; align-items: center; gap: 10px; }
+        .brand i { color: var(--accent); }
+
+        /* Back Button Style (Added) */
+        .btn-back {
+            text-decoration: none;
+            color: var(--text-muted);
+            font-size: 13px;
+            display: flex; align-items: center; gap: 8px;
+            border: 1px solid var(--border);
+            padding: 6px 12px;
+            border-radius: 6px;
+            background: var(--panel);
+            transition: 0.3s;
+            font-weight: 500;
+        }
+        .btn-back:hover { background: var(--accent); color: #000; border-color: var(--accent); }
+
+        /* --- TOOLBAR --- */
+        .toolbar {
+            height: 56px; background: var(--panel); display: flex; align-items: center; 
+            padding: 0 15px; gap: 8px; border-bottom: 1px solid var(--border);
+        }
+
+        .btn {
+            background: #334155; border: 1px solid transparent; color: #e2e8f0; 
+            padding: 8px 14px; font-size: 13px; cursor: pointer; border-radius: 6px; 
+            display: flex; align-items: center; gap: 8px; font-weight: 500; transition: 0.2s;
+        }
+        .btn:hover { background: #475569; border-color: #64748b; }
+        .btn:active { transform: translateY(1px); }
+
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: var(--primary-hover); }
+        
+        .btn-warning { background: #d97706; color: white; }
+        .btn-success { background: #16a34a; color: white; }
+        .btn-file { position: relative; overflow: hidden; }
+        .btn-file input[type=file] {
+            position: absolute; top: 0; right: 0; min-width: 100%; min-height: 100%;
+            font-size: 100px; text-align: right; filter: alpha(opacity=0); opacity: 0; outline: none; background: white; cursor: inherit; display: block;
+        }
+
+        .divider { width: 1px; height: 24px; background: var(--border); margin: 0 8px; }
+
+        /* --- MATRIX AREA --- */
+        .matrix-wrapper {
+            flex: 1; overflow: auto; padding: 0; position: relative;
+            scrollbar-width: thin; scrollbar-color: #475569 #0f172a;
+        }
+        
+        table { border-collapse: separate; border-spacing: 0; font-size: 13px; min-width: 100%; }
+        
+        th, td { border: 1px solid var(--border); padding: 0; position: relative; }
+
+        /* Editable Inputs inside cells */
+        .editable {
+            width: 100%; height: 100%; background: transparent; border: none; color: inherit;
+            padding: 8px; box-sizing: border-box; font-family: inherit; font-size: inherit; text-align: inherit;
+        }
+        .editable:focus { outline: 2px solid var(--primary); background: #0f172a; }
+
+        /* STICKY COLUMNS/ROWS */
+        thead { position: sticky; top: 0; z-index: 10; }
+        
+        .cause-head {
+            background: #0f172a; color: var(--text-muted); font-size: 11px; text-transform: uppercase; 
+            padding: 8px; border-bottom: 2px solid var(--border); z-index: 20;
+        }
+        
+        /* Sticky Left Columns */
+        .sticky-col { position: sticky; left: 0; background: var(--cause-bg); z-index: 5; border-right: 1px solid var(--border); }
+        .sticky-col:nth-child(2) { left: 50px; }
+        .sticky-col:nth-child(3) { left: 160px; border-right: 2px solid var(--accent); }
+        
+        thead .sticky-col { z-index: 30; background: #0f172a; } /* Top-Left Corner */
+
+        /* Rotated Effect Headers */
+        .effect-head {
+            height: 160px; vertical-align: bottom; background: var(--effect-bg); border-bottom: 2px solid var(--accent); min-width: 40px;
+        }
+        .rot-text {
+            writing-mode: vertical-rl; transform: rotate(180deg); white-space: nowrap; 
+            padding: 10px 5px; text-align: left; width: 30px; margin: 0 auto;
+        }
+        
+        /* Logic Cells */
+        td.cell {
+            width: 40px; height: 35px; text-align: center; cursor: pointer; 
+            background: #151e2e; font-weight: 700; font-size: 14px; transition: 0.1s;
+        }
+        td.cell:hover { background: #334155; }
+
+        /* Logic States */
+        td.cell[data-val="X"] { background: var(--trip); color: white; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.2); }
+        td.cell[data-val="A"] { background: var(--alarm); color: black; }
+        td.cell[data-val="T"] { background: var(--delay); color: white; }
+        td.cell[data-val="R"] { background: var(--reset); color: white; }
+
+        /* Simulation Highlight */
+        .sim-active { background: rgba(14, 165, 233, 0.2) !important; border-top: 1px solid var(--primary); border-bottom: 1px solid var(--primary); }
+        .sim-triggered { border: 2px solid var(--trip) !important; animation: pulse 1s infinite; }
+        
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
+
+        /* --- FOOTER --- */
+        .footer {
+            height: 35px; background: var(--panel); border-top: 1px solid var(--border); display: flex; align-items: center; padding: 0 15px; font-size: 12px; color: var(--text-muted); justify-content: space-between;
+        }
+
+        /* --- MODALS --- */
+        .modal-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(0,0,0,0.7); backdrop-filter: blur(4px); z-index: 100;
+            justify-content: center; align-items: center;
+        }
+        .modal {
+            background: var(--panel); border: 1px solid var(--border); border-radius: 12px; 
+            width: 500px; padding: 24px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5);
+            animation: slideIn 0.3s ease;
+        }
+        @keyframes slideIn { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+        .modal h2 { margin-top: 0; color: white; font-size: 18px; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
+        
+        .template-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px;
+        }
+        .template-card {
+            background: #0f172a; padding: 10px; border: 1px solid var(--border); border-radius: 6px; cursor: pointer; transition: 0.2s;
+        }
+        .template-card:hover { border-color: var(--primary); background: #1e293b; }
+        .template-tag { font-weight: bold; color: var(--accent); font-size: 12px; }
+        .template-desc { font-size: 11px; color: var(--text-muted); }
+
+        /* Toast Notification */
+        #toast {
+            position: fixed; bottom: 50px; right: 20px; background: var(--primary); color: white; padding: 10px 20px; border-radius: 6px; display: none; z-index: 200; box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+
+        /* Context Menu (Optional style for future) */
+        .del-btn { color: #ef4444; cursor: pointer; padding: 0 5px; }
+        .del-btn:hover { color: #ffadad; }
+        /* Dasselbe fuer eine Wirkungs-Spalte. Die Ueberschrift steht senkrecht,
+           der Knopf bleibt waagerecht darueber, damit er zu treffen ist. */
+        .del-spalte {
+            display: block; text-align: center; color: #ef4444; cursor: pointer;
+            font-size: 14px; line-height: 1; padding: 4px 0;
+        }
+        .del-spalte:hover { color: #ffadad; }
+
+    </style>
+<!-- Ein Aussehen fuer alle Werkzeuge. Steht direkt hinter dem letzten
+     <style> dieses Werkzeugs: spaeter in der Reihenfolge, also gewinnt
+     es bei gleicher Spezifitaet - aber so frueh wie moeglich, damit die
+     Seite nicht erst in der alten Farbe erscheint und dann umfaerbt.
+     Am Ende des <body> geladen war genau das zu sehen: Knoepfe mit
+     transition faerbten sichtbar um. Faerbt nur, verschiebt nichts.
+     Siehe werkzeug-stil.css. -->
+<link rel="stylesheet" href="werkzeug-stil.css">
+<!-- Sprachumschaltung Deutsch / Persisch / Englisch. Was nicht im
+     Woerterbuch steht, bleibt Deutsch. Siehe uebersetzung.js. -->
+<script src="woerter.js"></script>
+<script src="woerter/Cause_Effect.js"></script>
+<script src="uebersetzung.js"></script>
+
+</head>
+<body>
+
+<div class="ki-topbar" role="navigation" aria-label="KI Engineering Topbar">
+  <div class="ki-title" title="Cause &amp; Effect Matrix">
+    <span class="ki-dot"></span>
+    <span>Cause &amp; Effect Matrix</span>
+  </div>
+  <div class="ki-actions">
+    <button class="ki-iconbtn" type="button" onclick="KI_OpenInfo()" title="Info / Anleitung">
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 17v-6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M12 7.5h.01" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><path d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" stroke="currentColor" stroke-width="1.8"/></svg>
+      <span class="ki-label">Info</span>
+    </button>
+    <a class="ki-iconbtn" href="dashboard/" title="Zurück zum KI-Engineering Dashboard">
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5v10a1.5 1.5 0 0 1-1.5 1.5H15a1 1 0 0 1-1-1v-5H10v5a1 1 0 0 1-1 1H4.5A1.5 1.5 0 0 1 3 20.5v-10Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+      <span class="ki-label">Home</span>
+    </a>
+  </div>
+</div>
+
+<header>
+        <div style="display:flex; align-items:center; gap:20px;">
+            <!-- BACK BUTTON REMOVED AS REQUESTED -->
+            <div class="brand"><i class="fas fa-network-wired"></i> C&E Matrix Pro <span style="font-size:10px; color:#666; font-weight:normal; margin-left:10px;">v2.0</span></div>
+        </div>
+        <div id="statusInfo" style="font-size:12px; color:var(--text-muted);">Projekt: Unbenannt</div>
+    </header>
+
+    <div class="toolbar">
+        <button class="btn btn-primary" onclick="openTemplateModal('cause')"><i class="fas fa-plus-circle"></i> Ursache (Cause)</button>
+        <button class="btn btn-primary" onclick="openTemplateModal('effect')"><i class="fas fa-plus-circle"></i> Wirkung (Effect)</button>
+        
+        <div class="divider"></div>
+        
+        <button class="btn" onclick="toggleSimMode()" id="btnSim"><i class="fas fa-play"></i> Testen</button>
+        <button class="btn" onclick="clearMatrix()"><i class="fas fa-trash-alt"></i> Reset</button>
+        
+        <div style="flex:1;"></div>
+
+        <div class="btn btn-file btn-warning">
+            <i class="fas fa-file-import"></i> Excel Import
+            <input type="file" id="importFile" onchange="importExcel(this)" accept=".xlsx, .xls">
+        </div>
+        <button class="btn btn-success" onclick="exportExcel()"><i class="fas fa-file-export"></i> Export</button>
+    </div>
+
+    <div class="matrix-wrapper">
+        <table id="ceTable">
+            <thead>
+                <tr id="headerRow">
+                    <th class="cause-head sticky-col" style="width:50px;">ID</th>
+                    <th class="cause-head sticky-col" style="width:110px;">Tag</th>
+                    <th class="cause-head sticky-col" style="width:300px;">Beschreibung</th>
+                    <!-- Dynamic Effect Headers -->
+                </tr>
+            </thead>
+            <tbody id="tableBody">
+                <!-- Dynamic Rows -->
+            </tbody>
+        </table>
+    </div>
+
+    <div class="footer">
+        <span id="logicDisplay">System bereit.</span>
+        <span><i class="fas fa-info-circle"></i> Klicken Sie in Zellen, um Logik zu setzen (X, A, T, R). Texte sind editierbar.</span>
+    </div>
+
+    <!-- TEMPLATE MODAL -->
+    <div id="templateModal" class="modal-overlay" onclick="if(event.target===this) closeModal()">
+        <div class="modal">
+            <h2 id="modalTitle">Element hinzufügen</h2>
+            
+            <label style="font-size:12px; color:#aaa; margin-bottom:5px; display:block;">Manuelle Eingabe:</label>
+            <div style="display:flex; gap:10px; margin-bottom:20px;">
+                <input type="text" id="inpTag" class="editable" style="border:1px solid #444; flex:1;" placeholder="Tag (z.B. PIT-001)">
+                <input type="text" id="inpDesc" class="editable" style="border:1px solid #444; flex:2;" placeholder="Beschreibung">
+                <button class="btn btn-primary" onclick="addManualItem()">OK</button>
+            </div>
+
+            <label id="lblVorlagen" style="font-size:12px; color:#aaa; margin-bottom:5px; display:block;">Oder Vorlage wählen:</label>
+            <div class="template-grid" id="templateGrid">
+                <!-- Templates injected via JS -->
+            </div>
+
+            <div style="text-align:right; margin-top:10px;">
+                <button class="btn" onclick="closeModal()">Schließen</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast">Aktion erfolgreich!</div>
+
+<script>
+    // --- APP STATE ---
+    let matrixData = {
+        causes: [
+            { id: 1, tag: 'LSHH-100', desc: 'Separator Level High High' },
+            { id: 2, tag: 'PSLL-200', desc: 'Gas Header Pressure Low Low' }
+        ],
+        effects: [
+            { id: 1, tag: 'XV-100', desc: 'Inlet SDV Close' },
+            { id: 2, tag: 'ESD', desc: 'Emergency Shutdown' }
+        ],
+        links: { '1-1': 'X', '1-2': 'A', '2-2': 'X' }
+    };
+
+    let currentMode = 'edit';
+    let modalType = ''; // 'cause' or 'effect'
+
+    // --- TEMPLATES LIBRARY ---
+    const templates = {
+        cause: [
+            { tag: 'ESD-PB', desc: 'Not-Aus Taster Feld' },
+            { tag: 'LSHH', desc: 'Füllstand Hoch-Hoch (Trip)' },
+            { tag: 'PSLL', desc: 'Druck Tief-Tief (Trip)' },
+            { tag: 'FSL', desc: 'Durchfluss niedrig' },
+            { tag: 'GDT', desc: 'Gasdetektion Zone 1' },
+            { tag: 'F&G', desc: 'Feuer & Gas System Trip' }
+        ],
+        effect: [
+            { tag: 'SDV', desc: 'Sicherheitsventil ZU' },
+            { tag: 'BDV', desc: 'Abblaseventil AUF' },
+            { tag: 'PUMP-TRIP', desc: 'Pumpe Stop' },
+            { tag: 'HORN', desc: 'Alarm Hupe' },
+            { tag: 'BEACON', desc: 'Blitzleuchte' },
+            { tag: 'ESD', desc: 'Anlagen-Notabschaltung' }
+        ]
+    };
+
+    // --- INITIALIZATION ---
+    window.onload = function() {
+        renderMatrix();
+        showToast('Willkommen im Matrix Manager Pro');
+    };
+
+    // --- CORE RENDERING ---
+    function renderMatrix() {
+        const headerRow = document.getElementById('headerRow');
+        const tbody = document.getElementById('tableBody');
+
+        // Cleanup: Keep first 3 headers
+        while (headerRow.children.length > 3) headerRow.removeChild(headerRow.lastChild);
+        tbody.innerHTML = '';
+
+        // 1. Render Effect Columns
+        matrixData.effects.forEach((eff, index) => {
+            const th = document.createElement('th');
+            th.className = 'effect-head';
+
+            // Gebaut, nicht zusammengeklebt. Vorher stand hier eine Vorlage mit
+            // ${eff.tag} mitten im innerHTML: ein Tag mit Anfuehrungszeichen -
+            // PSH-"A" - brach das Attribut auf und kam als PSH- auf den Schirm,
+            // waehrend matrixData und der Excel-Export den vollen Text behielten.
+            // Bildschirm und Datei sagten Verschiedenes.
+            const wegSpalte = document.createElement('span');
+            wegSpalte.className = 'del-spalte';
+            wegSpalte.textContent = '\u00D7';
+            wegSpalte.title = 'Löschen';
+            wegSpalte.onclick = (e) => { e.stopPropagation(); deleteEffect(index); };
+            th.appendChild(wegSpalte);
+
+            const dreh = document.createElement('div');
+            dreh.className = 'rot-text';
+            const kopfTag = document.createElement('span');
+            kopfTag.style.cssText = 'color:var(--accent); font-weight:bold;';
+            kopfTag.textContent = eff.tag;
+            const kopfDesc = document.createElement('span');
+            kopfDesc.style.color = '#888';
+            kopfDesc.textContent = eff.desc;
+            dreh.appendChild(kopfTag);
+            dreh.appendChild(document.createElement('br'));
+            dreh.appendChild(kopfDesc);
+            th.appendChild(dreh);
+
+            th.title = eff.tag + ': ' + eff.desc;
+            th.ondblclick = () => editItem('effect', index);
+            headerRow.appendChild(th);
+        });
+
+        // 2. Render Cause Rows
+        matrixData.causes.forEach((cause, rIndex) => {
+            const tr = document.createElement('tr');
+            tr.dataset.causeId = cause.id;
+
+            // Auch hier gebaut statt zusammengeklebt, aus demselben Grund wie
+            // oben: value="${cause.tag}" verlor alles ab dem ersten
+            // Anfuehrungszeichen.
+            const tdId = document.createElement('td');
+            tdId.className = 'sticky-col';
+            tdId.style.cssText = 'text-align:center; color:#555;';
+            tdId.appendChild(document.createTextNode(cause.id + ' '));
+            const wegZeile = document.createElement('i');
+            wegZeile.className = 'fas fa-times del-btn';
+            wegZeile.title = 'Löschen';
+            wegZeile.onclick = () => deleteRow(rIndex);
+            tdId.appendChild(wegZeile);
+            tr.appendChild(tdId);
+
+            const metaFeld = (wert, feldName) => {
+                const td = document.createElement('td');
+                td.className = 'sticky-col';
+                const inp = document.createElement('input');
+                inp.className = 'editable';
+                inp.value = wert;
+                inp.onchange = () => updateData('cause', rIndex, feldName, inp.value);
+                td.appendChild(inp);
+                return td;
+            };
+            tr.appendChild(metaFeld(cause.tag, 'tag'));
+            tr.appendChild(metaFeld(cause.desc, 'desc'));
+
+            // Interaction Cells
+            matrixData.effects.forEach(eff => {
+                const td = document.createElement('td');
+                td.className = 'cell';
+                const key = `${cause.id}-${eff.id}`;
+                const val = matrixData.links[key];
+                
+                if (val) {
+                    td.dataset.val = val;
+                    td.innerText = val;
+                }
+
+                td.onclick = () => handleCellClick(td, cause, eff);
+                tr.appendChild(td);
+            });
+
+            tr.onclick = (e) => {
+                if(currentMode === 'sim' && !e.target.classList.contains('cell')) simulate(cause.id);
+            };
+
+            tbody.appendChild(tr);
+        });
+    }
+
+    // --- DATA HANDLING ---
+    function updateData(type, index, field, value) {
+        if(type === 'cause') {
+            matrixData.causes[index][field] = value;
+        } else {
+            // Header editing is tricky with rotated text, simplified here
+             matrixData.effects[index][field] = value;
+             renderMatrix();
+        }
+    }
+
+    function deleteRow(index) {
+        if(confirm('Ursache löschen?')) {
+            const id = matrixData.causes[index].id;
+            // cleanup links
+            Object.keys(matrixData.links).forEach(k => {
+                if(k.startsWith(id + '-')) delete matrixData.links[k];
+            });
+            matrixData.causes.splice(index, 1);
+            renderMatrix();
+        }
+    }
+
+    // Eine Wirkung liess sich bisher gar nicht entfernen. Es gab keinen Knopf
+    // und keine Funktion - wer eine Spalte falsch angelegt hatte, musste die
+    // ganze Matrix leeren. Der Schluessel einer Verknuepfung ist
+    // "Ursache-Wirkung"; beim Loeschen muss der hintere Teil weg.
+    function deleteEffect(index) {
+        const eff = matrixData.effects[index];
+        if (!eff) return;
+        if (!confirm('Wirkung löschen?')) return;
+        Object.keys(matrixData.links).forEach(k => {
+            if (k.split('-')[1] === String(eff.id)) delete matrixData.links[k];
+        });
+        matrixData.effects.splice(index, 1);
+        renderMatrix();
+    }
+
+    // --- LOGIC INTERACTION ---
+    const states = ['', 'X', 'A', 'T', 'R'];
+
+    function handleCellClick(td, cause, eff) {
+        if(currentMode === 'sim') return;
+
+        let currentVal = td.dataset.val || '';
+        let nextIdx = (states.indexOf(currentVal) + 1) % states.length;
+        let nextVal = states[nextIdx];
+
+        const key = `${cause.id}-${eff.id}`;
+        
+        if(nextVal) {
+            td.dataset.val = nextVal;
+            td.innerText = nextVal;
+            matrixData.links[key] = nextVal;
+        } else {
+            delete td.dataset.val;
+            td.innerText = '';
+            delete matrixData.links[key];
+        }
+        
+        const actionMap = {'X':'TRIP', 'A':'ALARM', 'T':'DELAY', 'R':'RESET'};
+        document.getElementById('logicDisplay').innerText = nextVal 
+            ? `Logik gesetzt: ${cause.tag} -> ${actionMap[nextVal]} -> ${eff.tag}`
+            : `Logik gelöscht`;
+    }
+
+    // --- TEMPLATE & MODAL SYSTEM ---
+    // null heisst anlegen, eine Zahl heisst: diese Zeile oder Spalte aendern.
+    let bearbeitetIndex = null;
+
+    function vorlagenZeigen(sichtbar) {
+        const lbl = document.getElementById('lblVorlagen');
+        const grid = document.getElementById('templateGrid');
+        if (lbl) lbl.style.display = sichtbar ? 'block' : 'none';
+        if (grid) grid.style.display = sichtbar ? '' : 'none';
+    }
+
+    // Ein Doppelklick auf eine Spaltenueberschrift rief editItem auf. Die
+    // Funktion gab es nicht: die Konsole meldete "editItem is not defined",
+    // und der Nutzer sah gar nichts. Eine Wirkung war damit nicht zu aendern.
+    function editItem(type, index) {
+        const liste = (type === 'cause') ? matrixData.causes : matrixData.effects;
+        const el = liste[index];
+        if (!el) return;
+        modalType = type;
+        bearbeitetIndex = index;
+        document.getElementById('modalTitle').innerText =
+            (type === 'cause' ? 'Ursache' : 'Wirkung') + ' bearbeiten';
+        document.getElementById('inpTag').value = el.tag;
+        document.getElementById('inpDesc').value = el.desc;
+        vorlagenZeigen(false);
+        document.getElementById('templateModal').style.display = 'flex';
+        document.getElementById('inpTag').focus();
+    }
+
+    function openTemplateModal(type) {
+        modalType = type;
+        bearbeitetIndex = null;
+        vorlagenZeigen(true);
+        document.getElementById('modalTitle').innerText = (type === 'cause' ? 'Ursache' : 'Wirkung') + ' hinzufügen';
+        document.getElementById('inpTag').value = '';
+        document.getElementById('inpDesc').value = '';
+        
+        const grid = document.getElementById('templateGrid');
+        grid.innerHTML = '';
+        
+        templates[type].forEach(tmpl => {
+            const card = document.createElement('div');
+            card.className = 'template-card';
+            card.innerHTML = `<div class="template-tag">${tmpl.tag}</div><div class="template-desc">${tmpl.desc}</div>`;
+            card.onclick = () => {
+                addItem(tmpl.tag, tmpl.desc);
+                closeModal();
+            };
+            grid.appendChild(card);
+        });
+
+        document.getElementById('templateModal').style.display = 'flex';
+        document.getElementById('inpTag').focus();
+    }
+
+    function addManualItem() {
+        const t = document.getElementById('inpTag').value;
+        const d = document.getElementById('inpDesc').value;
+        if (!t) return;
+        if (bearbeitetIndex === null) {
+            addItem(t, d);
+        } else {
+            const liste = (modalType === 'cause') ? matrixData.causes : matrixData.effects;
+            const el = liste[bearbeitetIndex];
+            if (el) { el.tag = t; el.desc = d; }
+            renderMatrix();
+            showToast('Element geändert');
+        }
+        closeModal();
+    }
+
+    function addItem(tag, desc) {
+        if(modalType === 'cause') {
+            const newId = matrixData.causes.length > 0 ? Math.max(...matrixData.causes.map(c => c.id)) + 1 : 1;
+            matrixData.causes.push({ id: newId, tag, desc });
+        } else {
+            const newId = matrixData.effects.length > 0 ? Math.max(...matrixData.effects.map(e => e.id)) + 1 : 1;
+            matrixData.effects.push({ id: newId, tag, desc });
+        }
+        renderMatrix();
+        showToast('Element hinzugefügt');
+    }
+
+    function closeModal() {
+        document.getElementById('templateModal').style.display = 'none';
+        bearbeitetIndex = null;
+        vorlagenZeigen(true);
+    }
+
+    // --- EXCEL IMPORT / EXPORT ---
+    function exportExcel() {
+        const wb = XLSX.utils.book_new();
+        
+        // Construct array for SheetJS
+        // Header
+        let header = ["ID", "Tag", "Description"];
+        matrixData.effects.forEach(e => header.push(`${e.tag} | ${e.desc}`)); // Combine for simple header
+        
+        let data = [header];
+        
+        matrixData.causes.forEach(c => {
+            let row = [c.id, c.tag, c.desc];
+            matrixData.effects.forEach(e => {
+                row.push(matrixData.links[`${c.id}-${e.id}`] || "");
+            });
+            data.push(row);
+        });
+
+        const ws = XLSX.utils.aoa_to_sheet(data);
+        
+        // Auto-width
+        const wscols = [{wch:5}, {wch:15}, {wch:40}];
+        ws['!cols'] = wscols;
+
+        XLSX.utils.book_append_sheet(wb, ws, "C&E Matrix");
+        XLSX.writeFile(wb, "Cause_Effect_Export.xlsx");
+        showToast("Export gestartet...");
+    }
+
+    function importExcel(input) {
+        const file = input.files[0];
+        if(!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, {type: 'array'});
+            const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+            const jsonData = XLSX.utils.sheet_to_json(firstSheet, {header: 1});
+
+            parseImportedData(jsonData);
+            input.value = ''; // Reset input
+        };
+        reader.readAsArrayBuffer(file);
+    }
+
+    function parseImportedData(data) {
+        if(data.length < 2) { alert("Datei scheint leer zu sein."); return; }
+
+        // Reset Data
+        matrixData = { causes: [], effects: [], links: {} };
+
+        // Parse Header (Row 0) for Effects
+        // Assuming Col 0=ID, 1=Tag, 2=Desc. Start checking effects from Col 3
+        const headerRow = data[0];
+        for(let i = 3; i < headerRow.length; i++) {
+            if(headerRow[i]) {
+                // Try to split "Tag | Desc" if generated by our export
+                let parts = headerRow[i].toString().split('|');
+                let tag = parts[0].trim();
+                let desc = parts[1] ? parts[1].trim() : "Imported Effect";
+                matrixData.effects.push({ id: i-2, tag, desc }); // ID based on col index logic
+            }
+        }
+
+        // Parse Rows for Causes and Links
+        for(let r = 1; r < data.length; r++) {
+            const row = data[r];
+            if(!row[0] && !row[1]) continue; // Skip empty rows
+
+            const causeId = parseInt(row[0]) || r;
+            const causeTag = row[1] || "UNK";
+            const causeDesc = row[2] || "";
+
+            matrixData.causes.push({ id: causeId, tag: causeTag, desc: causeDesc });
+
+            // Links
+            for(let c = 3; c < row.length; c++) {
+                if(row[c]) {
+                    // Match column index to effect ID
+                    // Effect at index 0 is at column 3. Eff ID = 1 corresponds to index 0 of effects array? 
+                    // Let's align IDs: Effect ID = (c - 2)
+                    const effId = c - 2;
+                    matrixData.links[`${causeId}-${effId}`] = row[c].toString().toUpperCase();
+                }
+            }
+        }
+
+        renderMatrix();
+        showToast("Import erfolgreich! " + matrixData.causes.length + " Zeilen geladen.");
+    }
+
+    // --- SIMULATION ---
+    function toggleSimMode() {
+        const btn = document.getElementById('btnSim');
+        if(currentMode === 'edit') {
+            currentMode = 'sim';
+            btn.classList.add('btn-warning');
+            btn.innerHTML = '<i class="fas fa-stop"></i> Stop';
+            document.getElementById('logicDisplay').innerText = "TEST-MODUS: Klicke auf eine Ursachen-Zeile.";
+            document.body.style.borderColor = "var(--trip)";
+        } else {
+            currentMode = 'edit';
+            btn.classList.remove('btn-warning');
+            btn.innerHTML = '<i class="fas fa-play"></i> Testen';
+            renderMatrix(); // Reset styles
+        }
+    }
+
+    function simulate(cId) {
+        // Clear old
+        document.querySelectorAll('tr').forEach(tr => tr.classList.remove('sim-active'));
+        document.querySelectorAll('.effect-head').forEach(th => th.style.background = '');
+
+        // Highlight Row
+        const row = document.querySelector(`tr[data-cause-id="${cId}"]`);
+        if(row) row.classList.add('sim-active');
+
+        // Find Outputs
+        let activeEffects = [];
+        matrixData.effects.forEach(eff => {
+            const val = matrixData.links[`${cId}-${eff.id}`];
+            if(val === 'X' || val === 'T') {
+                activeEffects.push(eff.tag);
+                // Highlight Header (Need to find index)
+                const headerIndex = matrixData.effects.indexOf(eff);
+                const headers = document.querySelectorAll('.effect-head');
+                if(headers[headerIndex]) headers[headerIndex].style.background = "rgba(239, 68, 68, 0.3)";
+            }
+        });
+
+        document.getElementById('logicDisplay').innerHTML = 
+            `Simuliert: <strong>ID ${cId}</strong> ausgelöst. <span style="color:var(--trip)">${activeEffects.length} Wirkungen aktiv.</span>`;
+    }
+
+    function clearMatrix() {
+        if(confirm("Alles zurücksetzen?")) {
+            matrixData = { causes: [], effects: [], links: {} };
+            renderMatrix();
+            showToast("Matrix geleert.");
+        }
+    }
+
+    // --- UTILS ---
+    function showToast(msg) {
+        const t = document.getElementById('toast');
+        t.innerText = msg;
+        t.style.display = 'block';
+        setTimeout(() => t.style.display = 'none', 3000);
+    }
+
+</script>
+
+<div id="kiInfoOverlay" class="ki-modal-overlay" onclick="if(event.target===this) KI_CloseInfo()" aria-hidden="true">
+  <div class="ki-modal" role="dialog" aria-modal="true" aria-label="Info">
+    <div class="ki-modal-head">
+      <h2>C&amp;E Matrix Pro | Anwendung & Formeln</h2>
+      <button class="ki-close" type="button" onclick="KI_CloseInfo()" title="Schließen">✕</button>
+    </div>
+    <div class="ki-modal-body">
+      
+<div class="ki-box">
+  <b>Anwendung dieser Seite:</b><br>
+  Dieses Tool dient zum Erstellen und Verwalten einer <b>C&E Matrix</b>: Definieren von <b>Ursachen (Cause)</b> und <b>Wirkungen (Effect)</b> sowie der Logik dazwischen.
+</div>
+
+<div class="ki-box">
+  <b>Nutzung:</b>
+  <ol style="margin:8px 0 0 18px;">
+    <li>Fügen Sie mit den Buttons <code>Ursache</code> und <code>Wirkung</code> neue Elemente hinzu (oder wählen Sie eine Vorlage).</li>
+    <li>Klicken Sie in der Tabelle auf die Zellen, um den Logik-Status zu ändern: <code>X → A → T → R → (leer)</code>.</li>
+    <li>Zum Testen aktivieren Sie <code>Testen</code> und klicken auf eine Ursachen-Zeile, um aktive Wirkungen hervorzuheben.</li>
+    <li>Datenaustausch: <code>Excel Import</code> und <code>Export</code>.</li>
+  </ol>
+</div>
+
+<div class="ki-box">
+  <b>Logik/Status (Code-Logik):</b>
+  <pre><code>States: ['', 'X', 'A', 'T', 'R']
+
+X = TRIP (Auslösung)
+A = ALARM
+T = DELAY (Verzögerung)
+R = RESET
+
+Link-Key:
+key = `${cause.id}-${eff.id}`
+matrixData.links[key] = state</code></pre>
+</div>
+
+<div class="ki-box">
+  <b>Datenstruktur (im File):</b>
+  <pre><code>matrixData = {
+  causes: [{id, tag, desc}, ...],
+  effects:[{id, tag, desc}, ...],
+  links:  {'causeId-effectId': 'X|A|T|R', ...}
+}</code></pre>
+</div>
+
+<div class="ki-box">
+  <b>Hinweis Excel Import/Export:</b><br>
+  Beim Export wird der Header der Effects-Spalte als <code>TAG | DESC</code> geschrieben.
+  Beim Import werden Effects ab Spalte 4 gelesen und Links aus den Zellinhalten extrahiert.
+</div>
+
+      <div class="ki-box">
+        <b>Dashboard Link (fix):</b> <code>dashboard/</code><br>
+        Falls der Browser bei <code>file:///</code> blockiert, öffnen Sie die Datei lokal und nicht über die Adressleiste per Copy-Paste.
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* === KI Topbar Modal Control (non-destructive) === */
+(function(){
+  function qs(sel){ return document.querySelector(sel); }
+  function openModal(){
+    var ov = qs('#kiInfoOverlay');
+    if(!ov) return;
+    ov.style.display = 'flex';
+    document.documentElement.style.overflow = 'hidden';
+  }
+  function closeModal(){
+    var ov = qs('#kiInfoOverlay');
+    if(!ov) return;
+    ov.style.display = 'none';
+    document.documentElement.style.overflow = '';
+  }
+  window.KI_OpenInfo = openModal;
+  window.KI_CloseInfo = closeModal;
+
+  document.addEventListener('keydown', function(e){
+    if(e.key === 'Escape') closeModal();
+  });
+})();
+</script>
+
+</body>
+</html>

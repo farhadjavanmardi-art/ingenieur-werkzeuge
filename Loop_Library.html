@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>ART ENVI - IEC Loop Designer (Final Fixed)</title>
+    <style>
+        body { font-family: 'Segoe UI', monospace; margin: 0; display: flex; height: 100vh; background: #2d3436; overflow: hidden; }
+        #toolbox { width: 260px; background: #1e272e; color: #d2dae2; padding: 15px; border-right: 2px solid #485460; display: flex; flex-direction: column; gap: 8px; z-index: 10; box-shadow: 4px 0 10px rgba(0,0,0,0.3); }
+        h2 { text-align: center; color: #0fbcf9; margin: 0 0 15px 0; border-bottom: 2px solid #0fbcf9; padding-bottom: 10px; font-size: 16px; }
+        .tool-btn { background: #2d3436; border: 1px solid #485460; color: #d2dae2; padding: 10px; cursor: pointer; border-radius: 4px; font-size: 13px; display: flex; justify-content: space-between; transition: 0.2s; align-items: center; }
+        .tool-btn:hover { background: #485460; border-color: #0fbcf9; color: #fff; }
+        .tool-btn span { color: #ffa801; font-weight: bold; font-size: 10px; background: #333; padding: 2px 6px; border-radius: 4px; }
+        #workspace { flex-grow: 1; position: relative; background: #fff; background-image: linear-gradient(#e1e1e1 1px, transparent 1px), linear-gradient(90deg, #e1e1e1 1px, transparent 1px); background-size: 20px 20px; cursor: crosshair; }
+        svg { width: 100%; height: 100%; }
+        .component { cursor: grab; }
+        .component:active { cursor: grabbing; }
+        .wire-line { stroke: #2d3436; stroke-width: 2; fill: none; cursor: pointer; stroke-linecap: round; }
+        .wire-line:hover { stroke: #0fbcf9; stroke-width: 4; }
+        .selected { stroke: #ff3f34 !important; stroke-dasharray: 5,5; }
+        .pin { fill: #fff; stroke: #d63031; stroke-width: 1px; cursor: crosshair; }
+        .pin:hover { fill: #0be881; r: 5px; }
+        .pin-label { font-size: 8px; fill: #636e72; pointer-events: none; }
+        #top-bar { position: absolute; top: 15px; left: 50%; transform: translateX(-50%); background: #2d3436; padding: 8px 20px; border-radius: 50px; display: flex; gap: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.4); z-index: 100; }
+        .btn-action { padding: 8px 20px; cursor: pointer; border: none; font-weight: bold; border-radius: 20px; font-size: 12px; color: white; display: flex; align-items: center; gap: 8px; }
+        .btn-mode.active { background: #0be881; color: #1e272e; }
+        .btn-mode { background: #485460; }
+        .btn-export { background: #0984e3; }
+        .btn-clear { background: #d63031; }
+        #notification { position: fixed; bottom: 20px; right: 20px; background: #2d3436; color: #fff; padding: 12px 25px; border-radius: 5px; border-left: 5px solid #0be881; transform: translateY(150px); transition: 0.3s; }
+        #notification.show { transform: translateY(0); }
+    
+        /* Added: home button linking back to main dashboard */
+        #home-dashboard {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #0f8b5c;
+            border: 2px solid #1bd18a;
+            border-radius: 12px;
+            text-decoration: none;
+            box-shadow: 0 6px 14px rgba(0,0,0,0.35);
+            z-index: 9999;
+        }
+        #home-dashboard svg { width: 22px; height: 22px; fill: #eafff5; }
+        #home-dashboard:hover { filter: brightness(1.08); }
+
+    </style>
+<!-- Ein Aussehen fuer alle Werkzeuge. Steht direkt hinter dem letzten
+     <style> dieses Werkzeugs: spaeter in der Reihenfolge, also gewinnt
+     es bei gleicher Spezifitaet - aber so frueh wie moeglich, damit die
+     Seite nicht erst in der alten Farbe erscheint und dann umfaerbt.
+     Am Ende des <body> geladen war genau das zu sehen: Knoepfe mit
+     transition faerbten sichtbar um. Faerbt nur, verschiebt nichts.
+     Siehe werkzeug-stil.css. -->
+<link rel="stylesheet" href="werkzeug-stil.css">
+<!-- Sprachumschaltung Deutsch / Persisch / Englisch. Was nicht im
+     Woerterbuch steht, bleibt Deutsch. Siehe uebersetzung.js. -->
+<script src="woerter.js"></script>
+<script src="woerter/Loop_Library.js"></script>
+<script src="uebersetzung.js"></script>
+
+</head>
+<body>
+
+<div id="toolbox">
+    <h2>ART ENVI <span style="font-size:10px; display:block; color:#aaa; margin-top:5px;">IEC 62424 DESIGNER</span></h2>
+    <button class="tool-btn" onclick="addComp('pt')">Pressure (PT) <span>P</span></button>
+    <button class="tool-btn" onclick="addComp('tt')">Temperature (TT) <span>T</span></button>
+    <button class="tool-btn" onclick="addComp('ft')">Flow (FT) <span>F</span></button>
+    <button class="tool-btn" onclick="addComp('lt')">Level (LT) <span>L</span></button>
+    <div style="height:1px; background:#444; margin:5px 0;"></div>
+    <button class="tool-btn" onclick="addComp('valve_control')">Control Valve <span>FCV</span></button>
+    <button class="tool-btn" onclick="addComp('valve_solenoid')">Solenoid Valve <span>SOV</span></button>
+    <button class="tool-btn" onclick="addComp('motor')">Motor <span>M</span></button>
+    <div style="height:1px; background:#444; margin:5px 0;"></div>
+    <button class="tool-btn" onclick="addComp('plc_ai')">PLC Card (AI) <span>AI</span></button>
+    <button class="tool-btn" onclick="addComp('junction')">Junction Box <span>JB</span></button>
+</div>
+
+<div id="workspace">
+
+    <a id="home-dashboard" href="dashboard/" title="Back to Dashboard" aria-label="Back to Dashboard">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 3l9 8h-3v9a1 1 0 0 1-1 1h-4v-6H11v6H7a1 1 0 0 1-1-1v-9H3l9-8z"/>
+        </svg>
+    </a>
+
+    <div id="top-bar">
+        <button id="btnMove" class="btn-action btn-mode active" onclick="setMode('move')">Move</button>
+        <button id="btnWire" class="btn-action btn-mode" onclick="setMode('wire')">Wire</button>
+        <div style="width:1px; background:#666;"></div>
+        <button class="btn-action btn-export" onclick="exportDXF()">Export DXF</button>
+        <button class="btn-action btn-clear" onclick="clearCanvas()">Clear</button>
+    </div>
+    <svg id="mainSvg" xmlns="http://www.w3.org/2000/svg">
+        <g id="layer-wires"></g>
+        <g id="layer-components"></g>
+    </svg>
+</div>
+
+<div id="notification">System Ready</div>
+
+<script>
+    const svgNS = "http://www.w3.org/2000/svg";
+    const layerComp = document.getElementById('layer-components');
+    const layerWires = document.getElementById('layer-wires');
+    const GRID = 20;
+    
+    let mode = 'move';
+    let selectedEl = null;
+    let wiringStart = null;
+    let offset = {x:0, y:0};
+    let dragTarget = null;
+
+    // Ein Text, der die Geraetebezeichnung traegt. Nur diese sind zu aendern -
+    // die Symbolbuchstaben (M im Motor, S in der Magnetspule) bleiben, wie sie
+    // nach IEC heissen.
+    function tagText(g, x, y, t, s, w) {
+        createText(g, x, y, t, s, "middle", w || "normal");
+        g.lastChild.setAttribute("data-tag", "1");
+    }
+
+    // --- Components ---
+    function addComp(type) {
+        const g = document.createElementNS(svgNS, "g");
+        g.setAttribute("transform", "translate(100,100)");
+        g.setAttribute("class", "component");
+        g.setAttribute("data-type", type);
+        
+        const pinGroup = document.createElementNS(svgNS, "g");
+        pinGroup.setAttribute("class", "pin-group");
+        pinGroup.style.opacity = "0"; // Hide pins initially
+
+        if(['pt','tt','ft','lt'].includes(type)) {
+            createCircle(g,0,0,20);
+            createLine(g,-20,0,20,0);
+            createText(g,0,-5,type.toUpperCase(),12,"middle","bold");
+            tagText(g,0,14,"1001",10);
+            createRect(g,22,-15,12,30,"#fff","#333",0.5);
+            addPin(pinGroup,28,-10,"+"); addPin(pinGroup,28,0,"-"); addPin(pinGroup,28,10,"S");
+        } 
+        else if(type === 'valve_control') {
+            createPolygon(g,"-15,-10 -15,10 15,-10 15,10");
+            createLine(g,0,0,0,-20);
+            createCircle(g,0,-23,10); // Using Circle for DXF safety instead of Ellipse
+            tagText(g,0,30,"FCV",10);
+            addPin(pinGroup,0,-33,"Air");
+        }
+        else if(type === 'valve_solenoid') {
+            createPolygon(g,"-15,-10 -15,10 15,-10 15,10");
+            createRect(g,-10,-25,20,15);
+            createText(g,0,-16,"S",10,"middle");
+            createRect(g,-12,-35,24,10,"#fff","#333",0.5);
+            tagText(g,0,26,"SV-1001",10);
+            addPin(pinGroup,-6,-30,"+"); addPin(pinGroup,6,-30,"-");
+        }
+        else if(type === 'motor') {
+            createCircle(g,0,0,18); createText(g,0,5,"M",14,"middle","bold");
+            createRect(g,-20,18,40,8,"#eee");
+            tagText(g,0,38,"M-1001",10);
+            addPin(pinGroup,-18,0,"L1");
+        }
+        else if(type.startsWith('plc')) {
+            createRect(g,-30,-50,60,100);
+            tagText(g,0,-40,type.toUpperCase(),10,"bold");
+            for(let i=0;i<3;i++) {
+                let y=-20+(i*30); createLine(g,-30,y+10,30,y+10,0.5,"2,2");
+                createText(g,-25,y+4,"CH"+(i+1),9,"start");
+                addPin(pinGroup,30,y-5,"+"); addPin(pinGroup,30,y+5,"-");
+            }
+        }
+        else if(type === 'junction') {
+            createRect(g,-20,-40,40,80); tagText(g,0,-30,"JB",12,"bold");
+            for(let i=0;i<3;i++) {
+                let y=-10+(i*20); createCircle(g,0,y,1.5,"black");
+                addPin(pinGroup,-20,y,"In"); addPin(pinGroup,20,y,"Out");
+            }
+        }
+
+        g.appendChild(pinGroup);
+        
+        // Hover effect for pins
+        g.addEventListener('mouseenter', () => pinGroup.style.opacity = "1");
+        g.addEventListener('mouseleave', () => pinGroup.style.opacity = "0");
+        
+        g.addEventListener('mousedown', startDrag);
+        g.addEventListener('click', (e) => { if(mode==='move'){e.stopPropagation(); select(g);} });
+        g.addEventListener('dblclick', (e) => { e.stopPropagation(); beschrifte(g); });
+        layerComp.appendChild(g);
+        notify("Added: " + type);
+    }
+
+    function addPin(p,x,y,lbl) {
+        const wrap = document.createElementNS(svgNS,"g");
+        const c = document.createElementNS(svgNS,"circle");
+        c.setAttribute("cx",x); c.setAttribute("cy",y); c.setAttribute("r",3.5); c.setAttribute("class","pin");
+        const t = document.createElementNS(svgNS,"text");
+        t.setAttribute("x",x<0?x+6:x-6); t.setAttribute("y",y+3); t.setAttribute("class","pin-label");
+        t.setAttribute("text-anchor",x<0?"start":"end"); t.textContent=lbl;
+        wrap.appendChild(t); wrap.appendChild(c);
+        c.addEventListener('click', (e) => { if(mode==='wire'){ e.stopPropagation(); handleWire(c, p.parentElement); }});
+        p.appendChild(wrap);
+    }
+
+    // --- Wiring ---
+    function handleWire(pin, parent) {
+        const pt = getCoord(pin, parent);
+        if(!wiringStart) {
+            wiringStart = pt;
+            const temp = document.createElementNS(svgNS,"line");
+            temp.id = "temp-wire";
+            temp.setAttribute("x1",pt.x); temp.setAttribute("y1",pt.y);
+            temp.setAttribute("x2",pt.x); temp.setAttribute("y2",pt.y);
+            temp.setAttribute("stroke","#0fbcf9"); temp.setAttribute("stroke-dasharray","4,2");
+            layerWires.appendChild(temp);
+            document.addEventListener('mousemove', moveTempWire);
+        } else {
+            createWire(wiringStart.x, wiringStart.y, pt.x, pt.y);
+            wiringStart = null;
+            document.getElementById('temp-wire').remove();
+            document.removeEventListener('mousemove', moveTempWire);
+        }
+    }
+
+    function moveTempWire(e) {
+        const r = document.getElementById('mainSvg').getBoundingClientRect();
+        const l = document.getElementById('temp-wire');
+        if(l) { l.setAttribute("x2", e.clientX-r.left); l.setAttribute("y2", e.clientY-r.top); }
+    }
+
+    function createWire(x1,y1,x2,y2) {
+        const l = document.createElementNS(svgNS,"line");
+        l.setAttribute("x1",x1); l.setAttribute("y1",y1); l.setAttribute("x2",x2); l.setAttribute("y2",y2);
+        l.setAttribute("class","wire-line");
+        l.addEventListener('click', (e)=>{if(mode==='move'){e.stopPropagation(); select(l);}});
+        layerWires.appendChild(l);
+    }
+
+    // --- Helpers ---
+    function getCoord(pin, parent) {
+        const tr = parent.getAttribute("transform");
+        // Robust Regex for translation
+        const m = tr.match(/translate\(\s*([\d.-]+)\s*[,\s]\s*([\d.-]+)\s*\)/);
+        const tx = m ? parseFloat(m[1]) : 0;
+        const ty = m ? parseFloat(m[2]) : 0;
+        return { x: parseFloat(pin.getAttribute("cx"))+tx, y: parseFloat(pin.getAttribute("cy"))+ty };
+    }
+
+    function createCircle(p,cx,cy,r,f="white",s="black") { const e=document.createElementNS(svgNS,"circle");e.setAttribute("cx",cx);e.setAttribute("cy",cy);e.setAttribute("r",r);e.setAttribute("stroke",s);e.setAttribute("stroke-width","1.5");e.setAttribute("fill",f);p.appendChild(e); }
+    function createRect(p,x,y,w,h,f="white",s="black",sw="1.5") { const e=document.createElementNS(svgNS,"rect");e.setAttribute("x",x);e.setAttribute("y",y);e.setAttribute("width",w);e.setAttribute("height",h);e.setAttribute("stroke",s);e.setAttribute("stroke-width",sw);e.setAttribute("fill",f);p.appendChild(e); }
+    function createLine(p,x1,y1,x2,y2,sw="1.5",dash="") { const e=document.createElementNS(svgNS,"line");e.setAttribute("x1",x1);e.setAttribute("y1",y1);e.setAttribute("x2",x2);e.setAttribute("y2",y2);e.setAttribute("stroke","black");e.setAttribute("stroke-width",sw);if(dash)e.setAttribute("stroke-dasharray",dash);p.appendChild(e); }
+    function createPolygon(p,pts) { const e=document.createElementNS(svgNS,"polygon");e.setAttribute("points",pts);e.setAttribute("stroke","black");e.setAttribute("stroke-width","1.5");e.setAttribute("fill","white");p.appendChild(e); }
+    function createText(p,x,y,t,s,a,w="normal") { const e=document.createElementNS(svgNS,"text");e.setAttribute("x",x);e.setAttribute("y",y);e.setAttribute("font-size",s);e.setAttribute("text-anchor",a);e.setAttribute("font-weight",w);e.textContent=t;p.appendChild(e); }
+
+    // --- Beschriften ---
+    // Die Verkaufsseite sagt: "Symbole setzen, Klemmen verbinden, beschriften,
+    // als DXF ausgeben." Beschriften ging nicht. Jeder Messumformer trug fest
+    // "1001", jedes Stellventil "FCV", Motor und Magnetventil gar keine
+    // Bezeichnung - und es gab keinen Weg, das zu aendern. Ein Loop-Blatt, auf
+    // dem alle Geraete gleich heissen, ist kein Loop-Blatt, und der DXF geht so
+    // in die Dokumentation.
+    //
+    // Ein Doppelklick auf das Symbol legt ein Eingabefeld genau ueber die
+    // Bezeichnung. Enter uebernimmt, Escape laesst alles, wie es war.
+    function beschrifte(g) {
+        const t = g.querySelector('[data-tag]');
+        if (!t || document.getElementById('tag-editor')) return;
+        const r = t.getBoundingClientRect();
+        const inp = document.createElement('input');
+        inp.id = 'tag-editor';
+        inp.value = t.textContent;
+        inp.style.cssText =
+            'position:fixed; z-index:9999; text-align:center; font:12px sans-serif;' +
+            'border:1px solid #0fbcf9; border-radius:3px; padding:1px 4px;' +
+            'left:' + (r.left - 14) + 'px; top:' + (r.top - 3) + 'px;' +
+            'width:' + Math.max(r.width + 28, 80) + 'px;';
+        // Nur einmal. Das Entfernen loest selbst ein blur aus, und das blur
+        // uebernimmt - ohne diese Sperre hat Escape den verworfenen Text
+        // ueber den Umweg blur doch noch geschrieben.
+        let erledigt = false;
+        const fertig = (uebernehmen) => {
+            if (erledigt) return;
+            erledigt = true;
+            if (uebernehmen && inp.value.trim()) t.textContent = inp.value.trim();
+            inp.remove();
+        };
+        // Ohne stopPropagation sieht der Fenster-Horcher die Taste mit: ein
+        // Backspace im Eingabefeld haette das Symbol geloescht, das man gerade
+        // beschriftet.
+        inp.addEventListener('keydown', (e) => {
+            e.stopPropagation();
+            if (e.key === 'Enter') fertig(true);
+            if (e.key === 'Escape') fertig(false);
+        });
+        inp.addEventListener('blur', () => fertig(true));
+        document.body.appendChild(inp);
+        inp.focus();
+        inp.select();
+    }
+
+    // Das Verdrahten sauber abbrechen. Vorher blieb bei Escape der gestrichelte
+    // Faden am Mauszeiger haengen und wiringStart gesetzt: der naechste Klick
+    // auf einen Anschluss zog eine Leitung von einem Punkt, den niemand mehr
+    // sah. clearCanvas loeschte den Faden, liess aber denselben Rest zurueck.
+    function verdrahtenAbbrechen() {
+        wiringStart = null;
+        const t = document.getElementById('temp-wire');
+        if (t) t.remove();
+        document.removeEventListener('mousemove', moveTempWire);
+    }
+
+    // --- Interaction ---
+    function startDrag(e) {
+        if(e.button!==0 || mode!=='move') return;
+        dragTarget = e.target.closest('.component');
+        const m = dragTarget.getAttribute("transform").match(/translate\(\s*([\d.-]+)\s*[,\s]\s*([\d.-]+)\s*\)/);
+        offset.x = e.clientX - (m ? parseFloat(m[1]) : 0);
+        offset.y = e.clientY - (m ? parseFloat(m[2]) : 0);
+        window.addEventListener('mousemove', onDrag);
+        window.addEventListener('mouseup', endDrag);
+    }
+    function onDrag(e) {
+        if(!dragTarget) return;
+        e.preventDefault();
+        const rx = e.clientX - offset.x;
+        const ry = e.clientY - offset.y;
+        dragTarget.setAttribute("transform", `translate(${Math.round(rx/GRID)*GRID}, ${Math.round(ry/GRID)*GRID})`);
+    }
+    function endDrag() { dragTarget=null; window.removeEventListener('mousemove',onDrag); window.removeEventListener('mouseup',endDrag); }
+    function select(el) { if(selectedEl) selectedEl.classList.remove('selected'); selectedEl=el; el.classList.add('selected'); }
+    function setMode(m) { verdrahtenAbbrechen(); mode=m; document.querySelectorAll('.btn-mode').forEach(b=>b.classList.remove('active')); document.getElementById(m==='move'?'btnMove':'btnWire').classList.add('active'); notify("Mode: "+m); }
+    function clearCanvas() { if(confirm("Clear All?")) { verdrahtenAbbrechen(); layerComp.innerHTML=''; layerWires.innerHTML=''; selectedEl=null; } }
+    function notify(msg) { const n=document.getElementById('notification'); n.textContent=msg; n.classList.add('show'); setTimeout(()=>n.classList.remove('show'),3000); }
+    
+    window.addEventListener('keydown', (e)=>{ if((e.key==='Delete'||e.key==='Backspace')&&selectedEl){selectedEl.remove(); selectedEl=null;} if(e.key==='Escape') setMode('move'); });
+
+    // --- FIXED DXF ENGINE (THE CORE FIX) ---
+    function exportDXF() {
+        try {
+            let dxf = [];
+            // Header for compatibility
+            dxf.push("0", "SECTION", "2", "HEADER", "9", "$ACADVER", "1", "AC1009", "0", "ENDSEC");
+            dxf.push("0", "SECTION", "2", "ENTITIES");
+
+            let entityCount = 0;
+
+            const addLine = (x1,y1,x2,y2, layer="0") => {
+                if(isNaN(x1) || isNaN(y1) || isNaN(x2) || isNaN(y2)) return; // CRITICAL CHECK
+                dxf.push("0","LINE", "8",layer, "10",x1.toFixed(3), "20",(-y1).toFixed(3), "11",x2.toFixed(3), "21",(-y2).toFixed(3));
+                entityCount++;
+            };
+
+            // 1. Wires
+            document.querySelectorAll(".wire-line").forEach(w => {
+                addLine(parseFloat(w.getAttribute("x1")), parseFloat(w.getAttribute("y1")), 
+                        parseFloat(w.getAttribute("x2")), parseFloat(w.getAttribute("y2")), "WIRING");
+            });
+
+            // 2. Components
+            document.querySelectorAll(".component").forEach(g => {
+                const tr = g.getAttribute("transform");
+                // The fix: Allow flexible regex for SVG transform
+                const m = tr.match(/translate\(\s*([\d.-]+)\s*[,\s]\s*([\d.-]+)\s*\)/);
+                if(!m) return;
+                const tx = parseFloat(m[1]);
+                const ty = parseFloat(m[2]);
+
+                // Lines inside component
+                g.querySelectorAll("line").forEach(l => {
+                    addLine(parseFloat(l.getAttribute("x1"))+tx, parseFloat(l.getAttribute("y1"))+ty,
+                            parseFloat(l.getAttribute("x2"))+tx, parseFloat(l.getAttribute("y2"))+ty, "SYMBOLS");
+                });
+
+                // Rects (converted to 4 lines)
+                g.querySelectorAll("rect").forEach(r => {
+                    let x=parseFloat(r.getAttribute("x"))+tx, y=parseFloat(r.getAttribute("y"))+ty;
+                    let w=parseFloat(r.getAttribute("width")), h=parseFloat(r.getAttribute("height"));
+                    addLine(x,y,x+w,y,"SYMBOLS"); addLine(x+w,y,x+w,y+h,"SYMBOLS");
+                    addLine(x+w,y+h,x,y+h,"SYMBOLS"); addLine(x,y+h,x,y,"SYMBOLS");
+                });
+
+                // Polygons (valves)
+                g.querySelectorAll("polygon").forEach(p => {
+                    // Safe split for points (handles commas AND spaces)
+                    const pts = p.getAttribute("points").trim().split(/[\s,]+/);
+                    for(let i=0; i<pts.length; i+=2) {
+                        if(i+1 >= pts.length) break;
+                        let x1 = parseFloat(pts[i])+tx;
+                        let y1 = parseFloat(pts[i+1])+ty;
+                        let x2 = (i+2 < pts.length) ? parseFloat(pts[i+2])+tx : parseFloat(pts[0])+tx;
+                        let y2 = (i+3 < pts.length) ? parseFloat(pts[i+3])+ty : parseFloat(pts[1])+ty;
+                        addLine(x1,y1,x2,y2,"SYMBOLS");
+                    }
+                });
+
+                // Circles (Instruments)
+                g.querySelectorAll("circle").forEach(c => {
+                    if(c.classList.contains('pin')) return;
+                    let cx = parseFloat(c.getAttribute("cx"))+tx;
+                    let cy = parseFloat(c.getAttribute("cy"))+ty;
+                    let r = parseFloat(c.getAttribute("r"));
+                    if(isNaN(cx) || isNaN(cy)) return;
+                    dxf.push("0","CIRCLE","8","SYMBOLS","10",cx.toFixed(3),"20",(-cy).toFixed(3),"40",r.toFixed(3));
+                    entityCount++;
+                });
+
+                // Text
+                g.querySelectorAll("text").forEach(t => {
+                    if(t.classList.contains('pin-label')) return;
+                    let x = parseFloat(t.getAttribute("x"))+tx;
+                    let y = parseFloat(t.getAttribute("y"))+ty;
+                    let txt = t.textContent;
+                    let h = parseFloat(t.getAttribute("font-size")) || 10;
+                    if(isNaN(x) || isNaN(y)) return;
+                    dxf.push("0","TEXT","8","SYMBOLS","10",x.toFixed(3),"20",(-y).toFixed(3),"40",h.toFixed(3),"1",txt);
+                    entityCount++;
+                });
+            });
+
+            dxf.push("0", "ENDSEC");
+            dxf.push("0", "EOF");
+
+            if(entityCount === 0) {
+                alert("Canvas is empty! Draw something first.");
+                return;
+            }
+
+            const blob = new Blob([dxf.join("\r\n")], {type: 'application/dxf'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = "IEC_Loop_Design.dxf";
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            notify("DXF Exported Successfully");
+
+        } catch(e) {
+            alert("Export Error: " + e.message);
+        }
+    }
+</script>
+</body>
+</html>

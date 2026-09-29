@@ -1,0 +1,1091 @@
+<!-- FILE: Load.html -->
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ART ENVI | Load Master</title>
+    <link rel="stylesheet" href="bibliotheken/fontawesome/css/all.min.css">
+    <script src="bibliotheken/xlsx.full.min.js"></script>
+
+    <style>
+        :root {
+            /* Dashboard Theme Colors */
+            --bg: #121212;
+            --panel: #0a0a0a;
+            --border: #333;
+            --text: #ecf0f1;
+            --card: #1e272e;
+            
+            /* Domain Colors */
+            --primary: #ff9800; /* Orange for Trafo */
+            --motor: #2979ff;   /* Blue for Motors */
+            --heat: #ff5252;    /* Red for Heaters */
+            
+            --success: #00e676;
+            --accent: #00d2d3; /* General Accent */
+        }
+
+        body { margin: 0; padding: 0; background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+
+        /* HEADER */
+        header { 
+            display: flex; justify-content: space-between; align-items: center; 
+            margin-bottom: 20px; border-bottom: 2px solid var(--primary); padding-bottom: 15px; 
+        }
+        
+        .header-left { display: flex; align-items: center; gap: 20px; }
+        
+        .brand h1 { margin: 0; font-size: 24px; color: var(--primary); text-transform: uppercase; letter-spacing: 1px; }
+        .brand span { color: #fff; font-size: 14px; opacity: 0.7; font-weight: normal; margin-left: 10px; }
+
+        /* TABS */
+        .tabs { display: flex; gap: 10px; margin-bottom: 25px; }
+        .tab-btn {
+            flex: 1; padding: 15px; cursor: pointer; background: #1a1a1a; border: 1px solid var(--border);
+            color: #aaa; font-weight: bold; border-radius: 8px; text-align: center; transition: 0.3s;
+            display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 14px;
+        }
+        .tab-btn:hover { background: #252525; color: #fff; }
+        .tab-btn.active-trafo { background: rgba(255, 152, 0, 0.15); border-color: var(--primary); color: var(--primary); box-shadow: 0 0 15px rgba(255, 152, 0, 0.1); }
+        .tab-btn.active-motor { background: rgba(41, 121, 255, 0.15); border-color: var(--motor); color: var(--motor); box-shadow: 0 0 15px rgba(41, 121, 255, 0.1); }
+        .tab-btn.active-heat { background: rgba(255, 82, 82, 0.15); border-color: var(--heat); color: var(--heat); box-shadow: 0 0 15px rgba(255, 82, 82, 0.1); }
+
+        /* SECTIONS */
+        .section { display: none; animation: fadeIn 0.4s; }
+        .section.active { display: block; }
+        @keyframes fadeIn { from {opacity:0; transform: translateY(10px);} to {opacity:1; transform: translateY(0);} }
+
+        /* GRID & CARDS */
+        .grid-main { display: grid; grid-template-columns: 1fr 1.2fr; gap: 25px; }
+        @media(max-width: 800px) { .grid-main { grid-template-columns: 1fr; } }
+
+        .card { background: var(--card); border-radius: 12px; padding: 25px; border: 1px solid var(--border); box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+        .card h3 { margin-top: 0; font-size: 18px; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
+
+        /* INPUTS */
+        .input-group { margin-bottom: 15px; }
+        label { display: block; font-size: 11px; margin-bottom: 5px; color: #aaa; text-transform: uppercase; letter-spacing: 0.5px; }
+        input, select { 
+            width: 100%; padding: 10px; background: #121212; border: 1px solid #444; color: #fff; border-radius: 6px; box-sizing: border-box; transition: 0.3s;
+        }
+        input:focus, select:focus { outline: none; border-color: #fff; }
+
+        /* BUTTONS */
+        .btn-calc { width: 100%; padding: 12px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 15px; font-size: 15px; transition:0.3s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .btn-trafo { background: var(--primary); color: #000; }
+        .btn-motor { background: var(--motor); color: #fff; }
+        .btn-heat { background: var(--heat); color: #fff; }
+        .btn-calc:hover { transform: translateY(-2px); filter: brightness(1.2); }
+
+        /* RESULTS */
+        .result-box {
+            text-align: center; padding: 20px; background: rgba(255,255,255,0.03); border-radius: 8px; margin-bottom: 25px; border: 1px solid var(--border);
+        }
+        .res-main { font-size: 36px; font-weight: bold; color: #fff; margin: 10px 0; }
+        .res-sub { font-size: 13px; color: #888; }
+        
+        .detail-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 14px; }
+        .detail-val { font-weight: bold; color: #fff; }
+
+        /* LINK BUTTONS */
+        .link-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 25px; }
+        .btn-link {
+            padding: 10px; background: transparent; border: 1px solid #444; color: #aaa; border-radius: 6px; cursor: pointer; font-size: 12px; display: flex; align-items: center; justify-content: center; gap: 5px; text-decoration: none; transition: 0.3s;
+        }
+        .btn-link:hover { border-color: var(--success); color: var(--success); background: rgba(0, 230, 118, 0.05); }
+
+    
+
+
+/* === KI Engineering Unified Topbar + Modal (Jade/Emerald) === */
+:root{
+  --ki-jade: #00b894;
+  --ki-jade-2: #00cec9;
+  --ki-jade-3: #55efc4;
+  --ki-jade-dark: #052e2b;
+  --ki-jade-darker: #03201d;
+
+  /* Force page accents into Jade/Emerald family */
+  --accent: var(--ki-jade-2);
+  --primary: var(--ki-jade);
+  --motor: var(--ki-jade-2);
+  --heat: var(--ki-jade-3);
+}
+
+*{ box-sizing: border-box; }
+
+body.ki-has-topbar{ padding-top: 64px !important; }
+
+.ki-topbar{
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  background: rgba(5, 46, 43, 0.92);
+  border-bottom: 1px solid rgba(0, 206, 201, 0.25);
+  backdrop-filter: blur(10px);
+  z-index: 99999;
+}
+
+.ki-topbar-left{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.ki-topbar-title{
+  color: #d1fae5;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  font-size: 14px;
+  opacity: 0.95;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ki-icon-btn{
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  border: 1px solid rgba(0, 206, 201, 0.35);
+  background: rgba(3, 32, 29, 0.55);
+  color: #d1fae5;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  text-decoration: none;
+  transition: 0.2s;
+}
+
+.ki-icon-btn:hover{
+  transform: translateY(-1px);
+  border-color: rgba(85, 239, 196, 0.9);
+  box-shadow: 0 10px 25px rgba(0,0,0,0.35);
+}
+
+.ki-icon-btn i{ font-size: 16px; }
+
+/* Modal */
+.ki-modal{
+  position: fixed;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  background: rgba(0,0,0,0.65);
+  z-index: 100000;
+}
+
+.ki-modal.ki-open{ display: flex; }
+
+.ki-modal-card{
+  width: min(980px, 96vw);
+  max-height: min(80vh, 820px);
+  overflow: auto;
+  border-radius: 16px;
+  border: 1px solid rgba(0, 206, 201, 0.25);
+  background: linear-gradient(180deg, rgba(5,46,43,0.98), rgba(3,32,29,0.98));
+  box-shadow: 0 25px 60px rgba(0,0,0,0.6);
+  padding: 18px 18px 14px 18px;
+}
+
+.ki-modal-head{
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(0, 206, 201, 0.18);
+  margin-bottom: 12px;
+}
+
+.ki-modal-title{
+  font-size: 16px;
+  font-weight: 900;
+  color: #d1fae5;
+  letter-spacing: 0.4px;
+}
+
+.ki-modal-close{
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  border: 1px solid rgba(0, 206, 201, 0.35);
+  background: rgba(3, 32, 29, 0.55);
+  color: #d1fae5;
+  cursor: pointer;
+}
+
+.ki-modal-body{
+  color: #d1fae5;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.ki-modal-body h3{
+  margin: 14px 0 8px 0;
+  font-size: 13px;
+  letter-spacing: 0.6px;
+  color: #a7f3d0;
+  text-transform: uppercase;
+}
+
+.ki-modal-body code, .ki-modal-body pre{
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 12px;
+}
+
+.ki-modal-body pre{
+  background: rgba(0,0,0,0.25);
+  border: 1px solid rgba(0, 206, 201, 0.18);
+  padding: 12px;
+  border-radius: 12px;
+  overflow: auto;
+}
+
+.ki-kbd{
+  padding: 2px 7px;
+  border: 1px solid rgba(0, 206, 201, 0.25);
+  background: rgba(0,0,0,0.2);
+  border-radius: 8px;
+  font-size: 11px;
+}
+
+</style>
+<!-- Ein Aussehen fuer alle Werkzeuge. Steht direkt hinter dem letzten
+     <style> dieses Werkzeugs: spaeter in der Reihenfolge, also gewinnt
+     es bei gleicher Spezifitaet - aber so frueh wie moeglich, damit die
+     Seite nicht erst in der alten Farbe erscheint und dann umfaerbt.
+     Am Ende des <body> geladen war genau das zu sehen: Knoepfe mit
+     transition faerbten sichtbar um. Faerbt nur, verschiebt nichts.
+     Siehe werkzeug-stil.css. -->
+<link rel="stylesheet" href="werkzeug-stil.css">
+<!-- Sprachumschaltung Deutsch / Persisch / Englisch. Was nicht im
+     Woerterbuch steht, bleibt Deutsch. Siehe uebersetzung.js. -->
+<script src="woerter.js"></script>
+<script src="woerter/Load.js"></script>
+<script src="uebersetzung.js"></script>
+
+</head>
+<body class="ki-has-topbar">
+
+
+<!-- KI_TOPBAR_START -->
+<div class="ki-topbar" role="navigation" aria-label="KI Engineering Topbar">
+  <div class="ki-topbar-left">
+    <!-- Home Button pointing to P: Drive -->
+    <a class="ki-icon-btn" href="dashboard/" title="Dashboard" aria-label="Home">
+      <i class="fa-solid fa-house"></i>
+    </a>
+    <!-- Help Button -->
+    <button class="ki-icon-btn" type="button" onclick="kiOpenHelp();" title="Info / Anleitung" aria-label="Info">
+      <i class="fa-solid fa-circle-info"></i>
+    </button>
+    <div class="ki-topbar-title">ART ENVI | Load Master</div>
+  </div>
+</div>
+
+<div class="ki-modal" id="kiHelpModal" aria-hidden="true">
+  <div class="ki-modal-card" role="dialog" aria-modal="true" aria-label="Load Master Help">
+    <div class="ki-modal-head">
+      <div class="ki-modal-title">Load Master (Trafo / Motor / Heizung) | Anwendung & Formeln</div>
+      <button class="ki-modal-close" type="button" onclick="kiCloseHelp();" aria-label="Close">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+    <div class="ki-modal-body">
+      <p>Diese Seite wird zur Berechnung elektrischer Lasten verwendet: Transformatorauswahl, Motorstrom/-leistung und Heizungsauslegung. Die Ergebnisse werden direkt basierend auf den Formeln in diesem HTML berechnet.</p>
+
+      <h3>Verwendung</h3>
+      <ul>
+        <li>Wählen Sie oben das Modul: <b>Transformator</b>, <b>Motor & Antrieb</b> oder <b>Elektrische Heizung</b>.</li>
+        <li>Geben Sie die Werte ein und klicken Sie auf <b>Berechnen</b>.</li>
+        <li>Die Ergebnisse (kVA, A, kW) werden in der Ergebnisbox angezeigt.</li>
+      </ul>
+
+      <h3>Formeln (Transformator)</h3>
+      <pre><code>P_active = P_inst * sim
+
+S_req = (P_active / (pf * eff)) * (1 + res_pct/100)
+
+I_sec = (S_selected * 1000) / (sqrt(3) * V_sec)
+
+Utilization[%] = (S_req / S_selected) * 100</code></pre>
+
+      <h4>Kurzschluss an der Unterspannungsschiene</h4>
+      <pre><code>I_k" = I_n * 100 / u_k          (IEC 60909, Speisung nur aus dem Trafo)
+i_p  = kappa * sqrt(2) * I_k"
+kappa = 1,02 + 0,98 * e^(-3*R/X),  R/X = u_R / sqrt(u_k&sup2; - u_R&sup2;),  u_R = P_k / S_n</code></pre>
+      <p>u<sub>k</sub> und P<sub>k</sub> stehen auf dem Typenschild. Das vorgelagerte Netz
+      wird weggelassen: seine Impedanz kaeme in Reihe dazu und wuerde den Strom kleiner
+      machen. Ohne sie kommt also zu viel heraus - und beim Schaltvermoegen ist zu viel
+      die sichere Richtung. Wer die Netzkurzschlussleistung des Versorgers hat, rechnet
+      genauer; fuer die Geraeteauswahl liegt dieser Wert nie darunter.</p>
+
+      <h3>Formeln (Motor)</h3>
+      <pre><code>P_elec = P_mech / eff
+
+S = P_elec / pf
+
+I (1-phase @230V) = (P_elec * 1000) / (V * pf)
+
+I (3-phase) = (P_elec * 1000) / (sqrt(3) * V * pf)
+
+I_DOL ≈ 7 * I
+I_StarDelta ≈ 2.3 * I</code></pre>
+
+      <h3>Formeln (Heizung)</h3>
+      <pre><code>ΔT = T2 - T1
+
+Q_kJ  = mass * cp * ΔT
+Q_kWh = Q_kJ / 3600
+
+P_kW = (Q_kWh / hours) * safetyFactor
+
+I_3ph@400V ≈ (P_kW * 1000) / (sqrt(3) * 400)
+I_1ph@230V ≈ (P_kW * 1000) / 230</code></pre>
+
+      <p>Tastaturkürzel: Drücken Sie <span class="ki-kbd">Esc</span>, um die Hilfe zu schließen.</p>
+    </div>
+  </div>
+</div>
+<!-- KI_TOPBAR_END -->
+
+
+
+<div class="container">
+    <header>
+       <!-- Removed redundant text back button -->
+    </header>
+
+    <!-- TABS -->
+    <div class="tabs">
+        <div class="tab-btn active-trafo" onclick="setTab('trafo')" id="btn-trafo">
+            <i class="fas fa-bolt"></i> Transformator
+        </div>
+        <div class="tab-btn" onclick="setTab('motor')" id="btn-motor">
+            <i class="fas fa-cogs"></i> Motor & Antrieb
+        </div>
+        <div class="tab-btn" onclick="setTab('heat')" id="btn-heat">
+            <i class="fas fa-fire"></i> Elektrische Heizung
+        </div>
+    </div>
+
+    <!-- 1. TRANSFORMER MODULE -->
+    <div id="view-trafo" class="section active">
+        <div class="grid-main">
+            <!-- Inputs -->
+            <div class="card">
+                <h3 style="color:var(--primary)"><i class="fas fa-sliders-h"></i> Lastparameter</h3>
+                
+                <div class="input-group">
+                    <label>Installierte Gesamtleistung (kW)</label>
+                    <input type="number" id="tr_kw" value="500">
+                </div>
+                
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                    <div class="input-group">
+                        <label>Gleichzeitigkeitsfaktor (0-1)</label>
+                        <input type="number" id="tr_sim" value="0.75" step="0.05" max="1">
+                    </div>
+                    <div class="input-group">
+                        <label>Leistungsfaktor (cos φ)</label>
+                        <input type="number" id="tr_pf" value="0.9" step="0.01">
+                    </div>
+                </div>
+
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                    <div class="input-group">
+                        <label>Zukunftsreserve (%)</label>
+                        <input type="number" id="tr_res" value="20">
+                    </div>
+                    <div class="input-group">
+                        <label>Wirkungsgrad (η)</label>
+                        <input type="number" id="tr_eff" value="0.98" readonly style="opacity:0.6; cursor:not-allowed;">
+                    </div>
+                </div>
+                
+                <div class="input-group">
+                    <label>Sekundärspannung (V)</label>
+                    <select id="tr_v">
+                        <option value="400">400 V (Niederspannung)</option>
+                        <option value="690">690 V (Industrie)</option>
+                    </select>
+                </div>
+
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                    <div class="input-group">
+                        <label>Kurzschlussspannung u<sub>k</sub> (%)</label>
+                        <input type="number" id="tr_uk" value="6" step="0.1" min="1" max="20">
+                    </div>
+                    <div class="input-group">
+                        <label>Kurzschlussverluste P<sub>k</sub> (kW)</label>
+                        <input type="number" id="tr_pk" value="10.5" step="0.1" min="0">
+                    </div>
+                </div>
+                <div style="font-size:11px; color:#8a9ba8; margin:-6px 0 12px;">
+                    Beides steht auf dem Typenschild. Regelwerte nach IEC 60076-5:
+                    u<sub>k</sub> = 4 % bis 630 kVA, 6 % ab 800 kVA.
+                </div>
+
+                <button class="btn-calc btn-trafo" onclick="calcTrafo()"><i class="fas fa-calculator"></i> Transformator auswählen</button>
+            </div>
+
+            <!-- Results -->
+            <div class="card">
+                <h3 style="color:var(--primary)"><i class="fas fa-check-circle"></i> Auswahlergebnis</h3>
+                
+                <div class="result-box" style="border-color:var(--primary);">
+                    <div style="font-size:11px; color:#aaa; text-transform:uppercase;">Empfohlene Standardgröße</div>
+                    <div class="res-main" id="tr_res_size">--- kVA</div>
+                    <div class="res-sub" id="tr_res_load">Bedarf: 0 kVA</div>
+                </div>
+
+                <div class="detail-row">
+                    <span>Aktive Last (P_calc)</span>
+                    <span class="detail-val" id="tr_det_p">0 kW</span>
+                </div>
+                <div class="detail-row">
+                    <span>Scheinleistung Bedarf (S_req)</span>
+                    <span class="detail-val" id="tr_det_s">0 kVA</span>
+                </div>
+                <div class="detail-row">
+                    <span>Nennstrom (Sekundär)</span>
+                    <span class="detail-val" id="tr_det_i" style="color:var(--primary)">0 A</span>
+                </div>
+                <div class="detail-row">
+                    <span>Auslastung %</span>
+                    <span class="detail-val" id="tr_det_u">0 %</span>
+                </div>
+
+                <div style="font-size:11px; color:#8a9ba8; margin:14px 0 6px; text-transform:uppercase;">
+                    Kurzschluss an der Unterspannungsschiene
+                </div>
+                <div class="detail-row">
+                    <span>Anfangs-Kurzschlusswechselstrom I<sub>k</sub>&quot;</span>
+                    <span class="detail-val" id="tr_det_ik" style="color:var(--primary)">0 kA</span>
+                </div>
+                <div class="detail-row">
+                    <span>Stoßkurzschlussstrom i<sub>p</sub></span>
+                    <span class="detail-val" id="tr_det_ip">0 kA</span>
+                </div>
+                <div class="detail-row">
+                    <span>Kurzschlussleistung S<sub>k</sub>&quot;</span>
+                    <span class="detail-val" id="tr_det_sk">0 MVA</span>
+                </div>
+                <div class="detail-row">
+                    <span>Schaltvermögen I<sub>cu</sub> mindestens</span>
+                    <span class="detail-val" id="tr_det_icu">0 kA</span>
+                </div>
+                <div style="font-size:11px; color:#8a9ba8; margin-top:8px; line-height:1.6;" id="tr_kurz_hinweis"></div>
+
+                <div class="link-actions">
+                    <a href="Kabeldimensionierung_Spannungsfall.html" target="_blank" class="btn-link">
+                        <i class="fas fa-search"></i> Hauptkabel berechnen
+                    </a>
+                    <a href="Electrical_Toolbox.html" target="_blank" class="btn-link">
+                        <i class="fas fa-calculator"></i> Kompensation (PFC)
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. MOTOR MODULE -->
+    <div id="view-motor" class="section">
+        <div class="grid-main">
+            <!-- Inputs -->
+            <div class="card">
+                <h3 style="color:var(--motor)"><i class="fas fa-cogs"></i> Motor Spezifikationen</h3>
+                
+                <div class="input-group">
+                    <label>Mechanische Wellenleistung (kW)</label>
+                    <input type="number" id="mo_kw" value="30">
+                </div>
+
+                <div class="input-group">
+                    <label>Spannungsversorgung</label>
+                    <select id="mo_v">
+                        <option value="400">400 V (3-Phasen)</option>
+                        <option value="690">690 V (3-Phasen)</option>
+                        <option value="230">230 V (1-Phase)</option>
+                    </select>
+                </div>
+
+                <div class="input-group">
+                    <label>Effizienzklasse (IEC 60034-30)</label>
+                    <select id="mo_ie" onchange="updateEff()">
+                        <option value="IE1">IE1 (Standard)</option>
+                        <option value="IE2">IE2 (Hoch)</option>
+                        <option value="IE3" selected>IE3 (Premium)</option>
+                        <option value="IE4">IE4 (Super Premium)</option>
+                    </select>
+                </div>
+
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                    <div class="input-group">
+                        <label>Geschätzter Wirkungsgrad (%)</label>
+                        <input type="number" id="mo_eff" value="93.6">
+                    </div>
+                    <div class="input-group">
+                        <label>Leistungsfaktor</label>
+                        <input type="number" id="mo_pf" value="0.86">
+                    </div>
+                </div>
+
+                <div class="input-grid">
+                    <div class="input-group">
+                        <label>Anlaufstromverh&auml;ltnis Ia/In (Typenschild)</label>
+                        <input type="number" id="mo_ia" value="7" step="0.1">
+                    </div>
+                    <div class="input-group">
+                        <label>Anlaufzeit (s)</label>
+                        <input type="number" id="mo_ta" value="3" step="0.5">
+                    </div>
+                </div>
+
+                <button class="btn-calc btn-motor" onclick="calcMotor()"><i class="fas fa-calculator"></i> Elektrische Last berechnen</button>
+            </div>
+
+            <!-- Results -->
+            <div class="card">
+                <h3 style="color:var(--motor)"><i class="fas fa-tachometer-alt"></i> Elektrische Daten</h3>
+                
+                <div class="result-box" style="border-color:var(--motor);">
+                    <div style="font-size:11px; color:#aaa; text-transform:uppercase;">Nennstrom (In)</div>
+                    <div class="res-main" id="mo_res_i">0.0 A</div>
+                    <div class="res-sub" id="mo_res_kw_elec">Elektr. Leistung: 0 kW</div>
+                </div>
+
+                <div class="detail-row">
+                    <span>Scheinleistung (S)</span>
+                    <span class="detail-val" id="mo_det_s">0 kVA</span>
+                </div>
+                <div class="detail-row">
+                    <span>Anlaufstrom Direkt (DOL)</span>
+                    <span class="detail-val" id="mo_det_dol">---</span>
+                </div>
+                <div class="detail-row">
+                    <span>Anlaufstrom Stern-Dreieck</span>
+                    <span class="detail-val" id="mo_det_sd">---</span>
+                </div>
+
+                <!-- Ein Motorabgang hat ZWEI Schutzfunktionen mit verschiedenen
+                     Aufgaben. Frueher stand hier eine einzige "empfohlene
+                     Sicherung" - und die war auf den Nennstrom bemessen, also
+                     genau die Groesse, die beim Anlauf durchbrennt. -->
+                <div class="detail-row" style="margin-top:10px; border-top:1px solid var(--border, #333); padding-top:10px;">
+                    <span>&Uuml;berlastschutz &ndash; Relais einstellen auf</span>
+                    <span class="detail-val" id="mo_det_ueberlast">---</span>
+                </div>
+                <div class="detail-row">
+                    <span>Kurzschlussschutz gG &ndash; Direktanlauf</span>
+                    <span class="detail-val" id="mo_det_fuse" style="color:var(--motor)">---</span>
+                </div>
+                <div class="detail-row">
+                    <span>Kurzschlussschutz gG &ndash; Stern-Dreieck</span>
+                    <span class="detail-val" id="mo_det_fuse_sd">---</span>
+                </div>
+                <div class="detail-row">
+                    <span>Alternative: Betriebsklasse aM</span>
+                    <span class="detail-val" id="mo_det_fuse_am">---</span>
+                </div>
+                <div id="mo_grundlage" style="font-size:11px; color:#8a8a8a; line-height:1.55; margin-top:10px;"></div>
+
+                <div class="link-actions">
+                    <a href="Kabeldimensionierung_Spannungsfall.html" target="_blank" class="btn-link">
+                        <i class="fas fa-bolt"></i> Kabel berechnen
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. HEATER MODULE -->
+    <div id="view-heat" class="section">
+        <div class="grid-main">
+            <!-- Inputs -->
+            <div class="card">
+                <h3 style="color:var(--heat)"><i class="fas fa-thermometer-half"></i> Thermische Anforderung</h3>
+                
+                <div class="input-group">
+                    <label>Medium (Stoff)</label>
+                    <select id="he_mat">
+                        <option value="4.18">Wasser (Cp=4.18)</option>
+                        <option value="1.9">Hydrauliköl (Cp=1.9)</option>
+                        <option value="1.0">Luft (Cp=1.0)</option>
+                        <option value="0.5">Stahltank (Cp=0.5)</option>
+                    </select>
+                </div>
+
+                <div class="input-group">
+                    <label>Volumen / Masse (Liter oder kg)</label>
+                    <input type="number" id="he_mass" value="1000">
+                </div>
+
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                    <div class="input-group">
+                        <label>Start Temp (°C)</label>
+                        <input type="number" id="he_t1" value="20">
+                    </div>
+                    <div class="input-group">
+                        <label>Ziel Temp (°C)</label>
+                        <input type="number" id="he_t2" value="80">
+                    </div>
+                </div>
+
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                    <div class="input-group">
+                        <label>Aufheizzeit (Stunden)</label>
+                        <input type="number" id="he_time" value="2">
+                    </div>
+                    <div class="input-group">
+                        <label>Sicherheitsfaktor (Verluste)</label>
+                        <input type="number" id="he_safe" value="1.2">
+                    </div>
+                </div>
+
+                <button class="btn-calc btn-heat" onclick="calcHeater()"><i class="fas fa-calculator"></i> Heizung auslegen</button>
+            </div>
+
+            <!-- Results -->
+            <div class="card">
+                <h3 style="color:var(--heat)"><i class="fas fa-fire"></i> Heizungsdaten</h3>
+                
+                <div class="result-box" style="border-color:var(--heat);">
+                    <div style="font-size:11px; color:#aaa; text-transform:uppercase;">Benötigte Leistung</div>
+                    <div class="res-main" id="he_res_p">0.0 kW</div>
+                    <div class="res-sub">Inkl. Sicherheitsfaktor</div>
+                </div>
+
+                <div class="detail-row">
+                    <span>Benötigte Energie (Q)</span>
+                    <span class="detail-val" id="he_det_q">0 kWh</span>
+                </div>
+                <div class="detail-row">
+                    <span>Delta T</span>
+                    <span class="detail-val" id="he_det_dt">0 °C</span>
+                </div>
+                <div class="detail-row">
+                    <span>Strom @ 400V (3ph)</span>
+                    <span class="detail-val" id="he_det_i3" style="color:var(--heat)">0 A</span>
+                </div>
+                <div class="detail-row">
+                    <span>Strom @ 230V (1ph)</span>
+                    <span class="detail-val" id="he_det_i1">0 A</span>
+                </div>
+
+                <div class="link-actions">
+                    <a href="Kabeldimensionierung_Spannungsfall.html" target="_blank" class="btn-link">
+                        <i class="fas fa-bolt"></i> Kabel auslegen
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    // --- NAVIGATION ---
+    function setTab(tab) {
+        document.querySelectorAll('.section').forEach(el => el.classList.remove('active'));
+        document.getElementById('view-' + tab).classList.add('active');
+        
+        document.querySelectorAll('.tab-btn').forEach(el => {
+            el.classList.remove('active-trafo', 'active-motor', 'active-heat');
+        });
+        
+        // Restore base style active class
+        const btn = document.getElementById('btn-' + tab);
+        if(tab === 'trafo') btn.classList.add('active-trafo');
+        if(tab === 'motor') btn.classList.add('active-motor');
+        if(tab === 'heat') btn.classList.add('active-heat');
+    }
+
+    // Liest ein Zahlenfeld. null bei leer, keine Zahl, Unendlich.
+    function zahl(id) {
+        const el = document.getElementById(id);
+        if (!el) return null;
+        const t = (el.value || '').trim();
+        if (t === '') return null;
+        const v = Number(t);
+        return Number.isFinite(v) ? v : null;
+    }
+    function fehler(id, text) {
+        const el = document.getElementById(id);
+        if (el) el.innerHTML = '<span style="color:#e74c3c; font-size:0.55em">' + text + '</span>';
+    }
+    function leere(ids) { ids.forEach(i => { const e = document.getElementById(i); if (e) e.innerText = '--'; }); }
+
+    // --- 1. TRANSFORMER CALC ---
+    // Normreihe der Bemessungsleistungen. Muss aufsteigend sortiert bleiben:
+    // calcTrafo nimmt den ersten Wert >= Bedarf und bricht dann ab.
+    const stdTrafos = [50, 63, 100, 160, 250, 315, 400, 500, 630, 800, 1000, 1250, 1600, 2000, 2500, 3150];
+
+    function calcTrafo() {
+        const P_inst = zahl('tr_kw'), sim = zahl('tr_sim'), pf = zahl('tr_pf');
+        const res_pct = zahl('tr_res'), eff = zahl('tr_eff'), v_sec = zahl('tr_v');
+
+        const felder = ['tr_det_p','tr_det_s','tr_det_i','tr_det_u',
+                        'tr_det_ik','tr_det_ip','tr_det_sk','tr_det_icu'];
+        if ([P_inst, sim, pf, res_pct, eff, v_sec].some(x => x === null)) {
+            fehler('tr_res_size', 'Eingabe fehlt'); leere(felder);
+            document.getElementById('tr_res_load').innerText = ''; return;
+        }
+        if (P_inst <= 0 || sim <= 0 || pf <= 0 || pf > 1 || eff <= 0 || eff > 1 || v_sec <= 0 || res_pct < 0) {
+            fehler('tr_res_size', 'Werte pruefen: cos phi und Wirkungsgrad zwischen 0 und 1, Leistung und Spannung ueber null');
+            leere(felder); document.getElementById('tr_res_load').innerText = ''; return;
+        }
+
+        // Active Load = Installed * Simultaneity
+        const P_active = P_inst * sim;
+        
+        // Apparent Power Req = (P_active / (pf * eff)) * (1 + (res_pct/100));
+        const S_req = (P_active / (pf * eff)) * (1 + (res_pct/100));
+
+        // Find Standard Size
+        let selected = null;
+        for(let s of stdTrafos) {
+            if(s >= S_req) {
+                selected = s;
+                break;
+            }
+        }
+        if(!selected) selected = "> 3150";
+
+        // Calculate Rated Current for Selected
+        // I = S / (sqrt(3) * V)
+        const I_sec = (selected !== "> 3150") ? (selected * 1000) / (Math.sqrt(3) * v_sec) : 0;
+        
+        // Utilization
+        const util = (selected !== "> 3150") ? (S_req / selected) * 100 : 100;
+
+        // Render
+        document.getElementById('tr_res_size').innerText = selected + " kVA";
+        document.getElementById('tr_res_load').innerText = "Bedarf: " + S_req.toFixed(1) + " kVA";
+        document.getElementById('tr_det_p').innerText = P_active.toFixed(1) + " kW";
+        document.getElementById('tr_det_s').innerText = S_req.toFixed(1) + " kVA";
+        document.getElementById('tr_det_i').innerText = I_sec.toFixed(0) + " A";
+        
+        const utilEl = document.getElementById('tr_det_u');
+        utilEl.innerText = util.toFixed(1) + " %";
+        utilEl.style.color = util > 90 ? 'red' : 'var(--success)';
+
+        kurzschlussRechnen(selected, v_sec);
+    }
+
+    // Kurzschlussdaten an der Unterspannungsschiene.
+    //
+    // Nach der Trafogroesse fragt in einem Ingenieurbuero als naechstes immer
+    // jemand: "und was muss der Hauptschalter koennen?" Diese Zahl stand hier
+    // nicht, obwohl sie aus dem Typenschild in zwei Zeilen folgt.
+    //
+    //   I_k" = I_n * 100 / u_k          IEC 60909, Speisung nur aus dem Trafo
+    //   i_p  = kappa * sqrt(2) * I_k"
+    //   kappa = 1,02 + 0,98 * e^(-3*R/X)
+    //
+    // Das vorgelagerte Netz wird weggelassen. Seine Impedanz kaeme in Reihe
+    // dazu und wuerde den Strom kleiner machen - ohne sie kommt also zu viel
+    // heraus, und beim Schaltvermoegen ist zu viel die sichere Richtung. Wer
+    // die Netzkurzschlussleistung des Versorgers hat, rechnet genauer; fuer
+    // die Geraeteauswahl reicht dieser Wert und liegt nie darunter.
+    //
+    // R/X kommt aus dem Typenschild selbst: u_R = P_k/S_n und
+    // u_X = sqrt(u_k^2 - u_R^2). Damit ist auch kappa gerechnet und nicht
+    // geschaetzt.
+    function kurzschlussRechnen(S_kVA, U_V) {
+        const felder = ['tr_det_ik','tr_det_ip','tr_det_sk','tr_det_icu'];
+        const hinweis = document.getElementById('tr_kurz_hinweis');
+        const uk = zahl('tr_uk'), Pk = zahl('tr_pk');
+
+        if (typeof S_kVA !== 'number' || !(S_kVA > 0)) {
+            leere(felder);
+            if (hinweis) hinweis.innerText = 'Erst eine Standardgroesse, dann der Kurzschluss.';
+            return;
+        }
+        if (uk === null || Pk === null || uk <= 0 || Pk < 0) {
+            leere(felder);
+            if (hinweis) hinweis.innerText = 'u_k und P_k pruefen, beide stehen auf dem Typenschild.';
+            return;
+        }
+
+        const I_n = (S_kVA * 1000) / (Math.sqrt(3) * U_V);
+        const I_k = I_n * 100 / uk;
+        const S_k = S_kVA / uk * 100 / 1000;          // MVA
+
+        const u_R = Pk / S_kVA * 100;
+        let kappa;
+        if (u_R >= uk) {
+            // P_k passt nicht zu u_k - dann lieber der ungeguenstigste Wert
+            // als eine Wurzel aus etwas Negativem.
+            kappa = 2.0;
+        } else {
+            const u_X = Math.sqrt(uk * uk - u_R * u_R);
+            kappa = 1.02 + 0.98 * Math.exp(-3 * (u_R / u_X));
+        }
+        const i_p = kappa * Math.SQRT2 * I_k;
+
+        document.getElementById('tr_det_ik').innerText = (I_k/1000).toFixed(1) + " kA";
+        document.getElementById('tr_det_ip').innerText = (i_p/1000).toFixed(1) + " kA";
+        document.getElementById('tr_det_sk').innerText = S_k.toFixed(1) + " MVA";
+
+        // Genormte Schaltvermoegen. Gewaehlt wird die naechste Stufe ueber
+        // I_k", nie darunter.
+        const ICU_REIHE = [10, 15, 16, 20, 25, 36, 50, 65, 70, 85, 100, 125, 150];
+        const icu = ICU_REIHE.find(x => x >= I_k/1000);
+        document.getElementById('tr_det_icu').innerText = icu ? (icu + " kA") : "> 150 kA";
+
+        if (hinweis) {
+            hinweis.innerText = "kappa = " + kappa.toFixed(2) + " aus u_R = " + u_R.toFixed(2)
+                + " %. Ohne die Impedanz des vorgelagerten Netzes gerechnet - damit liegt "
+                + "I_k\u0022 eher zu hoch als zu niedrig, und das ist beim Schaltvermoegen "
+                + "die sichere Richtung.";
+        }
+    }
+
+    // --- 2. MOTOR CALC ---
+    function updateEff() {
+        const cls = document.getElementById('mo_ie').value;
+        const kw = parseFloat(document.getElementById('mo_kw').value);
+        // Approximation of IE3 efficiencies (4 pole)
+        let eff = 90;
+        if(kw < 1) eff = 80;
+        else if(kw < 5) eff = 86;
+        else if(kw < 20) eff = 91;
+        else if(kw < 100) eff = 94;
+        else eff = 96;
+
+        // Adjust for class
+        if(cls === 'IE1') eff -= 4;
+        if(cls === 'IE2') eff -= 2;
+        if(cls === 'IE4') eff += 1.5;
+
+        document.getElementById('mo_eff').value = eff.toFixed(1);
+    }
+
+    // Normreihe der Sicherungen nach IEC 60269-1.
+    const SICHERUNGSREIHE = [6, 10, 16, 20, 25, 32, 40, 50, 63, 80, 100, 125,
+                             160, 200, 250, 315, 400, 500, 630];
+
+    /* Wie viel Vielfaches ihres Bemessungsstroms eine gG-Sicherung fuer die
+       Dauer eines Motoranlaufs aushaelt, bevor sie schmilzt. Aus den
+       Zeit-Strom-Kennlinien: bei etwa 5-fachem Strom liegt die Schmelzzeit
+       einer gG-Sicherung im Bereich einiger Sekunden, bei 4,5-fachem
+       darueber. 4,5 ist der vorsichtigere Wert und gilt bis rund 5 s
+       Anlaufzeit; laenger anlaufende Antriebe brauchen die Kennlinie des
+       Herstellers. Deshalb steht die Anlaufzeit als Eingabe da und die
+       Annahme unter dem Ergebnis - eine Zahl ohne ihre Grundlage ist in
+       einem Schutzkonzept wertlos. */
+    function gGFaktor(anlaufzeit) {
+        if (anlaufzeit <= 1) return 6.0;
+        if (anlaufzeit <= 5) return 4.5;
+        if (anlaufzeit <= 10) return 3.5;
+        return 3.0;
+    }
+
+    function naechsteSicherung(strom) {
+        const f = SICHERUNGSREIHE.find(x => x >= strom);
+        return f ? f : null;
+    }
+
+    function calcMotor() {
+        const P_mech = zahl('mo_kw'), V = zahl('mo_v');
+        const effP = zahl('mo_eff'), pf = zahl('mo_pf');
+        const iaVerh = zahl('mo_ia'), anlaufzeit = zahl('mo_ta');
+
+        const felder = ['mo_det_s','mo_det_dol','mo_det_sd','mo_det_ueberlast',
+                        'mo_det_fuse','mo_det_fuse_sd','mo_det_fuse_am'];
+        const grundlage = document.getElementById('mo_grundlage');
+
+        if ([P_mech, V, effP, pf, iaVerh, anlaufzeit].some(x => x === null)) {
+            fehler('mo_res_i', 'Eingabe fehlt'); leere(felder);
+            grundlage.innerText = '';
+            document.getElementById('mo_res_kw_elec').innerText = ''; return;
+        }
+        if (P_mech <= 0 || V <= 0 || effP <= 0 || effP > 100 || pf <= 0 || pf > 1
+            || iaVerh <= 1 || anlaufzeit <= 0) {
+            fehler('mo_res_i', 'Werte pruefen: cos phi 0 bis 1, Wirkungsgrad 0 bis 100 %, Ia/In ueber 1, Leistung, Spannung und Anlaufzeit ueber null');
+            leere(felder); grundlage.innerText = '';
+            document.getElementById('mo_res_kw_elec').innerText = ''; return;
+        }
+        const eff = effP / 100;
+        const P_elec = P_mech / eff;
+        const S = P_elec / pf;
+
+        let I = 0;
+        if (V === 230) {
+            I = (P_elec * 1000) / (V * pf);
+        } else {
+            I = (P_elec * 1000) / (Math.sqrt(3) * V * pf);
+        }
+
+        // Stern-Dreieck zieht ein Drittel des Direktanlaufstroms - das ist
+        // keine Faustzahl, sondern folgt aus der Strangspannung.
+        const Ia_dol = I * iaVerh;
+        const Ia_sd  = Ia_dol / 3;
+
+        document.getElementById('mo_res_i').innerText = I.toFixed(1) + " A";
+        document.getElementById('mo_res_kw_elec').innerText = "Elektr. Input: " + P_elec.toFixed(2) + " kW";
+        document.getElementById('mo_det_s').innerText = S.toFixed(1) + " kVA";
+        document.getElementById('mo_det_dol').innerText =
+            Ia_dol.toFixed(0) + " A  (" + iaVerh.toFixed(1) + "x In)";
+        document.getElementById('mo_det_sd').innerText =
+            Ia_sd.toFixed(0) + " A  (" + (iaVerh / 3).toFixed(1) + "x In)";
+
+        /* Ein Motorabgang hat zwei Schutzfunktionen, und sie gehoeren
+           getrennt (DIN VDE 0100-430, IEC 60947-4-1):
+
+           Der Ueberlastschutz schuetzt den MOTOR und wird auf den Nennstrom
+           eingestellt. Das macht das thermische Relais, nicht die Sicherung.
+
+           Der Kurzschlussschutz schuetzt die LEITUNG und darf beim Anlauf
+           gerade nicht ansprechen. Er muss deshalb zwei Bedingungen zugleich
+           erfuellen: den Nennstrom dauernd tragen UND den Anlaufstrom fuer
+           die Anlaufzeit ueberstehen.
+
+           Frueher stand hier die naechste Groesse ueber dem Nennstrom. Bei
+           30 kW waren das 63 A gG neben einem Anlaufstrom von 385 A - eine
+           Sicherung, die beim ersten Start durchbrennt. */
+        const k = gGFaktor(anlaufzeit);
+        const gG_dol = naechsteSicherung(Math.max(I, Ia_dol / k));
+        const gG_sd  = naechsteSicherung(Math.max(I, Ia_sd  / k));
+        // aM-Sicherungen sind fuer den Motoranlauf gebaut und lassen ihn
+        // durch; sie werden auf den Nennstrom bemessen.
+        const aM = naechsteSicherung(I);
+
+        const zeig = (id, wert, zusatz) => {
+            document.getElementById(id).innerText =
+                wert ? (wert + " A" + (zusatz || "")) : "ueber 630 A - Herstellerangabe";
+        };
+        document.getElementById('mo_det_ueberlast').innerText = I.toFixed(1) + " A  (In)";
+        zeig('mo_det_fuse', gG_dol, " gG");
+        zeig('mo_det_fuse_sd', gG_sd, " gG");
+        zeig('mo_det_fuse_am', aM, " aM");
+
+        grundlage.innerText =
+            "Grundlage: DIN VDE 0100-430 und IEC 60947-4-1. Die gG-Sicherung ist so "
+          + "gewaehlt, dass sie den Nennstrom dauernd traegt und den Anlaufstrom "
+          + anlaufzeit.toFixed(1) + " s lang uebersteht (angenommener Faktor "
+          + k.toFixed(1) + "x In der Sicherung). Ueber 5 s Anlaufzeit gilt die "
+          + "Zeit-Strom-Kennlinie des Herstellers. Der Ueberlastschutz ist das "
+          + "thermische Relais, nicht die Sicherung; Kurzschlussschutz und Starter "
+          + "muessen nach IEC 60947-4-1 koordiniert sein (Art 1 oder Art 2).";
+    }
+
+    // --- 3. HEATER CALC ---
+    function calcHeater() {
+        const cp = zahl('he_mat');      // kJ/(kg*K)
+        const mass = zahl('he_mass');   // kg
+        const t1 = zahl('he_t1'), t2 = zahl('he_t2');
+        const hours = zahl('he_time'), safe = zahl('he_safe');
+
+        const felder = ['he_det_q','he_det_dt','he_det_i3','he_det_i1'];
+        if ([cp, mass, t1, t2, hours, safe].some(x => x === null)) {
+            fehler('he_res_p', 'Eingabe fehlt'); leere(felder); return;
+        }
+        if (mass <= 0 || hours <= 0 || cp <= 0 || safe <= 0) {
+            fehler('he_res_p', 'Masse, Zeit, cp und Zuschlag muessen ueber null liegen');
+            leere(felder); return;
+        }
+        const dT = t2 - t1;
+        if (dT <= 0) {
+            fehler('he_res_p', 'Zieltemperatur muss ueber der Starttemperatur liegen');
+            leere(felder); return;
+        }
+
+        // Energy (kJ) = mass * cp * dT
+        const Q_kJ = mass * cp * dT;
+        const Q_kWh = Q_kJ / 3600;
+
+        // Power (kW) = Energy (kWh) / Time (h) * Safety
+        const P_kw = (Q_kWh / hours) * safe;
+
+        // Current
+        const I_3ph = (P_kw * 1000) / (Math.sqrt(3) * 400); // Resistive PF=1
+        const I_1ph = (P_kw * 1000) / 230;
+
+        // Render
+        document.getElementById('he_res_p').innerText = P_kw.toFixed(2) + " kW";
+        document.getElementById('he_det_q').innerText = Q_kWh.toFixed(2) + " kWh";
+        document.getElementById('he_det_dt').innerText = dT + " °C";
+        document.getElementById('he_det_i3').innerText = I_3ph.toFixed(1) + " A";
+        document.getElementById('he_det_i1').innerText = I_1ph.toFixed(1) + " A";
+    }
+
+    // Init
+    updateEff();
+</script>
+
+
+<script>
+
+(function(){
+  function qs(sel){ return document.querySelector(sel); }
+
+  window.kiOpenHelp = function(){
+    const m = qs('#kiHelpModal');
+    if(!m) return;
+    m.classList.add('ki-open');
+  };
+
+  window.kiCloseHelp = function(){
+    const m = qs('#kiHelpModal');
+    if(!m) return;
+    m.classList.remove('ki-open');
+  };
+
+  // Modal close handlers
+  document.addEventListener('click', function(ev){
+    const m = qs('#kiHelpModal');
+    if(!m || !m.classList.contains('ki-open')) return;
+    if(ev.target === m) window.kiCloseHelp();
+  });
+
+  document.addEventListener('keydown', function(ev){
+    if(ev.key === 'Escape') window.kiCloseHelp();
+  });
+})();
+
+</script>
+
+
+<!-- KI-Helfer: ordnet das Ergebnis ein, rechnet es nicht. Der
+     Schluessel steht nicht hier, sondern hinter der Edge Function
+     werkzeug-assistent. Siehe ki-helfer.js. -->
+<script src="ki-helfer.js"></script>
+<script>
+  KI_HELFER.einbauen({
+    werkzeug: "Load Master",
+    modus: "deutung",
+    knopf: "Ergebnis einordnen",
+    titel: "Einordnung des Ergebnisses",
+    platzhalter: "Frage dazu, optional. Zum Beispiel: welche Stellschraube zuerst?",
+    ergebnisse: {
+      "tr_res_size": "Trafogroesse",
+      "tr_res_load": "Auslastung",
+      "tr_det_s": "Scheinleistung",
+      "tr_det_i": "Sekundaerstrom",
+      "tr_det_ik": "Kurzschlussstrom Ik''",
+      "tr_det_ip": "Stosskurzschlussstrom ip",
+      "tr_det_icu": "Schaltvermoegen mindestens",
+      "mo_res_i": "Motorstrom",
+      "mo_det_dol": "Anlaufstrom direkt",
+      "mo_det_sd": "Anlaufstrom Stern-Dreieck",
+      "mo_det_fuse": "Sicherungsvorschlag",
+      "he_res_p": "Heizleistung",
+      "he_det_q": "Waermemenge"
+    }
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,642 @@
+<!-- FILE: Bau_Rechner.html -->
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ART ENVI | Bautechnik Rechner Pro</title>
+    <link rel="stylesheet" href="bibliotheken/fontawesome/css/all.min.css">
+    <style>
+    /* Meldung bei unbrauchbarer Eingabe. Frueher stand in solchen Faellen NaN im Ergebnis. */
+    .eingabe-fehler { color:#e74c3c; font-size:12px; margin-top:8px; min-height:14px; }
+        :root {
+            --header-height: 60px;
+            --bg-dark: #1e272e;
+            --panel: #2f3640;
+            --accent: #0f766e; /* Emerald */
+            --text: #f5f6fa;
+            --text-mute: #7f8c8d;
+            --border: #353b48;
+        }
+
+        body { margin: 0; background: var(--bg-dark); color: var(--text); font-family: 'Segoe UI', sans-serif; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+        /* SIDEBAR */
+        .sidebar { 
+            width: 280px; 
+            background: #191f26; 
+            border-right: 1px solid var(--border); 
+            display: flex; 
+            flex-direction: column; 
+            padding: 20px; 
+            overflow-y: auto;
+        }
+        
+        .brand { font-size: 20px; font-weight: 800; color: #fff; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; padding-bottom: 20px; border-bottom: 2px solid var(--accent); }
+        .brand span { color: var(--accent); }
+        
+        /* BACK BUTTON REMOVED HERE AS REQUESTED */
+
+        .nav-btn {
+            padding: 15px; cursor: pointer; border-radius: 8px; margin-bottom: 8px; color: #bdc3c7; display: flex; align-items: center; gap: 15px; font-size: 14px; transition: 0.3s;
+            border: 1px solid transparent;
+        }
+        .nav-btn:hover { background: rgba(255,255,255,0.05); color: #fff; }
+        .nav-btn.active { background: var(--accent); color: #1e272e; font-weight: bold; box-shadow: 0 4px 15px rgba(241, 196, 15, 0.3); }
+
+        /* MAIN */
+        .main { flex: 1; padding: 40px; overflow-y: auto; position: relative; }
+        
+        .calc-section { display: none; animation: fadein 0.3s; }
+        .calc-section.active { display: block; }
+        @keyframes fadein { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        h2 { border-bottom: 1px solid var(--border); padding-bottom: 15px; margin-bottom: 25px; font-size: 24px; color: var(--accent); }
+
+        /* CARDS & INPUTS */
+        .input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px; }
+        .full-width { grid-column: span 2; }
+
+        .group { background: var(--panel); padding: 25px; border-radius: 12px; border: 1px solid var(--border); }
+        
+        label { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-mute); margin-bottom: 8px; font-weight: bold; }
+        
+        input, select { 
+            width: 100%; padding: 12px; background: #1e272e; border: 1px solid #444; color: #fff; border-radius: 6px; font-size: 14px; box-sizing: border-box; transition: 0.3s;
+        }
+        input:focus, select:focus { border-color: var(--accent); outline: none; }
+
+        .btn-calc {
+            width: 100%; padding: 15px; background: var(--accent); color: #1e272e; border: none; border-radius: 8px; font-weight: bold; font-size: 16px; cursor: pointer; transition: 0.2s; margin-top: 20px;
+        }
+        .btn-calc:hover { transform: translateY(-2px); filter: brightness(1.1); }
+
+        /* Knoepfe der Liste: der eine in jeder Zeile, der andere darunter. */
+        .btn-zeile {
+            background: none; border: 1px solid #555; color: #bbb; border-radius: 4px;
+            padding: 3px 10px; font: inherit; font-size: 12px; cursor: pointer;
+        }
+        .btn-zeile:hover { border-color: #c0392b; color: #e74c3c; }
+        .btn-leeren {
+            margin-top: 12px; background: none; border: 1px solid #555; color: #bbb;
+            border-radius: 6px; padding: 8px 14px; font: inherit; font-size: 13px; cursor: pointer;
+        }
+        .btn-leeren:hover:enabled { border-color: #c0392b; color: #e74c3c; }
+        .btn-leeren:disabled { opacity: .4; cursor: default; }
+
+        /* RESULT BOX */
+        .result-box {
+            background: #111; border-left: 5px solid var(--accent); padding: 20px; margin-top: 30px; border-radius: 4px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .res-label { font-size: 12px; color: #888; text-transform: uppercase; }
+        .res-value { font-size: 28px; font-weight: bold; color: #fff; margin-top: 5px; }
+        .res-unit { font-size: 16px; color: var(--accent); }
+
+        /* TABLE FOR LISTS */
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 14px; }
+        th { text-align: left; color: var(--text-mute); border-bottom: 1px solid #444; padding: 10px; font-size: 12px; }
+        td { padding: 12px 10px; border-bottom: 1px solid #333; color: #ddd; }
+        tr:last-child td { border-bottom: none; }
+    
+        /* === KI Dashboard Topbar (Emerald) === */
+        .topbar{
+            position: fixed; top: 0; left: 0; right: 0;
+            height: var(--header-height);
+            background: #111a16;
+            border-bottom: 2px solid rgba(15,118,110,.65);
+            display:flex; align-items:center; justify-content:space-between;
+            padding: 0 18px; box-sizing:border-box;
+            z-index: 1000;
+        }
+        .topbar .tb-brand{
+            display:flex; align-items:center; gap:10px;
+            font-weight: 900; letter-spacing: .02em;
+            color: #eafff7;
+            font-size: 14px;
+        }
+        .topbar .tb-brand i{ color: var(--accent); }
+        .topbar .tb-actions{display:flex; align-items:center; gap:10px;}
+        .icon-btn{
+            width:38px;height:38px;border-radius:10px;
+            display:inline-flex;align-items:center;justify-content:center;
+            border:1px solid rgba(15,118,110,.35);
+            background: rgba(15,118,110,.10);
+            color: #d9fff1;
+            cursor:pointer;
+            transition: .2s;
+        }
+        .icon-btn:hover{background: rgba(15,118,110,.18); transform: translateY(-1px);}
+        .icon-btn i{font-size:16px; color: #d9fff1;}
+        .icon-btn.home i{color:#d9fff1;}
+        .icon-btn.info i{color:#d9fff1;}
+
+        .app{
+            display:flex;
+            flex: 1;
+            margin-top: var(--header-height);
+            min-height: 0;
+        }
+
+        /* Modal */
+        .modal-overlay{
+            position:fixed; inset:0;
+            background: rgba(0,0,0,.60);
+            display:none;
+            align-items:center;
+            justify-content:center;
+            z-index: 2000;
+            padding: 20px;
+            box-sizing:border-box;
+        }
+        .modal-overlay.open{display:flex;}
+        .modal{
+            width: min(920px, 100%);
+            max-height: min(80vh, 900px);
+            overflow:auto;
+            background:#0b1210;
+            border-radius:14px;
+            border: 1px solid rgba(15,118,110,.45);
+            box-shadow: 0 20px 60px rgba(0,0,0,.45);
+        }
+        .modal-header{
+            position:sticky; top:0;
+            background: linear-gradient(90deg, rgba(15,118,110,.18), rgba(15,118,110,.06));
+            border-bottom:1px solid rgba(15,118,110,.35);
+            padding:14px 16px;
+            display:flex; align-items:center; justify-content:space-between;
+            gap: 10px;
+        }
+        .modal-title{
+            font-weight:900; color:#eafff7; font-size:14px;
+            display:flex; align-items:center; gap:10px;
+        }
+        .modal-title i{color:#d9fff1;}
+        .modal-close{
+            width:34px;height:34px;border-radius:10px;
+            border:1px solid rgba(15,118,110,.45);
+            background: rgba(15,118,110,.10);
+            color:#d9fff1;
+            cursor:pointer;
+        }
+        .modal-body{padding:16px; color:#e8fff6; font-size:13px; line-height:1.65;}
+        .modal-body h4{margin: 14px 0 8px 0; font-size:12px; color:#7fffd6; text-transform:uppercase; letter-spacing:.08em;}
+        .modal-body code{background: rgba(15,118,110,.12); border: 1px solid rgba(15,118,110,.25); padding: 2px 6px; border-radius: 6px; color:#eafff7;}
+        .modal-body ul{margin:8px 0 12px 18px;}
+        .modal-body li{margin:6px 0;}
+
+        /* unify accents across existing components */
+        .brand span { color: var(--accent) !important; }
+        h2 { color: var(--accent) !important; }
+        .nav-btn.active { background: var(--accent) !important; color: #06110d !important; box-shadow: 0 4px 15px rgba(15,118,110, 0.35) !important; }
+        .btn-calc { background: var(--accent) !important; color: #06110d !important; }
+        .result-box { border-left-color: var(--accent) !important; }
+    
+    </style>
+<!-- Ein Aussehen fuer alle Werkzeuge. Steht direkt hinter dem letzten
+     <style> dieses Werkzeugs: spaeter in der Reihenfolge, also gewinnt
+     es bei gleicher Spezifitaet - aber so frueh wie moeglich, damit die
+     Seite nicht erst in der alten Farbe erscheint und dann umfaerbt.
+     Am Ende des <body> geladen war genau das zu sehen: Knoepfe mit
+     transition faerbten sichtbar um. Faerbt nur, verschiebt nichts.
+     Siehe werkzeug-stil.css. -->
+<link rel="stylesheet" href="werkzeug-stil.css">
+<!-- Sprachumschaltung Deutsch / Persisch / Englisch. Was nicht im
+     Woerterbuch steht, bleibt Deutsch. Siehe uebersetzung.js. -->
+<script src="woerter.js"></script>
+<script src="woerter/Bau_Rechner.js"></script>
+<script src="uebersetzung.js"></script>
+
+</head>
+<body>
+
+    <header class="topbar">
+        <div class="tb-brand">
+            <i class="fas fa-circle-nodes"></i>
+            KI-Engineering Dashboard
+        </div>
+        <div class="tb-actions">
+            <!-- Corrected Home Path to P: Drive -->
+            <a class="icon-btn home" href="dashboard/" title="Zurück zum KI-Engineering-Dashboard"><i class="fas fa-house"></i></a>
+            <button class="icon-btn info" id="openInfo" title="Info & Formeln"><i class="fas fa-circle-info"></i></button>
+        </div>
+    </header>
+
+
+    <div class="app">
+
+    <div class="sidebar">
+        <div class="brand">
+            <i class="fas fa-hard-hat" style="color:var(--accent)"></i>
+            ART <span>BAUTECHNIK</span>
+        </div>
+
+        <!-- Redundant 'Zurück zum Dashboard' button removed -->
+
+        <div class="nav-btn active" onclick="switchTab('concrete', this)">
+            <i class="fas fa-cube"></i> Beton & Volumen
+        </div>
+        <div class="nav-btn" onclick="switchTab('steel', this)">
+            <i class="fas fa-girders"></i> Stahlprofile (DIN)
+        </div>
+        <div class="nav-btn" onclick="switchTab('rebar', this)">
+            <i class="fas fa-border-all"></i> Bewehrung
+        </div>
+    </div>
+
+    <div class="main">
+
+        <div id="concrete" class="calc-section active">
+            <h2>Betonrechner (Massivbau)</h2>
+            <div class="group">
+                <div class="input-grid">
+                    <div>
+                        <label>Bauteil-Typ</label>
+                        <select id="c_type" onchange="benenneMasse()">
+                            <option value="slab">Bodenplatte / Decke</option>
+                            <option value="wall">Wand</option>
+                            <option value="column">Stütze (Rechteck)</option>
+                            <option value="foundation">Streifenfundament</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label>Betonsorte (Dichte)</label>
+                        <select id="c_density">
+                            <option value="2500">Stahlbeton (2500 kg/m³)</option>
+                            <option value="2400">Normalbeton (2400 kg/m³)</option>
+                            <option value="2000">Leichtbeton (2000 kg/m³)</option>
+                        </select>
+                    </div>
+                    <div><label id="lbl_c_l">Länge (m)</label><input type="number" id="c_l" value="5.0" step="0.1"></div>
+                    <div><label id="lbl_c_w">Breite (m)</label><input type="number" id="c_w" value="4.0" step="0.1"></div>
+                    <div><label id="lbl_c_h">Höhe / Dicke (m)</label><input type="number" id="c_h" value="0.2" step="0.05"></div>
+                    <div><label>Anzahl (Stück)</label><input type="number" id="c_qty" value="1"></div>
+                </div>
+                <button class="btn-calc" onclick="calcConcrete()">Berechnen</button>
+                <div id="msg_c" class="eingabe-fehler"></div>
+            </div>
+
+            <div class="result-box">
+                <div>
+                    <div class="res-label">Gesamtvolumen</div>
+                    <div class="res-value" id="res_c_vol">0.00 <span class="res-unit">m³</span></div>
+                </div>
+                <div>
+                    <div class="res-label">Gesamtgewicht</div>
+                    <div class="res-value" id="res_c_wgt">0 <span class="res-unit">kg</span></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="steel" class="calc-section">
+            <h2>Stahlprofil-Rechner (DIN)</h2>
+            <div class="group">
+                <div class="input-grid">
+                    <div class="full-width">
+                        <label>Profil-Reihe</label>
+                        <select id="s_series" onchange="updateSizes()">
+                            <option value="HEA">HE-A (Breitflansch leicht)</option>
+                            <option value="HEB">HE-B (Breitflansch normal)</option>
+                            <option value="IPE">IPE (Mittelbreit)</option>
+                            <option value="UNP">UNP (U-Profil)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label>Baugröße</label>
+                        <select id="s_size">
+                            </select>
+                    </div>
+                    <div><label>Länge (m)</label><input type="number" id="s_l" value="6.0" step="0.1"></div>
+                    <div><label>Anzahl</label><input type="number" id="s_qty" value="1"></div>
+                </div>
+                <button class="btn-calc" onclick="calcSteel()">Berechnen</button>
+                <div id="msg_s" class="eingabe-fehler"></div>
+            </div>
+
+            <div class="result-box">
+                <div>
+                    <div class="res-label">Gewicht pro Meter</div>
+                    <div class="res-value" id="res_s_gpm">0.0 <span class="res-unit">kg/m</span></div>
+                </div>
+                <div>
+                    <div class="res-label">Gesamtgewicht</div>
+                    <div class="res-value" id="res_s_total">0 <span class="res-unit">kg</span></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="rebar" class="calc-section">
+            <h2>Bewehrung & Stahlmatten</h2>
+            <div class="group">
+                <div class="input-grid">
+                    <div>
+                        <label>Durchmesser (mm)</label>
+                        <select id="r_diam">
+                            <option value="6">Ø 6 mm</option>
+                            <option value="8">Ø 8 mm</option>
+                            <option value="10">Ø 10 mm</option>
+                            <option value="12">Ø 12 mm</option>
+                            <option value="14">Ø 14 mm</option>
+                            <option value="16">Ø 16 mm</option>
+                            <option value="20">Ø 20 mm</option>
+                            <option value="25">Ø 25 mm</option>
+                            <option value="28">Ø 28 mm</option>
+                        </select>
+                    </div>
+                    <div><label>Stablänge (m)</label><input type="number" id="r_len" value="6.0" step="0.1"></div>
+                    <div><label>Anzahl Stäbe</label><input type="number" id="r_qty" value="50"></div>
+                </div>
+                <button class="btn-calc" onclick="calcRebar()">Hinzufügen zur Liste</button>
+                <div id="msg_r" class="eingabe-fehler"></div>
+            </div>
+
+            <div style="background:#191f26; border-radius:8px; padding:15px; margin-top:20px; border:1px solid #333;">
+                <table id="rebarTable">
+                    <thead>
+                        <tr>
+                            <th>Ø (mm)</th>
+                            <th>Länge (m)</th>
+                            <th>Stück</th>
+                            <th>Gewicht (kg)</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+                <button type="button" class="btn-leeren" id="btn_r_leeren"
+                        onclick="leereStahlliste()" disabled>Liste leeren</button>
+            </div>
+
+            <div class="result-box">
+                <div>
+                    <div class="res-label">Gesamtgewicht Liste</div>
+                    <div class="res-value" id="res_r_total">0 <span class="res-unit">kg</span></div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+
+<div class="modal-overlay" id="infoModalOverlay" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="infoTitle">
+        <div class="modal-header">
+            <div class="modal-title" id="infoTitle"><i class="fas fa-circle-info"></i> Bautechnik Rechner Pro | Anwendung, Nutzung & Formeln</div>
+            <button class="modal-close" id="closeInfo" title="Schließen"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-body">
+            <h4>Zweck dieser Seite</h4>
+            <ul>
+                <li>Schnelle Berechnung von Betonvolumen/-gewicht, Gewicht von DIN-Stahlprofilen (interne Datenbank) und Bewehrungsgewichten für Stücklisten/Schätzungen.</li>
+                <li>Geeignet für technische Schätzungen (Engineering Estimates). Für die Endkonstruktion sollte dies mit Normen/Fachsoftware überprüft werden.</li>
+            </ul>
+
+            <h4>Verwendung</h4>
+            <ul>
+                <li>Wählen Sie im linken Menü den gewünschten Reiter: <b>Beton</b>, <b>Stahlprofile</b> oder <b>Bewehrung</b>.</li>
+                <li>Geben Sie die Werte ein und klicken Sie auf <b>Berechnen</b> oder <b>Hinzufügen zur Liste</b>.</li>
+                <li>Das <b>Home-Icon</b> oben führt immer zurück zum Haupt-Dashboard.</li>
+            </ul>
+
+            <h4>Formeln und Berechnungslogik (exakt wie im HTML-Code)</h4>
+            <ul>
+                <li><b>Beton (Concrete)</b>: Gesamtvolumen
+                    <code>vol = l * w * h * qty</code>
+                    und Gesamtgewicht
+                    <code>weight = vol * density</code>
+                </li>
+                <li><b>Stahlprofile (Steel)</b>: Gewicht pro Meter aus Datenbank
+                    <code>kgPerM = DB[series][size]</code>
+                    und Gesamtgewicht
+                    <code>total = kgPerM * l * qty</code>
+                </li>
+                <li><b>Bewehrung (Rebar)</b>: Geschätztes Gewicht pro Meter
+                    <code>kgPerM = (d * d) / 162</code>
+                    dann Gewicht
+                    <code>weight = kgPerM * l * qty</code>
+                    und Gesamtsumme der Liste mit
+                    <code>totalRebarWeight += weight</code>
+                </li>
+            </ul>
+
+            <h4>Praktischer Hinweis</h4>
+            <ul>
+                <li>Die Einheiten sind genau wie im Formular angegeben (m, mm, kg/m³). Falsche Einheiten führen zu falschen Ergebnissen.</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- DATABASE (Specific Weights kg/m) ---
+    const DB = {
+        'HEA': { 100:16.7, 120:19.9, 140:24.7, 160:30.4, 180:35.5, 200:42.3, 220:50.5, 240:60.3, 260:68.2, 280:76.4, 300:88.3 },
+        'HEB': { 100:20.4, 120:26.7, 140:33.7, 160:42.6, 180:51.2, 200:61.3, 220:71.5, 240:83.2, 260:93.0, 280:103.0, 300:117.0 },
+        'IPE': { 80:6.0, 100:8.1, 120:10.4, 140:12.9, 160:15.8, 180:18.8, 200:22.4, 220:26.2, 240:30.7, 270:36.1, 300:42.2 },
+        'UNP': { 80:8.6, 100:10.6, 120:13.4, 140:16.0, 160:18.8, 180:22.0, 200:25.3, 220:29.4, 240:33.2, 260:37.9, 300:46.2 }
+    };
+
+    // Die Liste ist die Wahrheit, nicht eine mitlaufende Summe. Vorher zaehlte
+    // totalRebarWeight nur hoch. Eine Zeile mit 500 statt 50 Staeben liess sich
+    // nicht mehr herausnehmen - die Seite musste neu geladen und die ganze
+    // Liste noch einmal eingegeben werden. Die Spalte ganz rechts sah nach
+    // Bedienung aus und trug nur ein Haekchen.
+    let stahlliste = [];
+
+    // --- INIT ---
+    window.onload = function() {
+        updateSizes();      // Stahlgroessen fuellen
+        benenneMasse();     // Bezeichnungen zum Bauteil-Typ setzen
+        zeigeStahlliste();  // leere Liste, Knopf aus
+    };
+
+    // knopf wird uebergeben. Vorher stand hier das globale event, das es nur in
+    // Chrome gibt; in Firefox waren die Reiter dadurch tot.
+    function switchTab(id, knopf) {
+        document.querySelectorAll('.calc-section').forEach(el => el.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
+        if (knopf) knopf.classList.add('active');
+    }
+
+    // Liest ein Zahlenfeld. null bei leer, keine Zahl, Unendlich.
+    function zahl(id) {
+        const el = document.getElementById(id);
+        if (!el) return null;
+        const t = (el.value || '').trim();
+        if (t === '') return null;
+        const v = Number(t);
+        return Number.isFinite(v) ? v : null;
+    }
+
+    function meldung(id, text) {
+        const el = document.getElementById(id);
+        if (el) el.innerText = text || '';
+    }
+
+    // Bezeichnungen der drei Masse haengen am Bauteil-Typ. Die Rechnung bleibt
+    // dieselbe, weil alle vier Typen Prismen sind; nur weiss der Nutzer jetzt,
+    // was er wo eintragen soll. Vorher wurde c_type nirgends ausgelesen.
+    const MASSE = {
+        slab:       ["Länge (m)", "Breite (m)", "Dicke (m)"],
+        wall:       ["Länge (m)", "Dicke (m)", "Höhe (m)"],
+        column:     ["Querschnitt a (m)", "Querschnitt b (m)", "Höhe (m)"],
+        foundation: ["Länge (m)", "Breite (m)", "Tiefe (m)"]
+    };
+    function benenneMasse() {
+        const t = document.getElementById('c_type').value;
+        const m = MASSE[t] || MASSE.slab;
+        document.getElementById('lbl_c_l').innerText = m[0];
+        document.getElementById('lbl_c_w').innerText = m[1];
+        document.getElementById('lbl_c_h').innerText = m[2];
+    }
+
+    // --- CONCRETE ---
+    function calcConcrete() {
+        const l = zahl('c_l'), w = zahl('c_w'), h = zahl('c_h'), qty = zahl('c_qty');
+        const density = zahl('c_density');
+
+        if (l === null || w === null || h === null || qty === null) {
+            meldung('msg_c', 'Bitte alle vier Felder mit Zahlen füllen.'); return;
+        }
+        if (l <= 0 || w <= 0 || h <= 0 || qty <= 0) {
+            meldung('msg_c', 'Masse und Anzahl müssen größer als null sein.'); return;
+        }
+        meldung('msg_c', '');
+
+        const vol = l * w * h * qty;
+        const weight = vol * density;
+
+        animateValue('res_c_vol', vol.toFixed(2));
+        animateValue('res_c_wgt', Math.round(weight));
+    }
+
+    // --- STEEL ---
+    function updateSizes() {
+        const series = document.getElementById('s_series').value;
+        const select = document.getElementById('s_size');
+        select.innerHTML = '';
+        
+        for (let size in DB[series]) {
+            let opt = document.createElement('option');
+            opt.value = size;
+            opt.innerHTML = series + ' ' + size;
+            select.appendChild(opt);
+        }
+    }
+
+    function calcSteel() {
+        const series = document.getElementById('s_series').value;
+        const size = document.getElementById('s_size').value;
+        const l = zahl('s_l'), qty = zahl('s_qty');
+
+        if (l === null || qty === null) {
+            meldung('msg_s', 'Bitte Länge und Anzahl mit Zahlen füllen.'); return;
+        }
+        if (l <= 0 || qty <= 0) {
+            meldung('msg_s', 'Länge und Anzahl müssen größer als null sein.'); return;
+        }
+        const kgPerM = DB[series][size];
+        if (kgPerM === undefined) {
+            meldung('msg_s', 'Für dieses Profil liegt kein Gewicht vor.'); return;
+        }
+        meldung('msg_s', '');
+        const total = kgPerM * l * qty;
+
+        animateValue('res_s_gpm', kgPerM.toFixed(1));
+        animateValue('res_s_total', Math.round(total));
+    }
+
+    // --- REBAR ---
+    function calcRebar() {
+        const d = zahl('r_diam'), l = zahl('r_len'), qty = zahl('r_qty');
+
+        if (l === null || qty === null || d === null) {
+            meldung('msg_r', 'Bitte Länge und Anzahl mit Zahlen füllen.'); return;
+        }
+        if (l <= 0 || qty <= 0) {
+            meldung('msg_r', 'Länge und Anzahl müssen größer als null sein.'); return;
+        }
+        meldung('msg_r', '');
+
+        // Masse je Meter eines Rundstabs: rho * A = 7850 * pi/4 * (d/1000)^2
+        // = d^2 / 162,16. Die Bauformel d^2/162 ist genau das, gerundet.
+        const kgPerM = (d * d) / 162;
+        const weight = kgPerM * l * qty;
+
+        stahlliste.unshift({ d: d, laenge: l, anzahl: qty, gewicht: weight });
+        zeigeStahlliste();
+    }
+
+    // Tabelle und Summe kommen beide aus stahlliste. Damit koennen sie nicht
+    // auseinanderlaufen: was in der Tabelle steht, ist in der Summe, und was
+    // geloescht wird, ist aus beidem weg.
+    function zeigeStahlliste() {
+        const tbody = document.querySelector('#rebarTable tbody');
+        tbody.innerHTML = '';
+        let summe = 0;
+        stahlliste.forEach((z, i) => {
+            summe += z.gewicht;
+            const tr = document.createElement('tr');
+            tr.innerHTML = '<td>\u00D8 ' + z.d + '</td><td>' + z.laenge.toFixed(2)
+                + '</td><td>' + z.anzahl + '</td><td>' + z.gewicht.toFixed(1) + '</td>';
+            const td = document.createElement('td');
+            const knopf = document.createElement('button');
+            knopf.type = 'button';
+            knopf.className = 'btn-zeile';
+            knopf.textContent = 'L\u00F6schen';
+            knopf.addEventListener('click', function () {
+                stahlliste.splice(i, 1);
+                zeigeStahlliste();
+            });
+            td.appendChild(knopf);
+            tr.appendChild(td);
+            tbody.appendChild(tr);
+        });
+        animateValue('res_r_total', Math.round(summe));
+        const leer = document.getElementById('btn_r_leeren');
+        if (leer) leer.disabled = (stahlliste.length === 0);
+    }
+
+    function leereStahlliste() {
+        stahlliste = [];
+        zeigeStahlliste();
+    }
+
+    // Helper
+    function animateValue(id, end) {
+        const obj = document.getElementById(id);
+        obj.innerHTML = end + ' <span class="res-unit">' + obj.querySelector('.res-unit').innerText + '</span>';
+        obj.style.color = '#fff';
+        setTimeout(() => obj.style.color = 'var(--accent)', 100);
+        setTimeout(() => obj.style.color = '#fff', 300);
+    }
+</script>
+
+
+<script>
+(function(){
+    const overlay = document.getElementById('infoModalOverlay');
+    const openBtn = document.getElementById('openInfo');
+    const closeBtn = document.getElementById('closeInfo');
+
+    function openInfoModal(){
+        overlay.classList.add('open');
+        overlay.setAttribute('aria-hidden','false');
+    }
+    function closeInfoModal(){
+        overlay.classList.remove('open');
+        overlay.setAttribute('aria-hidden','true');
+    }
+
+    if(openBtn) openBtn.addEventListener('click', openInfoModal);
+    if(closeBtn) closeBtn.addEventListener('click', closeInfoModal);
+    if(overlay) overlay.addEventListener('click', (e)=>{ if(e.target === overlay) closeInfoModal(); });
+    window.addEventListener('keydown', (e)=>{ if(e.key === 'Escape' && overlay.classList.contains('open')) closeInfoModal(); });
+})();
+</script>
+
+</body>
+</html>

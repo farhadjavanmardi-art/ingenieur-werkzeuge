@@ -1,0 +1,1105 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>E-Technik Toolbox | ART ENVI</title>
+    <link rel="stylesheet" href="bibliotheken/fontawesome/css/all.min.css">
+    <style>
+        :root {
+            /* Dashboard Theme Colors - Updated to Emerald */
+            --bg: #031b18;
+            --surface: #052e2b;
+            --sidebar-bg: #02110d;
+            
+            --primary: #10b981; /* Emerald */
+            --primary-hover: #34d399;
+            --secondary: #2979ff; 
+            
+            --text: #d1fae5;
+            --text-muted: #aaa;
+            --border: #064e42;
+            
+            --calc-btn: #06261c;
+            --calc-btn-hover: #0a382e;
+            --danger: #ef4444;
+            --success: #10b981;
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            height: 100vh;
+            display: flex;
+            overflow: hidden;
+            padding-top: 64px; /* Space for Topbar */
+        }
+
+        /* SIDEBAR NAVIGATION */
+        .sidebar {
+            width: 90px;
+            background-color: var(--sidebar-bg);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-top: 30px;
+            z-index: 10;
+            box-shadow: 2px 0 20px rgba(0,0,0,0.5);
+        }
+
+        .nav-btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 12px;
+            background: rgba(16, 185, 129, 0.05);
+            border: 1px solid transparent;
+            color: var(--text-muted);
+            font-size: 24px;
+            margin-bottom: 25px;
+            cursor: pointer;
+            transition: 0.3s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+
+        .nav-btn:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+            transform: translateY(-2px);
+            box-shadow: 0 0 15px rgba(16, 185, 129, 0.2);
+        }
+
+        .nav-btn.active {
+            background: var(--primary);
+            color: #00150d;
+            box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);
+            font-weight: bold;
+        }
+        
+        .nav-tooltip {
+            position: absolute;
+            left: 75px;
+            background: #06261c;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            opacity: 0;
+            pointer-events: none;
+            transition: 0.2s;
+            white-space: nowrap;
+            border: 1px solid var(--border);
+            z-index: 100;
+            color: #fff;
+        }
+        .nav-btn:hover .nav-tooltip { opacity: 1; left: 80px; }
+
+        /* MAIN CONTENT */
+        .main-wrapper {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* HEADER REMOVED (Redundant) */
+        
+        /* CONTENT GRID */
+        .content-area {
+            flex: 1;
+            padding: 30px;
+            overflow-y: auto;
+            display: grid;
+            grid-template-columns: 1fr 400px; /* Space for calculator */
+            gap: 30px;
+        }
+
+        .tool-container {
+            display: none;
+            animation: fadeIn 0.4s ease;
+        }
+        .tool-container.active { display: block; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        h2 { margin-top: 0; border-bottom: 1px solid var(--border); padding-bottom: 15px; color: var(--primary); font-size: 22px; display: flex; align-items: center; gap: 10px; }
+
+        /* FORMS & CARDS */
+        .card {
+            background-color: var(--surface);
+            border-radius: 12px;
+            padding: 25px;
+            border: 1px solid var(--border);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            margin-bottom: 25px;
+        }
+
+        .input-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 8px; font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+        
+        input, select {
+            width: 100%;
+            background: #02110d;
+            border: 1px solid var(--border);
+            padding: 12px;
+            border-radius: 6px;
+            color: white;
+            font-size: 15px;
+            box-sizing: border-box;
+            transition: 0.3s;
+        }
+        input:focus, select:focus { border-color: var(--primary); outline: none; }
+
+        .btn-calc {
+            width: 100%;
+            padding: 12px;
+            background: var(--primary);
+            color: #00150d;
+            font-weight: bold;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 15px;
+            margin-top: 15px;
+            transition: 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        .btn-calc:hover { background: var(--primary-hover); transform: translateY(-2px); }
+
+        .result-box {
+            margin-top: 20px;
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid var(--primary);
+            padding: 20px;
+            border-radius: 8px;
+            display: none;
+            text-align: center;
+        }
+        .result-val { font-size: 28px; font-weight: bold; color: #fff; display: block; margin-top: 5px; }
+
+        /* CALCULATOR (RIGHT PANEL) */
+        .calculator-panel {
+            background-color: var(--surface);
+            border-radius: 12px;
+            padding: 25px;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid var(--border);
+            height: fit-content;
+            min-height: 550px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        .calc-screen {
+            background: #000;
+            color: var(--primary);
+            font-family: 'Courier New', monospace;
+            font-size: 32px;
+            text-align: right;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 1px solid var(--border);
+            min-height: 50px;
+            word-wrap: break-word;
+            box-shadow: inset 0 0 10px rgba(16, 185, 129, 0.1);
+        }
+        .calc-history {
+            text-align: right;
+            color: #666;
+            font-size: 12px;
+            min-height: 20px;
+            margin-bottom: 5px;
+            font-family: monospace;
+        }
+
+        .calc-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+        }
+
+        .c-btn {
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: var(--calc-btn);
+            color: #fff;
+            font-size: 18px;
+            cursor: pointer;
+            transition: 0.2s;
+            font-weight: bold;
+        }
+        .c-btn:hover { background: var(--calc-btn-hover); border-color: var(--primary); }
+        .c-btn:active { transform: scale(0.95); }
+        
+        .op { color: var(--primary); background: rgba(16, 185, 129, 0.1); border-color: var(--primary); }
+        .op:hover { background: var(--primary); color: #000; }
+        
+        .eq { background: var(--primary); color: black; grid-column: span 2; border-color: var(--primary); }
+        .eq:hover { background: var(--primary-hover); }
+        
+        .sci { font-size: 14px; color: var(--secondary); background: rgba(41, 121, 255, 0.1); }
+        
+        .clear { color: var(--danger); background: rgba(255, 82, 82, 0.1); }
+        .clear:hover { background: var(--danger); color: #fff; }
+
+        /* RESPONSIVE */
+        @media (max-width: 1100px) {
+            .content-area { grid-template-columns: 1fr; }
+            .calculator-panel { display: none; } /* Hide sidebar calculator on mobile/tablet */
+        }
+    </style>
+
+<style id="ki-global-style">
+/* ===== KI Engineering Global Shell (Emerald) ===== */
+html{ box-sizing: border-box; }
+*,*::before,*::after{ box-sizing: inherit; }
+
+:root{
+  --ki-emerald: #10b981;
+  --ki-emerald-2: #34d399;
+  --ki-border: rgba(16,185,129,0.35);
+  --ki-text: rgba(255,255,255,0.92);
+  --ki-shadow: 0 10px 25px rgba(0,0,0,0.35);
+  --ki-topbar-h: 64px;
+}
+
+.ki-topbar{
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: var(--ki-topbar-h);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  background: linear-gradient(180deg, rgba(5, 46, 43, 0.98), rgba(6, 32, 29, 0.92));
+  border-bottom: 1px solid var(--ki-border);
+  box-shadow: var(--ki-shadow);
+  z-index: 2147483000;
+  backdrop-filter: blur(10px);
+}
+
+.ki-topbar-left{display:flex; align-items:center; gap:12px; min-width: 0;}
+.ki-topbar-brand{display:flex; align-items:center; gap:10px; min-width:0;}
+.ki-dot{width:10px; height:10px; border-radius:999px; background: var(--ki-emerald); box-shadow: 0 0 18px rgba(16,185,129,0.55);}
+.ki-brand-text{font: 700 14px/1.2 system-ui, -apple-system, Segoe UI, Roboto, Arial; color: var(--ki-text); letter-spacing: 0.6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.ki-topbar-right{display:flex; align-items:center; gap:10px;}
+
+.ki-iconbtn{
+  width: 42px; height: 42px;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  display:flex; align-items:center; justify-content:center;
+  color: var(--ki-emerald-2);
+  cursor: pointer;
+  transition: transform .15s ease, background .15s ease, border-color .15s ease;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.25);
+}
+.ki-linkbtn{ text-decoration:none; }
+.ki-iconbtn:hover{
+  transform: translateY(-1px);
+  background: rgba(16,185,129,0.12);
+  border-color: rgba(16,185,129,0.55);
+}
+.ki-ico{width:20px; height:20px; fill: currentColor;}
+
+</style>
+</head>
+<body>
+<div class="ki-topbar" role="banner" aria-label="KI Engineering Navigation">
+  <div class="ki-topbar-left">
+    <div class="ki-topbar-brand">
+      <span class="ki-dot"></span>
+      <span class="ki-brand-text">E-Technik Toolbox</span>
+    </div>
+  </div>
+  <div class="ki-topbar-right">
+    <button type="button" class="ki-iconbtn" id="kiInfoBtn" aria-label="Info" title="Info">
+      <svg class="ki-ico" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 2a10 10 0 1 0 .001 20.001A10 10 0 0 0 12 2Zm0 4.8a1.2 1.2 0 1 1 0 2.4a1.2 1.2 0 0 1 0-2.4Zm1.6 12H10.9a.9.9 0 1 1 0-1.8h.9v-5.2h-.7a.9.9 0 1 1 0-1.8h1.5c.5 0 .9.4.9.9v6.1h.9a.9.9 0 1 1 0 1.8Z"/>
+      </svg>
+    </button>
+    <a class="ki-iconbtn ki-linkbtn" id="kiHomeBtn" href="dashboard/" aria-label="Home" title="Home">
+      <svg class="ki-ico" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 3.2 2.7 11a1 1 0 0 0 1.3 1.5l.9-.7V20a1.6 1.6 0 0 0 1.6 1.6h3.9a.9.9 0 0 0 .9-.9v-4.8a.9.9 0 0 1 .9-.9h1.6a.9.9 0 0 1 .9.9v4.8c0 .5.4.9.9.9h3.9A1.6 1.6 0 0 0 19.1 20v-8.2l.9.7A1 1 0 1 0 21.3 11L12 3.2Z"/>
+      </svg>
+    </a>
+  </div>
+</div>
+
+
+    <nav class="sidebar">
+        <button class="nav-btn active" onclick="showTab('general')">
+            <i class="fas fa-bolt"></i>
+            <span class="nav-tooltip">Leistung/Ohm</span>
+        </button>
+        <button class="nav-btn" onclick="showTab('motor')">
+            <i class="fas fa-cogs"></i>
+            <span class="nav-tooltip">Motor Rechner</span>
+        </button>
+        <button class="nav-btn" onclick="showTab('pfc')">
+            <i class="fas fa-battery-three-quarters"></i>
+            <span class="nav-tooltip">Kompensation (PFC)</span>
+        </button>
+        <button class="nav-btn" onclick="showTab('vdrop')">
+            <i class="fas fa-level-down-alt"></i>
+            <span class="nav-tooltip">Spannungsfall</span>
+        </button>
+    </nav>
+
+    <div class="main-wrapper">
+        
+        <div class="content-area">
+            
+            <div id="general" class="tool-container active">
+                <div class="card">
+                    <h2><i class="fas fa-calculator"></i> Leistung & Strom (Ohm)</h2>
+                    <div class="input-group">
+                        <label>Systemart</label>
+                        <select id="gen_sys">
+                            <option value="1">Einphasig (1ph AC)</option>
+                            <option value="1.732">Dreiphasig (3ph AC)</option>
+                            <option value="dc">Gleichstrom (DC)</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>Spannung (V)</label>
+                        <input type="number" id="gen_v" value="400">
+                    </div>
+                    <div class="input-group">
+                        <label>Leistungsfaktor (cos φ)</label>
+                        <input type="number" id="gen_pf" value="0.9" step="0.01">
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap:15px;">
+                        <div class="input-group">
+                            <label>Bekannte Leistung (kW)</label>
+                            <input type="number" id="gen_p" placeholder="P eingeben">
+                        </div>
+                        <div class="input-group">
+                            <label>ODER Bekannter Strom (A)</label>
+                            <input type="number" id="gen_i" placeholder="I eingeben">
+                        </div>
+                    </div>
+
+                    <button class="btn-calc" onclick="calcGeneral()"><i class="fas fa-play"></i> Berechnen</button>
+
+                    <div id="gen_result" class="result-box">
+                        <span id="gen_res_txt" class="result-val"></span>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h3><i class="fas fa-info-circle"></i> Verwendete Formeln</h3>
+                    <p style="color:#aaa; font-size:14px; line-height:1.6;">
+                        <strong>3-Phasen:</strong> P = √3 × U × I × cosφ<br>
+                        <strong>1-Phase:</strong> P = U × I × cosφ<br>
+                        <strong>DC:</strong> P = U × I
+                    </p>
+                </div>
+            </div>
+
+            <div id="motor" class="tool-container">
+                <div class="card">
+                    <h2><i class="fas fa-fan"></i> Elektromotor Rechner</h2>
+                    <div class="input-group">
+                        <label>Motorleistung (kW)</label>
+                        <input type="number" id="mot_kw" value="15">
+                    </div>
+                    <div class="input-group">
+                        <label>Spannung (V)</label>
+                        <input type="number" id="mot_v" value="400">
+                    </div>
+                    <div class="input-group">
+                        <label>Wirkungsgrad (η) %</label>
+                        <input type="number" id="mot_eff" value="90">
+                    </div>
+                    <div class="input-group">
+                        <label>Leistungsfaktor (cos φ)</label>
+                        <input type="number" id="mot_pf" value="0.85">
+                    </div>
+
+                    <button class="btn-calc" onclick="calcMotor()"><i class="fas fa-play"></i> Motor berechnen</button>
+
+                    <div id="mot_result" class="result-box">
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px;">
+                            <div>
+                                <small style="color:#aaa; text-transform:uppercase;">Nennstrom (In)</small>
+                                <span id="mot_res_i" class="result-val">0 A</span>
+                            </div>
+                            <div>
+                                <small style="color:#aaa; text-transform:uppercase;">Scheinleistung (S)</small>
+                                <span id="mot_res_s" class="result-val">0 kVA</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="pfc" class="tool-container">
+                <div class="card">
+                    <h2><i class="fas fa-battery-three-quarters"></i> Blindleistungskompensation</h2>
+                    <p style="font-size:13px; color:#aaa; margin-bottom:20px;">Berechnung der Kondensatorleistung (kVAR) zur Verbesserung des Leistungsfaktors.</p>
+                    <div class="input-group">
+                        <label>Wirkleistung (Last) in kW</label>
+                        <input type="number" id="pfc_kw" value="100">
+                    </div>
+                    <div class="input-group">
+                        <label>Aktueller Cos φ (Alt)</label>
+                        <input type="number" id="pfc_old" value="0.70">
+                    </div>
+                    <div class="input-group">
+                        <label>Ziel Cos φ (Neu)</label>
+                        <input type="number" id="pfc_new" value="0.95">
+                    </div>
+
+                    <button class="btn-calc" onclick="calcPFC()"><i class="fas fa-play"></i> kVAR Berechnen</button>
+
+                    <div id="pfc_result" class="result-box">
+                        <small style="color:#aaa;">Benötigte Kompensationsleistung:</small>
+                        <span id="pfc_res_val" class="result-val">0 kVAR</span>
+                        <small id="pfc_steps" style="color:var(--primary); display:block; margin-top:5px; font-weight:bold;"></small>
+                    </div>
+                </div>
+            </div>
+
+            <div id="vdrop" class="tool-container">
+                <div class="card">
+                    <h2><i class="fas fa-level-down-alt"></i> Spannungsfall Rechner</h2>
+                    <div class="input-group">
+                        <label>Stromstärke (A)</label>
+                        <input type="number" id="vd_i" value="32">
+                    </div>
+                    <div class="input-group">
+                        <label>Kabellänge (m)</label>
+                        <input type="number" id="vd_l" value="50">
+                    </div>
+                    <div class="input-group">
+                        <label>Kabelquerschnitt (mm²)</label>
+                        <select id="vd_s">
+                            <option value="1.5">1.5 mm²</option>
+                            <option value="2.5">2.5 mm²</option>
+                            <option value="4">4 mm²</option>
+                            <option value="6">6 mm²</option>
+                            <option value="10">10 mm²</option>
+                            <option value="16">16 mm²</option>
+                            <option value="25">25 mm²</option>
+                            <option value="35">35 mm²</option>
+                            <option value="50">50 mm²</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>Leitermaterial</label>
+                        <select id="vd_mat">
+                            <option value="56">Kupfer (56)</option>
+                            <option value="35">Aluminium (35)</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>Spannungssystem</label>
+                        <select id="vd_sys">
+                            <option value="1">1-Phasig (230V)</option>
+                            <option value="1.732">3-Phasig (400V)</option>
+                        </select>
+                    </div>
+
+                    <button class="btn-calc" onclick="calcDrop()"><i class="fas fa-check"></i> Prüfen</button>
+
+                    <div id="vd_result" class="result-box">
+                        <small style="color:#aaa;">Spannungsfall:</small>
+                        <span id="vd_res_val" class="result-val">0 V (0%)</span>
+                        <small id="vd_status" style="display:block; margin-top:5px; font-weight:bold;"></small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="calculator-panel">
+                <h3 style="margin:0 0 15px 0; color:var(--text-muted); font-size:14px; text-transform:uppercase; text-align:center;">Wissenschaftlicher Rechner</h3>
+                <div class="calc-history" id="calcHistory"></div>
+                <div class="calc-screen" id="display">0</div>
+                
+                <div class="calc-grid" dir="ltr">
+                    <button class="c-btn sci" onclick="appendFunc('Math.sin(')">sin</button>
+                    <button class="c-btn sci" onclick="appendFunc('Math.cos(')">cos</button>
+                    <button class="c-btn sci" onclick="appendFunc('Math.tan(')">tan</button>
+                    <button class="c-btn clear" onclick="clearDisplay()">AC</button>
+
+                    <button class="c-btn sci" onclick="appendFunc('Math.sqrt(')">√</button>
+                    <button class="c-btn sci" onclick="appendFunc('**2')">x²</button>
+                    <button class="c-btn sci" onclick="appendChar('(')">(</button>
+                    <button class="c-btn sci" onclick="appendChar(')')">)</button>
+
+                    <button class="c-btn" onclick="appendChar('7')">7</button>
+                    <button class="c-btn" onclick="appendChar('8')">8</button>
+                    <button class="c-btn" onclick="appendChar('9')">9</button>
+                    <button class="c-btn op" onclick="appendChar('/')">÷</button>
+
+                    <button class="c-btn" onclick="appendChar('4')">4</button>
+                    <button class="c-btn" onclick="appendChar('5')">5</button>
+                    <button class="c-btn" onclick="appendChar('6')">6</button>
+                    <button class="c-btn op" onclick="appendChar('*')">×</button>
+
+                    <button class="c-btn" onclick="appendChar('1')">1</button>
+                    <button class="c-btn" onclick="appendChar('2')">2</button>
+                    <button class="c-btn" onclick="appendChar('3')">3</button>
+                    <button class="c-btn op" onclick="appendChar('-')">-</button>
+
+                    <button class="c-btn" onclick="appendChar('0')">0</button>
+                    <button class="c-btn" onclick="appendChar('.')">.</button>
+                    <button class="c-btn sci" onclick="backspace()">⌫</button>
+                    <button class="c-btn op" onclick="appendChar('+')">+</button>
+
+                    <button class="c-btn sci" onclick="appendChar('Math.PI')">π</button>
+                    <button class="c-btn sci" onclick="appendFunc('**')">^</button>
+                    <button class="c-btn eq" onclick="calculate()">=</button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // --- NAVIGATION LOGIC ---
+        function showTab(tabId) {
+            // Remove active class from tabs and buttons
+            document.querySelectorAll('.tool-container').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
+            
+            // Add active to selected
+            document.getElementById(tabId).classList.add('active');
+            
+            // Highlight button
+            const icons = {
+                'general': 0, 'motor': 1, 'pfc': 2, 'vdrop': 3
+            };
+            document.querySelectorAll('.nav-btn')[icons[tabId]].classList.add('active');
+        }
+
+        // --- TOOL 1: GENERAL ---
+        // Liest ein Zahlenfeld. null bei leer, keine Zahl, Unendlich.
+        function zahl(id) {
+            const el = document.getElementById(id);
+            if (!el) return null;
+            const t = (el.value || '').trim();
+            if (t === '') return null;
+            const v = Number(t);
+            return Number.isFinite(v) ? v : null;
+        }
+        function fehler(id, text) {
+            const el = document.getElementById(id);
+            if (el) el.innerHTML = '<span style="color:var(--danger)">' + text + '</span>';
+        }
+
+        function calcGeneral() {
+            const sys = document.getElementById('gen_sys').value;
+            const V = parseFloat(document.getElementById('gen_v').value);
+            const PF = parseFloat(document.getElementById('gen_pf').value);
+            const P_in = parseFloat(document.getElementById('gen_p').value);
+            const I_in = parseFloat(document.getElementById('gen_i').value);
+            const resBox = document.getElementById('gen_result');
+            const resTxt = document.getElementById('gen_res_txt');
+
+            resBox.style.display = 'block';
+
+            if (P_in > 0) {
+                // Find Current
+                let I = 0;
+                if (sys === 'dc') I = (P_in * 1000) / V;
+                else if (sys === '1') I = (P_in * 1000) / (V * PF);
+                else I = (P_in * 1000) / (Math.sqrt(3) * V * PF);
+                
+                resTxt.innerHTML = `Strom: <span style="color:var(--primary)">${I.toFixed(2)} A</span>`;
+            } else if (I_in > 0) {
+                // Find Power
+                let P = 0;
+                if (sys === 'dc') P = (V * I_in) / 1000;
+                else if (sys === '1') P = (V * I_in * PF) / 1000;
+                else P = (Math.sqrt(3) * V * I_in * PF) / 1000;
+
+                resTxt.innerHTML = `Leistung: <span style="color:var(--primary)">${P.toFixed(2)} kW</span>`;
+            } else {
+                resTxt.innerText = "Bitte P oder I eingeben";
+            }
+        }
+
+        // --- TOOL 2: MOTOR ---
+        function calcMotor() {
+            const kw = zahl('mot_kw'), v = zahl('mot_v');
+            const effP = zahl('mot_eff'), pf = zahl('mot_pf');
+            document.getElementById('mot_result').style.display = 'block';
+            if (kw === null || v === null || effP === null || pf === null) {
+                fehler('mot_res_i', 'Eingabe fehlt');
+                document.getElementById('mot_res_s').innerText = '--';
+                return;
+            }
+            if (kw <= 0 || v <= 0 || effP <= 0 || effP > 100 || pf <= 0 || pf > 1) {
+                fehler('mot_res_i', 'Werte pruefen: cos phi 0 bis 1, Wirkungsgrad 0 bis 100 %, Leistung und Spannung ueber null');
+                document.getElementById('mot_res_s').innerText = '--';
+                return;
+            }
+            const eff = effP / 100;
+
+            // In = P / (sqrt3 * V * pf * eff)
+            const I = (kw * 1000) / (Math.sqrt(3) * v * pf * eff);
+            // S = P / (pf * eff)
+            const S = kw / (pf * eff);
+
+            document.getElementById('mot_result').style.display = 'block';
+            document.getElementById('mot_res_i').innerText = I.toFixed(1) + " A";
+            document.getElementById('mot_res_s').innerText = S.toFixed(1) + " kVA";
+        }
+
+        // --- TOOL 3: PFC ---
+        function calcPFC() {
+            const P = zahl('pfc_kw'), cos1 = zahl('pfc_old'), cos2 = zahl('pfc_new');
+            document.getElementById('pfc_result').style.display = 'block';
+            const stufenFeld = document.getElementById('pfc_steps');
+            if (P === null || cos1 === null || cos2 === null) {
+                fehler('pfc_res_val', 'Eingabe fehlt'); stufenFeld.innerText = ''; return;
+            }
+            // Ausserhalb 0 bis 1 ergab Math.acos frueher NaN, ohne jeden Hinweis.
+            if (cos1 <= 0 || cos1 > 1 || cos2 <= 0 || cos2 > 1) {
+                fehler('pfc_res_val', 'cos phi muss zwischen 0 und 1 liegen'); stufenFeld.innerText = ''; return;
+            }
+            if (P <= 0) {
+                fehler('pfc_res_val', 'Leistung muss ueber null liegen'); stufenFeld.innerText = ''; return;
+            }
+            if (cos2 <= cos1) {
+                fehler('pfc_res_val', 'Ziel-cos-phi muss groesser als der jetzige sein'); stufenFeld.innerText = ''; return;
+            }
+
+            // tan(acos(x))
+            const tan1 = Math.tan(Math.acos(cos1));
+            const tan2 = Math.tan(Math.acos(cos2));
+
+            const Q_needed = P * (tan1 - tan2);
+
+            document.getElementById('pfc_result').style.display = 'block';
+            document.getElementById('pfc_res_val').innerText = Q_needed.toFixed(1) + " kVAR";
+            
+            // Suggest standard step
+            const standards = [2.5, 5, 10, 12.5, 15, 20, 25, 30, 40, 50, 60];
+            // Aufrunden, nicht auf den naechstliegenden Wert runden: eine kleinere
+            // Stufe kompensiert zu wenig und verfehlt den Ziel-cos-phi.
+            const passend = standards.find(x => x >= Q_needed);
+            document.getElementById('pfc_steps').innerText = passend
+                ? `Nächste Standardstufe: ${passend} kVAR`
+                : `Über ${standards[standards.length - 1]} kVAR: mehrere Stufen erforderlich`;
+        }
+
+        // --- TOOL 4: VOLTAGE DROP ---
+        function calcDrop() {
+            const I = zahl('vd_i'), L = zahl('vd_l'), S = zahl('vd_s');
+            document.getElementById('vd_result').style.display = 'block';
+            if (I === null || L === null || S === null) {
+                fehler('vd_res_val', 'Eingabe fehlt');
+                document.getElementById('vd_status').innerHTML = ''; return;
+            }
+            if (I <= 0 || L <= 0 || S <= 0) {
+                fehler('vd_res_val', 'Strom, Laenge und Querschnitt muessen ueber null liegen');
+                document.getElementById('vd_status').innerHTML = ''; return;
+            }
+            const kappa = parseFloat(document.getElementById('vd_mat').value); // Conductivity
+            const sys = parseFloat(document.getElementById('vd_sys').value);
+            
+            let V_nom = sys === 1 ? 230 : 400;
+            
+            // Formula: dU = (Factor * L * I) / (kappa * S)
+            // Factor: 2 for 1ph/DC, sqrt(3) for 3ph
+            const factor = sys === 1 ? 2 : 1.732;
+            
+            const dU = (factor * L * I) / (kappa * S);
+            const dU_perc = (dU / V_nom) * 100;
+
+            document.getElementById('vd_result').style.display = 'block';
+            const valEl = document.getElementById('vd_res_val');
+            valEl.innerText = `${dU.toFixed(2)} V (${dU_perc.toFixed(2)}%)`;
+
+            const status = document.getElementById('vd_status');
+            if (dU_perc > 3) {
+                status.innerHTML = "<span style='color:var(--danger)'><i class='fas fa-exclamation-triangle'></i> Spannungsfall zu hoch (>3%)</span>";
+            } else {
+                status.innerHTML = "<span style='color:var(--success)'><i class='fas fa-check'></i> Akzeptabel</span>";
+            }
+        }
+
+        // --- CALCULATOR LOGIC ---
+        let display = document.getElementById('display');
+        let currentInput = "";
+
+        function appendChar(char) {
+            if (currentInput === "0" && char !== ".") currentInput = "";
+            currentInput += char;
+            updateScreen();
+        }
+
+        function appendFunc(func) {
+            currentInput += func;
+            updateScreen();
+        }
+
+        function clearDisplay() {
+            currentInput = "0";
+            updateScreen();
+        }
+
+        function backspace() {
+            currentInput = currentInput.slice(0, -1);
+            if (currentInput === "") currentInput = "0";
+            updateScreen();
+        }
+
+        /* Ein kleiner Rechner fuer Ausdruecke, statt eval().
+
+           Hier stand eval(currentInput) mit dem Kommentar "strictly for local
+           tool usage". Das Werkzeug liegt inzwischen im Netz, und ein
+           Ingenieurbuero laesst seine IT darueber schauen: wer eval() auf
+           einer Benutzereingabe findet, liest nicht weiter.
+
+           Ein Filter mit regulaerem Ausdruck waere keine Antwort - danach
+           liefe die Eingabe immer noch als Code. Deshalb wird sie hier
+           gelesen und gerechnet, nie ausgefuehrt. Was die Tastatur erzeugen
+           kann, kann der Rechner; alles andere wird abgewiesen.
+
+           Grammatik, von schwach nach stark bindend:
+             summe   := produkt (('+'|'-') produkt)*
+             produkt := potenz (('*'|'/') potenz)*
+             potenz  := vorzeichen ('**' potenz)?      rechts gebunden
+             vorzeichen := ('-'|'+') vorzeichen | wert
+             wert    := Zahl | pi | funktion '(' summe ')' | '(' summe ')'  */
+        const RECHNER_FUNKTIONEN = {
+            'Math.sin(':  Math.sin,
+            'Math.cos(':  Math.cos,
+            'Math.tan(':  Math.tan,
+            'Math.sqrt(': Math.sqrt,
+        };
+
+        function zerlege(text) {
+            const marken = [];
+            let i = 0;
+            while (i < text.length) {
+                const rest = text.slice(i);
+                if (rest[0] === ' ') { i++; continue; }
+
+                const fn = Object.keys(RECHNER_FUNKTIONEN).find(f => rest.startsWith(f));
+                if (fn) { marken.push({ art: 'funktion', wert: fn }); i += fn.length; continue; }
+
+                if (rest.startsWith('Math.PI')) { marken.push({ art: 'pi' }); i += 7; continue; }
+                if (rest.startsWith('**'))      { marken.push({ art: 'op', wert: '**' }); i += 2; continue; }
+
+                if ('+-*/()'.includes(rest[0])) {
+                    marken.push({ art: 'op', wert: rest[0] }); i++; continue;
+                }
+
+                const zahl = rest.match(/^\d+(\.\d+)?|^\.\d+/);
+                if (zahl) {
+                    marken.push({ art: 'zahl', wert: parseFloat(zahl[0]) });
+                    i += zahl[0].length; continue;
+                }
+                throw new Error('unerlaubtes Zeichen: ' + rest[0]);
+            }
+            return marken;
+        }
+
+        function rechneAus(text) {
+            const marken = zerlege(text);
+            let p = 0;
+            const schau = () => marken[p];
+            const nimm = (wert) => {
+                const m = marken[p];
+                if (!m || (wert !== undefined && !(m.art === 'op' && m.wert === wert))) {
+                    throw new Error('erwartet: ' + wert);
+                }
+                p++; return m;
+            };
+
+            function summe() {
+                let links = produkt();
+                while (schau() && schau().art === 'op' && (schau().wert === '+' || schau().wert === '-')) {
+                    const op = nimm().wert;
+                    const rechts = produkt();
+                    links = (op === '+') ? links + rechts : links - rechts;
+                }
+                return links;
+            }
+            function produkt() {
+                let links = potenz();
+                while (schau() && schau().art === 'op' && (schau().wert === '*' || schau().wert === '/')) {
+                    const op = nimm().wert;
+                    const rechts = potenz();
+                    links = (op === '*') ? links * rechts : links / rechts;
+                }
+                return links;
+            }
+            function potenz() {
+                const basis = vorzeichen();
+                if (schau() && schau().art === 'op' && schau().wert === '**') {
+                    nimm('**');
+                    return Math.pow(basis, potenz());   // rechts gebunden
+                }
+                return basis;
+            }
+            function vorzeichen() {
+                if (schau() && schau().art === 'op' && (schau().wert === '-' || schau().wert === '+')) {
+                    const op = nimm().wert;
+                    const w = vorzeichen();
+                    return (op === '-') ? -w : w;
+                }
+                return wert();
+            }
+            function wert() {
+                const m = schau();
+                if (!m) throw new Error('Ausdruck bricht ab');
+                if (m.art === 'zahl') { p++; return m.wert; }
+                if (m.art === 'pi')   { p++; return Math.PI; }
+                if (m.art === 'funktion') {
+                    p++;                                  // die Klammer gehoert zum Namen
+                    const arg = summe();
+                    nimm(')');
+                    return RECHNER_FUNKTIONEN[m.wert](arg);
+                }
+                if (m.art === 'op' && m.wert === '(') {
+                    nimm('(');
+                    const innen = summe();
+                    nimm(')');
+                    return innen;
+                }
+                throw new Error('unerwartet');
+            }
+
+            const ergebnis = summe();
+            if (p !== marken.length) throw new Error('Rest nach dem Ausdruck');
+            return ergebnis;
+        }
+
+        function calculate() {
+            try {
+                document.getElementById('calcHistory').innerText = currentInput + " =";
+                let result = rechneAus(currentInput);
+
+                // Teilen durch null gab frueher "Infinity" auf dem Schirm.
+                // Das ist kein Ergebnis, das ist ein Fehler.
+                if (!Number.isFinite(result)) throw new Error('kein endliches Ergebnis');
+
+                if (!Number.isInteger(result)) result = result.toFixed(4);
+                currentInput = result.toString();
+                updateScreen();
+            } catch (e) {
+                currentInput = "Fehler";
+                updateScreen();
+                setTimeout(clearDisplay, 1500);
+            }
+        }
+
+        function updateScreen() {
+            // Clean up Math. parts for display
+            let visual = currentInput
+                .replace(/Math.sin\(/g, "sin(")
+                .replace(/Math.cos\(/g, "cos(")
+                .replace(/Math.tan\(/g, "tan(")
+                .replace(/Math.sqrt\(/g, "√(")
+                .replace(/Math.PI/g, "π")
+                .replace(/\*\*2/g, "²");
+            display.innerText = visual;
+        }
+
+        // --- INITIALIZE ---
+        showTab('general');
+
+    </script>
+
+<div class="ki-modal" id="kiHelpModal" aria-hidden="true">
+  <div class="ki-modal-card" role="dialog" aria-modal="true" aria-label="E-Technik Toolbox">
+    <div class="ki-modal-head">
+      <div class="ki-modal-title">
+        <span class="ki-pill">INFO</span>
+        <span>E-Technik Toolbox</span>
+      </div>
+      <button type="button" class="ki-modal-x" data-ki-close="1" aria-label="Close">✕</button>
+    </div>
+    <div class="ki-modal-body">
+      <div class="ki-section">
+        <h3>Zweck</h3>
+        <p>Diese Seite bündelt mehrere Elektro-Berechnungs-Tools (Leistung/Strom, Motor, Blindleistungskompensation, Spannungsfall) plus einen wissenschaftlichen Rechner.</p>
+      </div>
+      <div class="ki-section">
+        <h3>Benutzung</h3>
+        <ul>
+  <li>Links im Sidebar das gewünschte Tool auswählen (Leistung, Motor, PFC, Spannungsfall).</li>
+  <li>Eingabewerte eintragen, dann <code>Berechnen</code> / <code>Prüfen</code> klicken.</li>
+  <li>Ergebnisse erscheinen im jeweiligen Ergebnisfeld. Rechts steht optional der Rechner für schnelle Zwischenschritte.</li>
+</ul>
+      </div>
+      <div class="ki-section">
+        <h3>Formeln / Logik</h3>
+        <ul>
+  <li><strong>Leistung/Strom:</strong>
+    <ul>
+      <li>3~ AC: <code>P = √3 · U · I · cosφ</code></li>
+      <li>1~ AC: <code>P = U · I · cosφ</code></li>
+      <li>DC: <code>P = U · I</code></li>
+      <li>Umgestellt nach <code>I</code>: entsprechend <code>I = P/(...)</code></li>
+    </ul>
+  </li>
+  <li><strong>Motor:</strong>
+    <ul>
+      <li>Nennstrom: <code>Iₙ = (P·1000)/(√3 · U · cosφ · η)</code></li>
+      <li>Scheinleistung: <code>S = P/(cosφ · η)</code> (P in kW, S in kVA)</li>
+    </ul>
+  </li>
+  <li><strong>PFC (Kompensation):</strong>
+    <ul>
+      <li><code>φ = arccos(cosφ)</code></li>
+      <li><code>Q<sub>c</sub> = P · (tanφ₁ − tanφ₂)</code> (kVAR)</li>
+    </ul>
+  </li>
+  <li><strong>Spannungsfall:</strong>
+    <ul>
+      <li><code>ΔU = (k · L · I)/(κ · S)</code>, mit <code>k=2</code> (1~) bzw. <code>k=√3</code> (3~)</li>
+      <li><code>ΔU% = (ΔU / U<sub>nom</sub>) · 100</code></li>
+      <li>κ: Leitfähigkeit (Cu≈56, Al≈35), S: Querschnitt (mm²), L: Länge (m)</li>
+    </ul>
+  </li>
+</ul>
+      </div>
+      <div class="ki-footer-note">
+        <small>Home-Link: <code>dashboard/</code></small>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style id="ki-modal-style">
+.ki-modal{display:none; position:fixed; inset:0; z-index:2147483500;}
+.ki-modal[aria-hidden="false"]{display:block;}
+.ki-modal-backdrop{position:absolute; inset:0; background: rgba(0,0,0,0.72); backdrop-filter: blur(8px);}
+.ki-modal-card{
+  position:relative;
+  max-width: 980px;
+  width: min(980px, calc(100% - 28px));
+  margin: calc(var(--ki-topbar-h) + 18px) auto 18px;
+  background: linear-gradient(180deg, rgba(15,23,42,0.98), rgba(11,18,32,0.98));
+  border: 1px solid rgba(16,185,129,0.40);
+  border-radius: 16px;
+  box-shadow: 0 20px 45px rgba(0,0,0,0.55);
+  color: var(--ki-text);
+}
+.ki-modal-head{
+  display:flex; align-items:center; justify-content:space-between;
+  padding: 16px 16px 12px;
+  border-bottom: 1px solid rgba(16,185,129,0.22);
+}
+.ki-modal-title{display:flex; align-items:center; gap:10px; font: 800 14px/1.2 system-ui, -apple-system, Segoe UI, Roboto, Arial; letter-spacing:.4px;}
+.ki-pill{
+  display:inline-flex; align-items:center; justify-content:center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(16,185,129,0.15);
+  border: 1px solid rgba(16,185,129,0.35);
+  color: var(--ki-emerald-2);
+  font-weight: 900;
+  font-size: 12px;
+}
+.ki-modal-x{
+  width: 40px; height: 40px; border-radius: 12px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  color: rgba(255,255,255,0.85);
+  cursor:pointer;
+}
+.ki-modal-x:hover{border-color: rgba(16,185,129,0.55); background: rgba(16,185,129,0.12); color: #fff;}
+.ki-modal-body{padding: 14px 16px 18px; max-height: calc(100vh - var(--ki-topbar-h) - 60px); overflow:auto;}
+.ki-section{margin: 12px 0 16px; padding: 12px; border-radius: 14px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);}
+.ki-section h3{margin:0 0 10px; color: var(--ki-emerald-2); font: 900 13px/1.2 system-ui, -apple-system, Segoe UI, Roboto, Arial; text-transform: uppercase; letter-spacing: .8px;}
+.ki-section p, .ki-section li{color: var(--ki-text); opacity: .95; font: 500 14px/1.6 system-ui, -apple-system, Segoe UI, Roboto, Arial;}
+.ki-section code{background: rgba(0,0,0,0.35); border:1px solid rgba(255,255,255,0.10); padding: 2px 6px; border-radius: 8px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;}
+.ki-section ul{margin: 0; padding-left: 18px;}
+.ki-footer-note{opacity: .85; padding: 0 4px;}
+.ki-footer-note code{background: rgba(0,0,0,0.35); border:1px solid rgba(255,255,255,0.10); padding: 2px 6px; border-radius: 8px;}
+</style>
+<!-- Ein Aussehen fuer alle Werkzeuge. Steht direkt hinter dem letzten
+     <style> dieses Werkzeugs: spaeter in der Reihenfolge, also gewinnt
+     es bei gleicher Spezifitaet - aber so frueh wie moeglich, damit die
+     Seite nicht erst in der alten Farbe erscheint und dann umfaerbt.
+     Am Ende des <body> geladen war genau das zu sehen: Knoepfe mit
+     transition faerbten sichtbar um. Faerbt nur, verschiebt nichts.
+     Siehe werkzeug-stil.css. -->
+<link rel="stylesheet" href="werkzeug-stil.css">
+<!-- Sprachumschaltung Deutsch / Persisch / Englisch. Was nicht im
+     Woerterbuch steht, bleibt Deutsch. Siehe uebersetzung.js. -->
+<script src="woerter.js"></script>
+<script src="woerter/Electrical_Toolbox.js"></script>
+<script src="uebersetzung.js"></script>
+
+
+<script id="ki-global-script">
+(function() {
+  function openModal() {
+    var m = document.getElementById('kiHelpModal');
+    if (!m) return;
+    m.setAttribute('aria-hidden','false');
+    document.documentElement.style.overflow = 'hidden';
+  }
+  function closeModal() {
+    var m = document.getElementById('kiHelpModal');
+    if (!m) return;
+    m.setAttribute('aria-hidden','true');
+    document.documentElement.style.overflow = '';
+  }
+
+  document.addEventListener('click', function(ev) {
+    var t = ev.target;
+    if (!t) return;
+    if (t && t.getAttribute && t.getAttribute('data-ki-close') === '1') {
+      closeModal(); return;
+    }
+    var closeEl = t.closest ? t.closest('[data-ki-close="1"]') : null;
+    if (closeEl) { closeModal(); return; }
+  });
+
+  document.addEventListener('keydown', function(ev) {
+    if (ev.key === 'Escape') closeModal();
+  });
+
+  var infoBtn = document.getElementById('kiInfoBtn');
+  if (infoBtn) infoBtn.addEventListener('click', function(){ openModal(); });
+  // Zum Dashboard fuehrt der Verweis im Kopf, es braucht keinen Handler.
+  // Frueher stand hier einer, der ueber eine absolute file://-Adresse des
+  // Netzlaufwerks ging und bei Misserfolg auf eine Ersatzdatei auswich, die
+  // es nie gab - im Netz fuehrte beides ins Leere. Eine zweite Zeile bog
+  // Verweise auf Engineering_Dashboard.html um; solche stehen in dieser
+  // Datei gar nicht.
+})();
+</script>
+
+<!-- KI-Helfer: ordnet das Ergebnis ein, rechnet es nicht. Der
+     Schluessel steht nicht hier, sondern hinter der Edge Function
+     werkzeug-assistent. Siehe ki-helfer.js. -->
+<script src="ki-helfer.js"></script>
+<script>
+  KI_HELFER.einbauen({
+    werkzeug: "E-Technik Toolbox",
+    modus: "deutung",
+    knopf: "Ergebnis einordnen",
+    titel: "Einordnung des Ergebnisses",
+    platzhalter: "Frage dazu, optional. Zum Beispiel: welche Stellschraube zuerst?",
+    ergebnisse: {
+      "gen_res_txt": "Umrechnung",
+      "mot_res_i": "Motorstrom",
+      "mot_res_s": "Scheinleistung",
+      "pfc_res_val": "Kondensatorleistung",
+      "vd_res_val": "Spannungsfall"
+    }
+  });
+</script>
+</body>
+</html>

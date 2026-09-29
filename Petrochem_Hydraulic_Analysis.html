@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ART ENVI | Petrochem Hydraulic Studio (Fixed)</title>
+    
+    <link rel="stylesheet" href="bibliotheken/fontawesome/css/all.min.css">
+  <script src="formstuecke.js"></script>
+    <script src="bibliotheken/chart.umd.js"></script>
+    <script src="bibliotheken/xlsx.full.min.js"></script>
+
+    <style>
+        :root {
+            --bg: #0f1115;
+            --panel: #161b22;
+            --accent: #e67e22; /* Will be overridden by Dashboard Theme */
+            --accent-dim: rgba(230, 126, 34, 0.15);
+            --text: #c9d1d9;
+            --text-head: #ffffff;
+            --border: #30363d;
+            --success: #238636;
+            --warn: #d29922;
+            --danger: #da3633;
+            --excel: #217346;
+        }
+
+        body { margin: 0; background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; height: 100vh; display: flex; overflow: hidden; font-size: 12px; }
+        
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-thumb { background: #30363d; border-radius: 4px; }
+
+        .sidebar { width: 350px; background: #0d1117; border-right: 1px solid var(--border); display: flex; flex-direction: column; z-index: 10; padding: 15px; overflow-y: auto; }
+        .main { flex: 1; display: flex; flex-direction: column; background: var(--bg); overflow: hidden; }
+        .workspace { flex: 1; overflow-y: auto; padding: 20px; display: grid; grid-template-columns: 1fr 380px; gap: 20px; }
+        
+        .brand { font-size: 18px; font-weight: 800; color: #fff; margin-bottom: 20px; border-bottom: 2px solid var(--accent); padding-bottom: 10px; display:flex; align-items:center; gap:10px; }
+        .brand i { color: var(--accent); }
+
+        .section { margin-bottom: 15px; border: 1px solid var(--border); border-radius:6px; padding: 10px; background:#161b22; }
+        .sec-title { font-size: 11px; text-transform: uppercase; color: var(--accent); font-weight: 700; margin-bottom: 10px; border-bottom:1px solid #30363d; padding-bottom:5px; }
+        
+        .inp-row { display: flex; gap: 10px; margin-bottom: 8px; }
+        .inp-group { flex: 1; }
+        label { display: block; margin-bottom: 4px; font-size: 11px; color: #8b949e; }
+        
+        input, select { 
+            width: 100%; background: #0d1117; border: 1px solid #30363d; color: #fff; padding: 8px; border-radius: 4px; font-size: 12px; outline: none; box-sizing: border-box; transition:0.2s;
+        }
+        input:focus, select:focus { border-color: var(--accent); }
+        
+        optgroup { color: var(--accent); font-weight:bold; background:#1f242c; }
+        option { color: #fff; background:#0d1117; padding:5px; }
+
+        .card { background: var(--panel); border: 1px solid var(--border); border-radius: 6px; padding: 15px; margin-bottom: 15px; }
+        .card-head { font-size: 11px; color: #8b949e; text-transform: uppercase; display: flex; justify-content: space-between; margin-bottom: 5px; }
+        .kpi-val { font-size: 24px; font-weight: 700; color: #fff; }
+        .kpi-unit { font-size: 12px; color: #8b949e; font-weight: 400; }
+
+        .comp-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+        .comp-table th { text-align: left; padding: 8px; border-bottom: 1px solid var(--border); color: #8b949e; background: var(--panel); position: sticky; top: 0; }
+        .comp-table td { padding: 8px; border-bottom: 1px solid #21262d; color: var(--text); }
+        .comp-table tr:hover { background: #21262d; cursor: pointer; }
+        .comp-table tr.selected { background: var(--accent-dim); border-left: 3px solid var(--accent); }
+        .comp-table tr.best { background: rgba(35, 134, 54, 0.15); border-left: 3px solid var(--success); }
+
+        .badge { padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 700; }
+        .b-ok { background: rgba(35, 134, 54, 0.2); color: #3fb950; }
+        .b-warn { background: rgba(210, 153, 34, 0.2); color: #e3b341; }
+        .b-err { background: rgba(248, 81, 73, 0.2); color: #f85149; }
+
+        .btn-calc { width: 100%; padding: 12px; background: var(--accent); color: #000; border: none; border-radius: 4px; font-weight: 700; cursor: pointer; margin-top: 10px; }
+        .btn-calc:hover { filter: brightness(1.1); }
+        
+        .btn-excel { width: 100%; padding: 12px; background: var(--excel); color: #fff; border: none; border-radius: 4px; font-weight: 700; cursor: pointer; margin-top: 5px; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .btn-excel:hover { filter: brightness(1.1); }
+
+        .chart-box { height: 350px; position: relative; width: 100%; }
+
+        /* NAV BUTTONS STANDARD */
+        .nav-buttons { display: inline-flex; gap: 10px; align-items: center; position: absolute; top: 15px; right: 15px; z-index: 1000; }
+        .nav-btn {
+            width: 40px; height: 40px; background: rgba(16,185,129,0.12);
+            border: 1px solid rgba(16,185,129,0.45); border-radius: 12px;
+            display: inline-flex; align-items: center; justify-content: center;
+            color: #10b981; font-size: 18px; cursor: pointer;
+            text-decoration: none;
+            box-shadow: 0 6px 18px rgba(0,0,0,0.35);
+            transition: transform 0.15s ease, background 0.15s ease, color 0.15s ease;
+            flex: 0 0 auto;
+        }
+        .nav-btn:hover { background: #10b981; color: #00150d; transform: translateY(-1px); }
+
+        /* Override to Emerald Theme */
+        :root {
+            --accent: #10b981 !important; 
+            --accent-dim: rgba(16,185,129,0.15) !important;
+        }
+        
+        /* INFO MODAL STYLES */
+        .modal-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7); z-index: 2000; backdrop-filter: blur(5px);
+            align-items: center; justify-content: center;
+        }
+        .modal-box {
+            background: #161b22; width: 600px; max-width: 90%; border-radius: 12px; border: 1px solid var(--accent);
+            padding: 25px; position: relative; box-shadow: 0 20px 50px rgba(0,0,0,0.5); color: #fff;
+            max-height: 80vh; overflow-y: auto;
+        }
+        .modal-header { font-size: 18px; font-weight: bold; color: var(--accent); margin-bottom: 15px; border-bottom: 1px solid #30363d; padding-bottom: 10px; display:flex; justify-content:space-between; align-items:center; }
+        .modal-close { color: #aaa; cursor: pointer; font-size: 20px; transition:0.2s; }
+        .modal-close:hover { color: #fff; }
+        .help-content h3 { font-size: 14px; color: var(--accent); margin-top: 15px; margin-bottom: 5px; }
+        .help-content ul { padding-left: 20px; color: #c9d1d9; }
+        .help-content li { margin-bottom: 5px; }
+
+    </style>
+<!-- Ein Aussehen fuer alle Werkzeuge. Steht direkt hinter dem letzten
+     <style> dieses Werkzeugs: spaeter in der Reihenfolge, also gewinnt
+     es bei gleicher Spezifitaet - aber so frueh wie moeglich, damit die
+     Seite nicht erst in der alten Farbe erscheint und dann umfaerbt.
+     Am Ende des <body> geladen war genau das zu sehen: Knoepfe mit
+     transition faerbten sichtbar um. Faerbt nur, verschiebt nichts.
+     Siehe werkzeug-stil.css. -->
+<link rel="stylesheet" href="werkzeug-stil.css">
+<!-- Sprachumschaltung Deutsch / Persisch / Englisch. Was nicht im
+     Woerterbuch steht, bleibt Deutsch. Siehe uebersetzung.js. -->
+<script src="woerter.js"></script>
+<script src="woerter/Petrochem_Hydraulic_Analysis.js"></script>
+<script src="uebersetzung.js"></script>
+
+</head>
+<body>
+
+    <div class="nav-buttons">
+        <a href="dashboard/" class="nav-btn" title="Zurück zum Dashboard">
+            <i class="fas fa-home"></i>
+        </a>
+        <div class="nav-btn" onclick="openHelp()" title="Hilfe & Formeln">
+            <i class="fas fa-circle-info"></i>
+        </div>
+    </div>
+
+    <div id="helpModal" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-header">
+                <span><i class="fas fa-calculator"></i> Petrochem Hydraulic - Hilfe</span>
+                <div class="modal-close" onclick="closeHelp()"><i class="fas fa-times"></i></div>
+            </div>
+            <div class="help-content">
+                <h3>Funktionsweise</h3>
+                <ul>
+                    <li><b>Fluidwahl:</b> Wählen Sie ein Medium aus der Datenbank (z.B. Rohöl, Wasser) oder geben Sie Dichte und Viskosität manuell ein.</li>
+                    <li><b>Rohrleitungsdaten:</b> Definieren Sie Länge, Höhendifferenz und Rauheit der Leitung.</li>
+                    <li><b>Fittings:</b> Geben Sie die Anzahl der Bögen, Ventile etc. an, um den zeta-Wert (Widerstandsbeiwert) zu berechnen.</li>
+                </ul>
+                <h3>Berechnungsgrundlagen</h3>
+                <ul>
+                    <li><b>Reibungsfaktor:</b> Verwendet die <i>Churchill-Gleichung</i>, die für alle Strömungsbereiche (laminar bis turbulent) gültig ist.</li>
+                    <li><b>Druckverlust:</b> Berechnung nach <i>Darcy-Weisbach</i>.</li>
+                    <li><b>NPSHa:</b> Net Positive Suction Head Available = (Atmosphärendruck - Dampfdruck) - Reibungsverluste + Statische Höhe.</li>
+                    <li><b>OPEX:</b> Jährliche Energiekosten basierend auf hydraulischer Leistung und Pumpenwirkungsgrad (angenommen 70%).</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+<div class="sidebar">
+    <div class="brand"><i class="fas fa-industry"></i> ART ENVI <span>PETROCHEM</span></div>
+
+    <div class="section">
+        <div class="sec-title">1. Fluid (Prozessmedium)</div>
+        <div class="inp-group">
+            <label>Datenbank Auswahl</label>
+            <select id="fluid" onchange="updateFluid()">
+                <option value="custom">-- Benutzerdefiniert --</option>
+                <optgroup label="Hydrocarbons (Öl & Gas)">
+                    <option value="crude_light">Rohöl Leicht</option>
+                    <option value="crude_heavy">Rohöl Schwer</option>
+                    <option value="gasoline">Benzin</option>
+                    <option value="diesel">Diesel / Heizöl EL</option>
+                    <option value="kerosene">Kerosin / Jet A1</option>
+                    <option value="lube_oil">Schmieröl</option>
+                </optgroup>
+                <optgroup label="Utilities (Betrieb)">
+                    <option value="water_10" selected>Kühlwasser (10°C)</option>
+                    <option value="water_80">Heißwasser (80°C)</option>
+                    <option value="thermal_oil">Thermalöl</option>
+                </optgroup>
+            </select>
+        </div>
+        
+        <div class="inp-row">
+            <div class="inp-group"><label>Dichte (kg/m³)</label><input type="number" id="rho" value="999.7"></div>
+            <div class="inp-group"><label>Viskosität (cP)</label><input type="number" id="mu" value="1.307"></div>
+        </div>
+        <div class="inp-group"><label>Dampfdruck (mbar)</label><input type="number" id="p_vap" value="12.3"></div>
+    </div>
+
+    <div class="section">
+        <div class="sec-title">2. Rohrleitung</div>
+        <div class="inp-row">
+            <div class="inp-group"><label>Länge (m)</label><input type="number" id="len" value="100"></div>
+            <div class="inp-group"><label>Rauheit (mm)</label>
+                <select id="k">
+                    <option value="0.045">Carbon Steel (Neu)</option>
+                    <option value="0.1">Carbon Steel (Alt)</option>
+                    <option value="0.0015">Stainless Steel</option>
+                    <option value="0.007">Plastic (PE/PVC)</option>
+                </select>
+            </div>
+        </div>
+        <div class="inp-row">
+            <div class="inp-group">
+                <label>Höhendifferenz gesamt (m)</label>
+                <input type="number" id="h_stat" value="5">
+                <div style="font-size:10px; color:#7f8c8d; margin-top:4px;">Positiv = hinauf, negativ = hinab.</div>
+            </div>
+            <div class="inp-group">
+                <label>Pumpenwirkungsgrad</label>
+                <input type="number" id="eta_pump" value="0.70" step="0.01" min="0.1" max="1">
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="sec-title">2b. Saugseite (für NPSH)</div>
+        <div style="font-size:10.5px; color:#7f8c8d; margin-bottom:10px; line-height:1.5;">
+            NPSH<sub>a</sub> haengt nur an der Saugseite, nicht an der ganzen Anlage.
+            Hier gehoert der Teil der Leitung hin, der <b>vor</b> der Pumpe liegt.
+        </div>
+        <div class="inp-row">
+            <div class="inp-group">
+                <label>Druck im Saugbehälter (bar a)</label>
+                <input type="number" id="p_saug" value="1.013" step="0.001" min="0">
+            </div>
+            <div class="inp-group">
+                <label>Zulaufhöhe z<sub>s</sub> (m)</label>
+                <input type="number" id="z_saug" value="0" step="0.1">
+                <div style="font-size:10px; color:#7f8c8d; margin-top:4px;">Positiv = Zulauf, negativ = Saughub.</div>
+            </div>
+        </div>
+        <div class="inp-row">
+            <div class="inp-group">
+                <label>Länge Saugleitung (m)</label>
+                <input type="number" id="l_saug" value="10" step="0.5" min="0">
+            </div>
+            <div class="inp-group">
+                <label>&Sigma;&zeta; Saugseite</label>
+                <input type="number" id="zeta_saug" value="0" step="0.1" min="0">
+                <div style="font-size:10px; color:#7f8c8d; margin-top:4px;">Krümmer 0,3 &middot; T-Stück 1,3 &middot; Ventil 0,2 &middot; Fußventil 2,5</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="sec-title">3. Prozessdaten</div>
+        <div class="inp-row">
+            <div class="inp-group"><label>Durchfluss</label><input type="number" id="flow" value="50"></div>
+            <div class="inp-group"><label>Einheit</label>
+                <select id="flowUnit">
+                    <option value="m3h">m³/h</option>
+                    <option value="lpm">l/min</option>
+                    <option value="ls">l/s</option>
+                </select>
+            </div>
+        </div>
+        <div class="inp-row">
+            <div class="inp-group"><label>Energie (€/kWh)</label><input type="number" id="cost" value="0.25"></div>
+            <div class="inp-group"><label>Betrieb (h/a)</label><input type="number" id="hours" value="8000"></div>
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="sec-title">4. Fittings & Valves</div>
+        <div class="inp-row">
+            <div class="inp-group"><label>Bogen 90°</label><input type="number" id="n_bow" value="6" min="0"></div>
+            <div class="inp-group"><label>T-Stück (Abzweig)</label><input type="number" id="n_tee" value="2" min="0"></div>
+        </div>
+        <div class="inp-row">
+            <div class="inp-group"><label>Absperrschieber</label><input type="number" id="n_gate" value="3" min="0"></div>
+            <div class="inp-group"><label>Kugelhahn</label><input type="number" id="n_ball" value="0" min="0"></div>
+        </div>
+        <div class="inp-row">
+            <div class="inp-group"><label>Rückschlagklappe</label><input type="number" id="n_check_sw" value="1" min="0"></div>
+            <div class="inp-group"><label>Rückschlagventil</label><input type="number" id="n_check_li" value="0" min="0"></div>
+        </div>
+        <div style="font-size:11px; color:#94a3b8; line-height:1.6; margin-top:6px;">
+            Die Beiwerte kommen aus <code>formstuecke.js</code> und hängen an der Nennweite -
+            eine DN25-Armatur hat einen deutlich höheren Beiwert als dieselbe Bauart in DN200.
+            Früher stand hier ein Feld "Valves" mit &zeta; = 0,20 für alles. Ein
+            Rückschlagventil hat je nach Nennweite 5 bis 13.
+        </div>
+    </div>
+
+    <button class="btn-calc" onclick="runAnalysis()">BERECHNUNG STARTEN</button>
+    <button class="btn-excel" onclick="exportToExcel()"><i class="fas fa-file-excel"></i> EXCEL REPORT</button>
+</div>
+
+<div class="main">
+    <div style="padding: 15px; border-bottom:1px solid #30363d; display:flex; justify-content:space-between; align-items:center; background:#161b22;">
+        <div style="font-weight:700; color:#fff;">Petrochem Hydraulic Analysis</div>
+        </div>
+
+    <div class="workspace">
+        <div style="display:flex; flex-direction:column; gap:20px; height:100%; overflow:hidden;">
+            
+            <div class="card" style="flex:1; display:flex; flex-direction:column; padding:0; overflow:hidden;">
+                <div style="padding:10px; background:#161b22; border-bottom:1px solid #30363d; font-weight:700; font-size:11px; color:var(--accent);">
+                    LINE SIZING MATRIX (OPTIMIZATION)
+                </div>
+                <div style="flex:1; overflow:auto;">
+                    <table class="comp-table" id="matrixTable">
+                        <thead>
+                            <tr>
+                                <th>DN</th>
+                                <th>ID (mm)</th>
+                                <th>v (m/s)</th>
+                                <th>dP (bar)</th>
+                                <th>NPSHa (m)</th>
+                                <th>OPEX (€/yr)</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card chart-box">
+                <canvas id="mainChart"></canvas>
+            </div>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:15px;">
+            <div style="font-size:11px; color:#8b949e; text-transform:uppercase; font-weight:700;">Details Selected: <span id="sel_title" style="color:#fff">-</span></div>
+            
+            <div class="card" style="border-left:3px solid var(--accent);">
+                <div class="card-head">Hydraulics</div>
+                <div class="inp-row">
+                    <div>Velocity<br><span class="kpi-val" id="sel_v">0.0</span> <span class="kpi-unit">m/s</span></div>
+                    <div>Pressure Drop<br><span class="kpi-val" id="sel_dp">0.0</span> <span class="kpi-unit">bar</span></div>
+                </div>
+                <div style="margin-top:10px; font-size:11px; color:#8b949e;">
+                    Friction (λ): <span id="sel_lam" style="color:#fff">0.00</span><br>
+                    Reynolds: <span id="sel_re" style="color:#fff">0</span><br>
+                    Flow Regime: <span id="sel_reg" style="color:#fff">-</span>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-head">Pump Requirements</div>
+                <div class="kpi-val" id="sel_npsh">0.00 <span class="kpi-unit">m</span></div>
+                <div style="font-size:11px; color:#8b949e;">NPSH Available (NPSHa)</div>
+                <div style="margin-top:5px;" id="npsh_badge"></div>
+                <div style="border-top:1px solid #333; margin-top:10px; padding-top:5px; font-size:11px;">
+                    Hydraulic Power: <b id="sel_phyd" style="color:#fff">0.0</b> kW
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-head">Life Cycle Cost (1 Year)</div>
+                <div style="margin-top:10px; padding:10px; background:rgba(230, 126, 34, 0.1); border:1px solid rgba(230, 126, 34, 0.3); border-radius:4px;">
+                    <div style="font-size:10px; color:var(--accent);">ENERGIEKOSTEN (OPEX)</div>
+                    <div style="font-size:20px; font-weight:700; color:#fff;" id="sel_cost">0 €</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- HELPER FUNCTIONS FOR MODALS ---
+    function openHelp() { document.getElementById('helpModal').style.display = 'flex'; }
+    function closeHelp() { document.getElementById('helpModal').style.display = 'none'; }
+    
+    // Close modals on outside click
+    window.onclick = function(event) { 
+        if (event.target == document.getElementById('helpModal')) closeHelp();
+    }
+
+    // --- DATABASE ---
+    const FLUIDS = {
+        crude_light: { rho: 850, mu: 6.0, p_vap: 0.6 },
+        crude_heavy: { rho: 930, mu: 150.0, p_vap: 0.1 },
+        gasoline:    { rho: 740, mu: 0.6, p_vap: 500 },
+        diesel:      { rho: 832, mu: 3.5, p_vap: 0.4 },
+        kerosene:    { rho: 800, mu: 1.64, p_vap: 1.0 },
+        naphtha:     { rho: 665, mu: 0.3, p_vap: 200 },
+        lube_oil:    { rho: 890, mu: 200.0, p_vap: 0.001 },
+        bitumen:     { rho: 1020, mu: 500.0, p_vap: 0.01 },
+        h2so4:       { rho: 1840, mu: 26.7, p_vap: 0.01 },
+        hcl:         { rho: 1180, mu: 1.9, p_vap: 150 },
+        naoh:        { rho: 1525, mu: 78.0, p_vap: 1.0 },
+        methanol:    { rho: 792, mu: 0.59, p_vap: 129 },
+        ethanol:     { rho: 789, mu: 1.2, p_vap: 59 },
+        acetone:     { rho: 784, mu: 0.32, p_vap: 240 },
+        benzene:     { rho: 876, mu: 0.65, p_vap: 100 },
+        water_10:    { rho: 999.7, mu: 1.307, p_vap: 12.3 },
+        water_80:    { rho: 971.8, mu: 0.355, p_vap: 473.6 },
+        condensate:  { rho: 958.0, mu: 0.282, p_vap: 1013 },
+        glycol_30:   { rho: 1045, mu: 2.3, p_vap: 15 },
+        thermal_oil: { rho: 750, mu: 0.8, p_vap: 50 }
+    };
+
+    const PIPES = [
+        {dn: "DN 15", id: 15.8}, {dn: "DN 20", id: 20.9}, {dn: "DN 25", id: 26.6},
+        {dn: "DN 40", id: 40.9}, {dn: "DN 50", id: 52.5}, {dn: "DN 80", id: 77.9},
+        {dn: "DN 100", id: 102.3}, {dn: "DN 150", id: 154.1}, {dn: "DN 200", id: 202.7},
+        {dn: "DN 250", id: 254.5}, {dn: "DN 300", id: 303.2}, {dn: "DN 400", id: 381.0}
+    ];
+
+    let chartInstance = null;
+    let results = [];
+    let selectedIdx = 0;
+
+    // --- INIT ---
+    window.addEventListener('load', function() {
+        // Initialize Chart
+        const ctx = document.getElementById('mainChart').getContext('2d');
+        chartInstance = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'System Curve (Head vs Flow)',
+                    data: [],
+                    borderColor: '#10b981', // Emerald
+                    backgroundColor: 'rgba(16,185,129,0.1)',
+                    fill: true,
+                    tension: 0.4
+                }, {
+                    label: 'Operating Point',
+                    data: [],
+                    borderColor: '#ffffff',
+                    backgroundColor: '#ffffff',
+                    pointRadius: 6,
+                    type: 'scatter'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: { grid: {color:'#334155'}, title: {display:true, text:'Flow', color:'#8b949e'}, ticks:{color:'#8b949e'} },
+                    y: { grid: {color:'#334155'}, title: {display:true, text:'dP (bar)', color:'#8b949e'}, ticks:{color:'#8b949e'} }
+                },
+                plugins: { legend: {labels:{color:'#c9d1d9'}} }
+            }
+        });
+
+        // Run initial calculation
+        runAnalysis();
+    });
+
+    function updateFluid() {
+        const type = document.getElementById('fluid').value;
+        if (type !== 'custom') {
+            const data = FLUIDS[type];
+            document.getElementById('rho').value = data.rho;
+            document.getElementById('mu').value = data.mu;
+            document.getElementById('p_vap').value = data.p_vap;
+        }
+    }
+
+    function runAnalysis() {
+        const rho = parseFloat(document.getElementById('rho').value) || 1000;
+        const mu = parseFloat(document.getElementById('mu').value) || 1; 
+        const mu_pas = mu / 1000;
+        
+        let Q = parseFloat(document.getElementById('flow').value) || 50;
+        const qUnit = document.getElementById('flowUnit').value;
+        if(qUnit === 'm3h') Q /= 3600; else if(qUnit === 'lpm') Q /= 60000; else Q /= 1000; 
+
+        const L = parseFloat(document.getElementById('len').value) || 100;
+        const k = parseFloat(document.getElementById('k').value) / 1000; 
+        const H_stat = parseFloat(document.getElementById('h_stat').value) || 0;
+        
+        // Die Anzahl je Bauart. Zeta selbst wird erst in der Schleife
+        // gebildet, weil es an der Nennweite haengt - und die ist hier
+        // gerade die Groesse, die verglichen wird. Vorher stand der Beiwert
+        // fest und war fuer DN25 und DN200 derselbe.
+        const STUECK = [
+            ['elbow90',  'n_bow'],
+            ['tee_br',   'n_tee'],
+            ['gate',     'n_gate'],
+            ['ball',     'n_ball'],
+            ['check_sw', 'n_check_sw'],
+            ['check_li', 'n_check_li']
+        ].map(([schluessel, feld]) => ({
+            schluessel,
+            anzahl: parseFloat((document.getElementById(feld) || {}).value) || 0
+        }));
+        const zetaFuer = (dn) => STUECK.reduce(
+            (s, x) => s + x.anzahl * FORMSTUECKE.zeta(x.schluessel, dn), 0);
+
+        // 0 || 0.25 ist in JavaScript 0.25. Beides sind aber gueltige
+        // Eingaben: null Euro je kWh bei Eigenerzeugung, null Stunden bei
+        // einer Reserveleitung. Wer sie eintraegt, hat bisher stillschweigend
+        // mit 0,25 Euro und 8000 Stunden gerechnet - in einem Werkzeug, das
+        // genau daraus die Betriebskosten vergleicht.
+        const costRoh = parseFloat(document.getElementById('cost').value);
+        const hoursRoh = parseFloat(document.getElementById('hours').value);
+        const costKwh = Number.isFinite(costRoh) ? costRoh : 0.25;
+        const hours = Number.isFinite(hoursRoh) ? hoursRoh : 8000;
+        const p_vap = parseFloat(document.getElementById('p_vap').value) * 100;
+        const eta_pump = parseFloat(document.getElementById('eta_pump').value) || 0.70;
+
+        // Saugseite. NPSHa haengt nur an ihr, nicht an der Gesamtanlage.
+        const p_saug    = (parseFloat(document.getElementById('p_saug').value) || 1.013) * 100000;
+        const z_saug    = parseFloat(document.getElementById('z_saug').value) || 0;
+        const L_saug    = parseFloat(document.getElementById('l_saug').value) || 0;
+        const zeta_saug = parseFloat(document.getElementById('zeta_saug').value) || 0;
+
+        results = [];
+
+        PIPES.forEach((p, idx) => {
+            const D = p.id / 1000; 
+            const A = Math.PI * Math.pow(D/2, 2);
+            const v = Q / A;
+            
+            const Re = (rho * v * D) / mu_pas;
+            
+            // Friction Factor
+            let f = 0.02;
+            if(Re > 0) {
+                // Churchill
+                const A_c = Math.pow( -2.457 * Math.log( Math.pow(7/Re, 0.9) + 0.27*(k/D) ), 16 );
+                const B_c = Math.pow( 37530/Re, 16 );
+                f = 8 * Math.pow( Math.pow(8/Re, 12) + 1/Math.pow(A_c + B_c, 1.5), 1/12 );
+            }
+
+            const h_fric = f * (L/D) * (v*v)/(2*9.81);
+            const h_fit = zetaFuer(p.dn) * (v*v)/(2*9.81);
+            const H_loss = h_fric + h_fit;
+            const dP_bar = (H_loss * rho * 9.81) / 100000;
+
+            // Vorzeichen von H_stat erhalten. Vorher stand hier Math.abs(H_stat):
+            // ein Gefaelle wurde damit zu zusaetzlicher Last statt zur Hilfe, und
+            // die bergab laufende Leitung kam als die teuerste heraus.
+            const H_ges = H_loss + H_stat;
+            const H_pumpe = Math.max(H_ges, 0);   // faellt es von allein, ist keine Pumpe noetig
+            const P_hyd = Q * H_pumpe * rho * 9.81;
+            const P_shaft = P_hyd / eta_pump;
+            const costYear = (P_shaft/1000) * hours * costKwh;
+
+            // NPSHa = (p_s - p_v)/(rho*g) + z_s - h_v,Saug
+            // Vorher wurde hier der Reibungsverlust der GESAMTEN Leitung abgezogen
+            // und die geodaetische Hoehe der GESAMTEN Anlage addiert. Beides gehoert
+            // nicht zur Saugseite; die Kavitationswarnung war so nicht belastbar.
+            const h_saug = f * (L_saug/D) * (v*v)/(2*9.81) + zeta_saug * (v*v)/(2*9.81);
+            const npsh = (p_saug - p_vap)/(rho*9.81) + z_saug - h_saug;
+
+            results.push({
+                idx: idx,
+                dn: p.dn,
+                id: p.id,
+                v: v,
+                dp: dP_bar,
+                re: Re,
+                lam: f,
+                npsh: npsh,
+                phyd: P_hyd/1000,
+                cost: costYear
+            });
+        });
+
+        renderTable();
+        selectRow(selectedIdx);
+    }
+
+    function renderTable() {
+        const tbody = document.querySelector('#matrixTable tbody');
+        tbody.innerHTML = '';
+        
+        let bestIdx = -1;
+        
+        results.forEach((res, i) => {
+            const tr = document.createElement('tr');
+            tr.onclick = () => selectRow(i);
+            
+            let status = 'Optimal';
+            let badge = 'b-ok';
+            
+            if(res.v > 3.5) { status = 'Erosion'; badge = 'b-err'; }
+            else if(res.v > 2.5) { status = 'Hoch'; badge = 'b-warn'; }
+            else if(res.v < 0.5) { status = 'Settling'; badge = 'b-warn'; }
+            
+            if(status === 'Optimal' && bestIdx === -1) bestIdx = i;
+            if(i === bestIdx) tr.className = 'best';
+
+            tr.innerHTML = `
+                <td><b>${res.dn}</b></td>
+                <td>${res.id}</td>
+                <td>${res.v.toFixed(2)}</td>
+                <td>${res.dp.toFixed(3)}</td>
+                <td>${res.npsh.toFixed(2)}</td>
+                <td>${Math.round(res.cost).toLocaleString()}</td>
+                <td><span class="badge ${badge}">${status}</span></td>
+            `;
+            tbody.appendChild(tr);
+        });
+        
+        if(bestIdx !== -1 && selectedIdx === 0) selectedIdx = bestIdx;
+    }
+
+    function selectRow(idx) {
+        selectedIdx = idx;
+        document.querySelectorAll('#matrixTable tbody tr').forEach(r => r.classList.remove('selected'));
+        const rows = document.querySelectorAll('#matrixTable tbody tr');
+        if(rows[idx]) rows[idx].classList.add('selected');
+
+        const data = results[idx];
+        if(!data) return;
+
+        document.getElementById('sel_title').innerText = data.dn + " (" + data.id + "mm)";
+        document.getElementById('sel_v').innerText = data.v.toFixed(2);
+        document.getElementById('sel_dp').innerText = data.dp.toFixed(3);
+        document.getElementById('sel_lam').innerText = data.lam.toFixed(4);
+        document.getElementById('sel_re').innerText = Math.round(data.re).toLocaleString();
+        document.getElementById('sel_reg').innerText = data.re < 2300 ? "Laminar" : "Turbulent";
+        
+        document.getElementById('sel_npsh').innerText = data.npsh.toFixed(2);
+        const npshBadge = document.getElementById('npsh_badge');
+        if(data.npsh < 1) npshBadge.innerHTML = '<span class="badge b-err">ACHTUNG: KAVITATION</span>';
+        else npshBadge.innerHTML = '<span class="badge b-ok">NPSH OK</span>';
+
+        document.getElementById('sel_phyd').innerText = data.phyd.toFixed(2);
+        document.getElementById('sel_cost').innerText = Math.round(data.cost).toLocaleString() + " €";
+
+        updateChart(data);
+    }
+
+    function updateChart(data) {
+        const q_nom = parseFloat(document.getElementById('flow').value) || 50;
+        const rho = parseFloat(document.getElementById('rho').value) || 1000;
+        const H_stat = parseFloat(document.getElementById('h_stat').value) || 0;
+        // Anlagenkennlinie ist H = H_stat + k*Q^2, geht also NICHT durch den Nullpunkt.
+        // Vorher wurde nur der Reibungsanteil skaliert; bei jeder Anlage mit
+        // Hoehenunterschied lag die Kurve dadurch falsch.
+        const dp_stat = (H_stat * rho * 9.81) / 100000;   // bar
+        const points = [];
+        const labels = [];
+
+        for(let i=0; i<=10; i++) {
+            const q = (q_nom * 2.0) * (i/10);
+            const factor = Math.pow(q/q_nom, 2);
+            points.push(dp_stat + data.dp * factor);
+            labels.push(q.toFixed(1));
+        }
+
+        if(chartInstance) {
+            chartInstance.data.labels = labels;
+            chartInstance.data.datasets[0].data = points;
+            chartInstance.data.datasets[1].data = [{x: q_nom, y: data.dp}];
+            chartInstance.update();
+        }
+    }
+
+    // === EXCEL EXPORT ===
+    window.exportToExcel = function() {
+        if (!window.XLSX) {
+            alert("Excel Library loading...");
+            return;
+        }
+
+        const wb = XLSX.utils.book_new();
+        
+        // 1. DATASHEET
+        const fluidSel = document.getElementById('fluid');
+        const fluidName = fluidSel.options[fluidSel.selectedIndex].text;
+        const selData = results[selectedIdx];
+        
+        const sheetData = [
+            ["ART ENVI - HYDRAULIC CALCULATION SHEET"],
+            ["Project:", "Pipeline Sizing"],
+            ["Date:", new Date().toLocaleString()],
+            [],
+            ["1. PROCESS CONDITIONS"],
+            ["Fluid", fluidName],
+            ["Density", document.getElementById('rho').value + " kg/m3"],
+            ["Viscosity", document.getElementById('mu').value + " cP"],
+            ["Flow Rate", document.getElementById('flow').value + " " + document.getElementById('flowUnit').value],
+            [],
+            ["2. PIPELINE"],
+            ["Selected Line", selData.dn],
+            ["Inner Dia", selData.id + " mm"],
+            ["Length", document.getElementById('len').value + " m"],
+            [],
+            ["3. RESULTS"],
+            ["Velocity", selData.v.toFixed(2) + " m/s"],
+            ["Pressure Drop", selData.dp.toFixed(4) + " bar"],
+            ["NPSH Available", selData.npsh.toFixed(2) + " m"],
+            ["Hydraulic Power", selData.phyd.toFixed(2) + " kW"]
+        ];
+
+        const wsSheet = XLSX.utils.aoa_to_sheet(sheetData);
+        wsSheet['!cols'] = [{wch:25}, {wch:30}];
+        XLSX.utils.book_append_sheet(wb, wsSheet, "Datasheet");
+
+        // 2. MATRIX
+        const matrixData = [["DN", "ID (mm)", "Velocity (m/s)", "dP (bar)", "NPSHa (m)", "Power (kW)", "Cost (EUR)", "Status"]];
+        results.forEach(r => {
+            let st = "OK"; 
+            if(r.v > 3.5) st="High Vel"; 
+            else if(r.v < 0.5) st="Low Vel";
+            matrixData.push([r.dn, r.id, r.v.toFixed(2), r.dp.toFixed(4), r.npsh.toFixed(2), r.phyd.toFixed(2), Math.round(r.cost), st]);
+        });
+        const wsMatrix = XLSX.utils.aoa_to_sheet(matrixData);
+        XLSX.utils.book_append_sheet(wb, wsMatrix, "Sizing Matrix");
+
+        XLSX.writeFile(wb, "Petrochem_Calc.xlsx");
+    };
+</script>
+
+<!-- KI-Helfer: ordnet das Ergebnis ein, rechnet es nicht. Der
+     Schluessel steht nicht hier, sondern hinter der Edge Function
+     werkzeug-assistent. Siehe ki-helfer.js. -->
+<script src="ki-helfer.js"></script>
+<script>
+  KI_HELFER.einbauen({
+    werkzeug: "Petrochem Hydraulic Studio",
+    modus: "deutung",
+    knopf: "Ergebnis einordnen",
+    titel: "Einordnung des Ergebnisses",
+    platzhalter: "Frage dazu, optional. Zum Beispiel: welche Stellschraube zuerst?",
+    ergebnisse: {
+      "sel_title": "Gewaehlte Nennweite",
+      "sel_v": "Geschwindigkeit",
+      "sel_dp": "Druckverlust",
+      "sel_re": "Reynoldszahl",
+      "sel_reg": "Stroemungsbereich",
+      "sel_npsh": "NPSH",
+      "sel_phyd": "Hydraulische Leistung",
+      "sel_cost": "Betriebskosten",
+      "npsh_badge": "NPSH-Bewertung"
+    }
+  });
+</script>
+</body>
+</html>

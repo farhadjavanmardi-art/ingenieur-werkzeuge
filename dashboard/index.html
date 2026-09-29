@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ingenieur-Dashboard | 27 Werkzeuge</title>
+<meta name="description" content="Einstieg in die 27 Berechnungs- und Zeichenwerkzeuge für EMSR, Verfahrenstechnik und Anlagenbau.">
+<style>
+  /* Dieselben Farben wie die Verkaufsseite. Beide Seiten gehoeren zum selben
+     Produkt und sollen nicht wie zwei fremde Seiten aussehen. */
+  :root{
+    --tinte:#0f172a; --grau:#475569; --hell:#64748b;
+    --linie:#e2e8f0; --flaeche:#f8fafc; --weiss:#fff;
+    --akzent:#0d7a5f; --akzent-dunkel:#095c47; --akzent-hell:#e6f4f0;
+    --warn:#b45309; --warn-hell:#fffbeb;
+  }
+  *{box-sizing:border-box; margin:0; padding:0}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    color:var(--tinte); background:var(--flaeche); line-height:1.6; font-size:16px;
+    -webkit-font-smoothing:antialiased;
+  }
+  .breite{max-width:1140px; margin:0 auto; padding:0 24px}
+  a{color:var(--akzent); text-decoration:none}
+  a:hover{text-decoration:underline}
+
+  /* Kopf mit Suche. Die Suche steht oben und nicht in einer Seitenleiste:
+     wer das Dashboard oeffnet, weiss meistens schon, was er sucht. */
+  .kopf{background:var(--weiss); border-bottom:1px solid var(--linie); padding:26px 0 22px}
+  .kopf .zeile{display:flex; align-items:baseline; justify-content:space-between; gap:20px; flex-wrap:wrap}
+  .marke{font-weight:800; font-size:21px; letter-spacing:-.4px; color:var(--tinte)}
+  .marke small{display:block; font-weight:500; font-size:14px; color:var(--hell); letter-spacing:0; margin-top:2px}
+  .kopf-links{font-size:14px; color:var(--hell); display:flex; gap:18px; flex-wrap:wrap}
+
+  .suchfeld{position:relative; margin-top:20px}
+  .suchfeld input{
+    width:100%; font:inherit; font-size:17px; padding:14px 46px 14px 16px;
+    border:1.5px solid var(--linie); border-radius:10px; background:var(--weiss); color:var(--tinte);
+  }
+  .suchfeld input:focus{outline:none; border-color:var(--akzent); box-shadow:0 0 0 3px var(--akzent-hell)}
+  .suchfeld .loeschen{
+    position:absolute; right:8px; top:50%; transform:translateY(-50%);
+    border:none; background:none; cursor:pointer; color:var(--hell);
+    font:inherit; font-size:20px; line-height:1; padding:6px 10px; display:none;
+  }
+  .suchfeld.hatText .loeschen{display:block}
+  .trefferzahl{font-size:13.5px; color:var(--hell); margin-top:8px; min-height:20px}
+
+  /* Werkzeugliste */
+  main{padding:32px 0 60px}
+  .gruppe{margin-bottom:34px}
+  .gruppe h2{font-size:19px; font-weight:800; letter-spacing:-.3px; padding-bottom:9px; border-bottom:2px solid var(--linie)}
+  .gruppe h2 span{font-weight:500; color:var(--hell); font-size:14px; margin-left:8px}
+  .karten{display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-top:16px}
+  @media(max-width:980px){.karten{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:640px){.karten{grid-template-columns:1fr}}
+  .wz{
+    display:block; background:var(--weiss); border:1px solid var(--linie);
+    border-radius:11px; padding:16px 17px; color:inherit; transition:.15s;
+  }
+  .wz:hover{border-color:var(--akzent); box-shadow:0 3px 14px rgba(15,23,42,.07); text-decoration:none}
+  .wz h3{font-size:15.5px; font-weight:700; letter-spacing:-.15px}
+  .wz p{color:var(--grau); font-size:13.8px; margin-top:6px}
+  .wz code{display:block; color:var(--hell); font-size:11.5px; margin-top:10px; word-break:break-all}
+  .wz.empfohlen{border-color:var(--akzent); background:var(--akzent-hell)}
+  .wz .warum{
+    display:block; margin-top:10px; padding-top:9px; border-top:1px solid #cde8e0;
+    color:var(--akzent-dunkel); font-size:13.5px;
+  }
+  .leer{background:var(--weiss); border:1px dashed var(--linie); border-radius:11px;
+        padding:26px; text-align:center; color:var(--hell); font-size:15px}
+
+  /* KI-Bereich. Er sucht das Werkzeug, er rechnet nicht - deshalb steht der
+     Hinweis dauerhaft darunter und nicht nur in der Dokumentation. */
+  .ki{background:var(--weiss); border:1px solid var(--linie); border-radius:12px; padding:22px; margin-bottom:34px}
+  .ki h2{font-size:17px; font-weight:800; letter-spacing:-.3px}
+  .ki .unter{color:var(--grau); font-size:14px; margin-top:5px}
+  .ki .eingabe{display:flex; gap:10px; margin-top:14px; align-items:flex-start}
+  @media(max-width:700px){.ki .eingabe{flex-direction:column}}
+  .ki textarea{
+    flex:1; width:100%; font:inherit; font-size:15px; padding:11px 13px; resize:vertical;
+    min-height:76px; border:1.5px solid var(--linie); border-radius:9px; color:var(--tinte);
+  }
+  .ki textarea:focus{outline:none; border-color:var(--akzent); box-shadow:0 0 0 3px var(--akzent-hell)}
+  .ki button{
+    background:var(--akzent); color:#fff; border:none; border-radius:9px; cursor:pointer;
+    font:inherit; font-weight:600; font-size:14.5px; padding:12px 20px; white-space:nowrap;
+  }
+  .ki button:hover:not(:disabled){background:var(--akzent-dunkel)}
+  .ki button:disabled{opacity:.55; cursor:default}
+  .ki .meldung{margin-top:12px; font-size:14px; color:var(--grau); min-height:20px}
+  .ki .meldung.schlecht{color:var(--warn)}
+  .ki .fussnote{margin-top:12px; font-size:13px; color:var(--hell); border-top:1px solid var(--linie); padding-top:11px}
+
+  footer{border-top:1px solid var(--linie); background:var(--weiss); padding:24px 0; font-size:13.5px; color:var(--hell)}
+  footer .zeile{display:flex; gap:20px; justify-content:space-between; flex-wrap:wrap}
+</style>
+<!-- Sprachumschaltung Deutsch / Persisch / Englisch.
+     Was nicht im Woerterbuch steht, bleibt Deutsch. -->
+<script src="../woerter.js"></script>
+<script src="../woerter/werkzeugliste.js"></script>
+<script src="../woerter/dashboard.js"></script>
+<script src="../uebersetzung.js"></script>
+</head>
+<body>
+
+<header class="kopf">
+  <div class="breite">
+    <div class="zeile">
+      <div class="marke">Ingenieur-Dashboard
+        <small><span id="gesamt">27</span> Werkzeuge für EMSR, Verfahrenstechnik und Anlagenbau</small>
+      </div>
+      <nav class="kopf-links">
+        <a id="link_shop" href="../shop/index.html">Verkaufsseite</a>
+        <a id="link_readme" href="../README.md">Dokumentation</a>
+        <a id="link_pruefbericht" href="../PRUEFBERICHT.md">Prüfbericht</a>
+      </nav>
+    </div>
+    <div class="suchfeld" id="suchfeld">
+      <input id="suche" type="search" autocomplete="off" spellcheck="false"
+             placeholder="Suchen: Kabel, Kv, Erdung, Trasse, Loop, Beleuchtung, Dateiname ...">
+      <button class="loeschen" id="loeschen" type="button" title="Suche leeren" aria-label="Suche leeren">&times;</button>
+    </div>
+    <div class="trefferzahl" id="trefferzahl"></div>
+  </div>
+</header>
+
+<main class="breite">
+
+  <section class="ki">
+    <h2>Welches Werkzeug passt zu meiner Aufgabe?</h2>
+    <p class="unter">Aufgabe in eigenen Worten beschreiben. Die Antwort nennt die Werkzeuge,
+       die dafür gebaut sind, und sagt warum.</p>
+    <div class="eingabe">
+      <textarea id="ki_frage" maxlength="600"
+        placeholder="Beispiel: Ich habe einen 132-kW-Motor, 180 m Leitungslänge, und muss den Querschnitt festlegen."></textarea>
+      <button id="ki_senden" type="button">Werkzeug finden</button>
+    </div>
+    <div class="meldung" id="ki_meldung"></div>
+    <p class="fussnote">Die Auswahl kommt von einem Sprachmodell, das Ergebnis aus dem Werkzeug.
+       Gerechnet wird nach Formel, nicht vom Modell.</p>
+  </section>
+
+  <div id="liste"></div>
+</main>
+
+<footer>
+  <div class="breite zeile">
+    <span>&copy; 2026 Farhad Javanmardi &middot; Karlsruhe</span>
+    <span>Jedes Werkzeug läuft eigenständig im Browser, ohne Server und ohne Installation.</span>
+  </div>
+</footer>
+
+<script>
+  // Die Werkzeugdaten liegen in shop/werkzeuge.js und werden hier nur gelesen.
+  // Eine zweite Liste waere eine zweite Wahrheit; im Projekt ist genau das
+  // schon einmal teuer geworden (zwei Strombelastbarkeits-Tabellen, die um
+  // 14 bis 26 Prozent auseinanderlagen).
+  //
+  // Wo "neben" ist, haengt von der Adresse ab: unter /dashboard/ ist der
+  // Ordner dieser Datei die Basis, unter /dashboard ohne Schraegstrich zaehlt
+  // der Elternordner. Vercel liefert mit cleanUrls genau die zweite Form aus.
+  // Ohne diese Fallunterscheidung laedt die Datei nicht und die Seite bleibt
+  // leer - genau so ist es der Verkaufsseite einmal ergangen.
+  //
+  // document.write ist hier richtig: es muss waehrend des Parsens geschehen,
+  // damit WERKZEUGE steht, bevor das Skript unten laeuft.
+  document.write('<scr' + 'ipt src="' +
+    (/\/dashboard$/.test(location.pathname) ? 'dashboard/' : '') +
+    '../shop/werkzeuge.js"></scr' + 'ipt>');
+</script>
+<script>
+// ------------------------------------------------------------------- Wege
+// Massgeblich ist der Ordner des Dokuments, nicht der Dateiname. Steht die
+// Seite unter /ingenieur-werkzeuge/dashboard ohne Schraegstrich, ist ihr
+// Ordner bereits /ingenieur-werkzeuge/ und ein ../ waere einer zu viel.
+const ORDNER  = location.pathname.replace(/[^/]*$/, '');
+const WZ_PFAD = ORDNER.endsWith('/dashboard/') ? '../' : '';
+
+// Die Verweise im Kopf stehen als ../ im Text, damit die Seite auch ohne
+// JavaScript benutzbar bleibt. Hier werden sie an die Adresse angepasst.
+['link_shop', 'link_readme', 'link_pruefbericht'].forEach(function (id) {
+  const a = document.getElementById(id);
+  a.setAttribute('href', WZ_PFAD + a.getAttribute('href').replace(/^\.\.\//, ''));
+});
+
+// ------------------------------------------------------- Die vier Gruppen
+// Die Werkzeugdaten kennen sieben feine Gruppen. Das Dashboard fasst sie zu
+// den vier Abschnitten des README zusammen: wer ein Werkzeug sucht, denkt
+// nicht in sieben Schubladen.
+const ABSCHNITTE = [
+  { name: 'Elektrotechnik',        aus: ['elektro'],                    hinweis: 'Kabel, Lasten, Erdung, Licht, Schaltanlagen' },
+  { name: 'MSR und Prozess',       aus: ['msr', 'prozess'],             hinweis: 'Loops, Skalierung, Ventile, Hydraulik, Trennverfahren' },
+  { name: 'Kalkulation',           aus: ['kalkulation'],                hinweis: 'Kostenschätzung mit nachvollziehbaren Positionen' },
+  { name: 'Bau, Trasse, Sonstiges', aus: ['bau', 'trasse', 'sonstiges'], hinweis: 'Mengen, Profile, Kabelwege, Regelwerk' }
+];
+
+function sicher(t){
+  return String(t).replace(/[&<>"]/g, z => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[z]));
+}
+
+const liste       = document.getElementById('liste');
+const suche       = document.getElementById('suche');
+const suchfeld    = document.getElementById('suchfeld');
+const trefferzahl = document.getElementById('trefferzahl');
+document.getElementById('gesamt').textContent = WERKZEUGE.length;
+
+// Ein Werkzeug je Empfehlung: Kennung -> Begruendung des Modells.
+let empfehlung = {};
+
+function passt(w, begriff){
+  if (!begriff) return true;
+  const heuhaufen = [w.name, w.kurz, w.lang, w.datei, w.gruppe].join(' ').toLowerCase();
+  // Alle Woerter muessen vorkommen, nicht nur eines. "kabel trasse" soll den
+  // Trassenrechner finden und nicht jedes Werkzeug mit "Kabel" im Text.
+  return begriff.toLowerCase().split(/\s+/).filter(Boolean)
+                .every(teil => heuhaufen.includes(teil));
+}
+
+function karte(w){
+  const ziel  = WZ_PFAD + encodeURI(w.datei);
+  const warum = empfehlung[w.id];
+  return '<a class="wz' + (warum ? ' empfohlen' : '') + '" href="' + ziel + '" data-id="' + w.id + '">' +
+    '<h3>' + sicher(w.name) + '</h3>' +
+    '<p>' + sicher(w.kurz) + '</p>' +
+    (warum ? '<span class="warum">' + sicher(warum) + '</span>' : '') +
+    '<code>' + sicher(w.datei) + '</code>' +
+  '</a>';
+}
+
+function zeichne(){
+  const begriff = suche.value.trim();
+  suchfeld.classList.toggle('hatText', begriff.length > 0);
+
+  let gefunden = 0;
+  liste.innerHTML = ABSCHNITTE.map(a => {
+    const drin = WERKZEUGE.filter(w => a.aus.includes(w.gruppe) && passt(w, begriff));
+    if (!drin.length) return '';
+    gefunden += drin.length;
+    return '<section class="gruppe">' +
+      '<h2>' + sicher(a.name) + '<span>' + drin.length + ' &middot; ' + sicher(a.hinweis) + '</span></h2>' +
+      '<div class="karten">' + drin.map(karte).join('') + '</div>' +
+    '</section>';
+  }).join('');
+
+  if (!gefunden) {
+    liste.innerHTML = '<p class="leer">Kein Werkzeug gefunden für &bdquo;' + sicher(begriff) +
+      '&ldquo;. Die Frage oben beschreibt die Aufgabe in eigenen Worten und findet auch dann etwas.</p>';
+  }
+
+  trefferzahl.textContent = begriff
+    ? gefunden + ' von ' + WERKZEUGE.length + ' Werkzeugen'
+    : '';
+}
+
+suche.addEventListener('input', zeichne);
+document.getElementById('loeschen').addEventListener('click', () => {
+  suche.value = ''; empfehlung = {}; zeichne(); suche.focus();
+});
+// Tippen faengt sofort in der Suche an, ohne erst hineinzuklicken.
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && document.activeElement === suche) {
+    suche.value = ''; zeichne(); return;
+  }
+  if (e.ctrlKey || e.metaKey || e.altKey) return;
+  if (document.activeElement === suche || document.activeElement.tagName === 'TEXTAREA') return;
+  if (e.key.length === 1 && /\S/.test(e.key)) { suche.focus(); }
+});
+
+zeichne();
+
+// -------------------------------------------------------- Werkzeug finden
+// Der Schluessel fuer das Sprachmodell steht NICHT hier. Diese Seite ist
+// statisch; alles, was in ihr steht, kann jeder Besucher lesen. Gefragt wird
+// eine Edge Function, die den Schluessel aus app_config holt und selbst
+// bremst. Siehe supabase/functions/werkzeug-assistent/.
+//
+// Der hier stehende Schluessel ist der oeffentliche (publishable) Schluessel
+// des Projekts; er ist zur Veroeffentlichung gedacht und oeffnet nichts, was
+// nicht ohnehin oeffentlich ist. Derselbe wie auf der Verkaufsseite.
+const SB_URL = 'https://xdjtirojdjxqfzpjvdkw.supabase.co';
+const SB_KEY = 'sb_publishable_IR7rx1CMy7QMF3skpSYOxg_jyJtirQ_';
+
+const kiFrage   = document.getElementById('ki_frage');
+const kiSenden  = document.getElementById('ki_senden');
+const kiMeldung = document.getElementById('ki_meldung');
+
+function kiSage(text, schlecht){
+  kiMeldung.textContent = text;
+  kiMeldung.className = 'meldung' + (schlecht ? ' schlecht' : '');
+}
+
+async function werkzeugFinden(){
+  const frage = kiFrage.value.trim();
+  if (!frage) { kiSage('Bitte zuerst die Aufgabe beschreiben.', true); kiFrage.focus(); return; }
+
+  kiSenden.disabled = true;
+  kiSage('Wird gelesen ...');
+  try {
+    const antwort = await fetch(SB_URL + '/functions/v1/werkzeug-assistent', {
+      method: 'POST',
+      headers: {
+        'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ frage: frage })
+    });
+    const daten = await antwort.json().catch(() => ({}));
+
+    if (!antwort.ok || daten.fehler) {
+      // Die Bremse ist kein Fehler der Seite, deshalb wird ihr Text gezeigt.
+      kiSage(daten.fehler || 'Der Dienst antwortet gerade nicht. Die Suche oben funktioniert weiter.', true);
+      return;
+    }
+
+    const treffer = Array.isArray(daten.treffer) ? daten.treffer : [];
+    empfehlung = {};
+    treffer.forEach(t => {
+      if (t && t.id && WERKZEUGE.some(w => w.id === t.id)) empfehlung[t.id] = t.warum || '';
+    });
+
+    const anzahl = Object.keys(empfehlung).length;
+    if (!anzahl) {
+      kiSage('Dazu passt keines der Werkzeuge eindeutig. Die Suche oben hilft vielleicht weiter.', true);
+      return;
+    }
+    // Die Treffer werden in der Liste hervorgehoben, statt daneben noch einmal
+    // aufgezaehlt zu werden: so bleibt eine Stelle, an der ein Werkzeug steht.
+    suche.value = '';
+    zeichne();
+    kiSage(anzahl === 1 ? 'Ein Werkzeug ist unten hervorgehoben.'
+                        : anzahl + ' Werkzeuge sind unten hervorgehoben.');
+    const erstes = liste.querySelector('.wz.empfohlen');
+    if (erstes) erstes.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  } catch (_e) {
+    kiSage('Keine Verbindung. Die Suche oben funktioniert ohne Netz weiter.', true);
+  } finally {
+    kiSenden.disabled = false;
+  }
+}
+
+kiSenden.addEventListener('click', werkzeugFinden);
+kiFrage.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) werkzeugFinden();
+});
+</script>
+</body>
+</html>

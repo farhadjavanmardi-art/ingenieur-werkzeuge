@@ -1,0 +1,614 @@
+<!-- FILE: Bau_CAD.html -->
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ART ENVI | Master CAD (All-in-One)</title>
+    
+    <link rel="stylesheet" href="bibliotheken/fontawesome/css/all.min.css">
+    <style>
+        :root { 
+            --bg: #2d3436; 
+            --sidebar-bg: #dfe6e9; 
+            --accent: #0f766e; /* emerald/teal */ 
+            --text-dark: #2d3436;
+            --header-height: 60px; 
+            font-family: 'Segoe UI', sans-serif;
+        }
+        body { margin: 0; overflow: hidden; background: var(--bg); font-family: 'Segoe UI', sans-serif; }
+        
+        .header {
+            position: fixed; top: 0; width: 100%; height: var(--header-height);
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 0 20px; box-sizing: border-box;
+            background: #fff; border-bottom: 3px solid var(--accent); z-index: 20;
+        }
+        .brand { font-size: 20px; font-weight: 800; color: var(--text-dark); display: flex; align-items: center; gap:10px; }
+        .brand span { font-size: 11px; color: #fff; background: var(--accent); padding: 3px 8px; border-radius: 4px; text-transform: uppercase; }
+        
+        #sidebar {
+            position: fixed; top: var(--header-height); left: 0; bottom: 0; width: 350px;
+            background: var(--sidebar-bg); border-right: 1px solid #b2bec3;
+            padding: 15px; display: flex; flex-direction: column; z-index: 10; overflow-y: auto; 
+        }
+        /* Scrollbar styling */
+        #sidebar::-webkit-scrollbar { width: 8px; }
+        #sidebar::-webkit-scrollbar-thumb { background: #b2bec3; border-radius: 4px; }
+        
+        h3 { font-size: 12px; font-weight: 800; color: #636e72; border-bottom: 2px solid #b2bec3; margin: 25px 0 10px 0; padding-bottom: 5px; text-transform: uppercase; letter-spacing: 1px;}
+        
+        .control-group { margin-bottom: 10px; background: #fff; padding: 10px; border-radius: 6px; border: 1px solid #b2bec3; }
+        label { display: block; font-size: 11px; margin-bottom: 4px; color: #2d3436; font-weight: bold; }
+        input, select { width: 100%; padding: 6px; border: 1px solid #b2bec3; border-radius: 4px; font-size: 12px; box-sizing: border-box; margin-bottom: 5px; }
+        
+        .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-top: 5px; }
+        button { 
+            padding: 10px; border: none; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600; 
+            color: white; width: 100%; transition: 0.2s; text-align: left; padding-left: 10px;
+            display: flex; align-items: center; gap: 8px;
+        }
+        button:hover { transform: translateY(-1px); filter: brightness(1.1); }
+        button i { width: 15px; text-align: center; }
+        
+        .btn-steel { background: #2c3e50; } 
+        .btn-conc { background: #7f8c8d; color: #fff; } 
+        .btn-wood { background: #d35400; } 
+        .btn-geom { background: #8e44ad; } 
+        .btn-curve { background: #e17055; }
+        .btn-tool { background: #0984e3; justify-content: center;}
+        .btn-danger { background: #c0392b; justify-content: center;}
+        .btn-success { background: #27ae60; justify-content: center;}
+
+        #canvas-container {
+            margin-left: 350px; margin-top: var(--header-height);
+            width: calc(100% - 350px); height: calc(100vh - var(--header-height));
+            background: radial-gradient(circle, #f1f2f6 0%, #ced6e0 100%);
+        }
+        #statusBox { margin-top: auto; padding: 10px; background: #2d3436; color: #00b894; font-size: 11px; border-radius: 4px; border-left: 4px solid #00b894; }
+    
+        /* === KI Dashboard Top Icons (Emerald Theme) === */
+        .header-actions{display:flex;align-items:center;gap:10px;}
+        .icon-btn{
+            width:38px;height:38px;border-radius:10px;
+            display:inline-flex;align-items:center;justify-content:center;
+            border:1px solid rgba(15,118,110,.35);
+            background: rgba(15,118,110,.10);
+            color: var(--accent);
+            cursor:pointer;
+            transition: .2s;
+        }
+        .icon-btn:hover{background: rgba(15,118,110,.18); transform: translateY(-1px);}
+        .icon-btn i{font-size:16px;}
+        /* keep legacy back button in markup but do not let it clash with the top icons */
+        .btn-back{display:none;}
+
+        /* Modal */
+        .modal-overlay{
+            position:fixed; inset:0;
+            background: rgba(0,0,0,.55);
+            display:none;
+            align-items:center;
+            justify-content:center;
+            z-index:9999;
+            padding: 20px;
+            box-sizing:border-box;
+        }
+        .modal-overlay.open{display:flex;}
+        .modal{
+            width:min(920px, 100%);
+            max-height: min(80vh, 900px);
+            overflow:auto;
+            background:#ffffff;
+            border-radius:14px;
+            border: 1px solid rgba(15,118,110,.35);
+            box-shadow: 0 20px 60px rgba(0,0,0,.35);
+        }
+        .modal-header{
+            position:sticky; top:0;
+            background: linear-gradient(90deg, rgba(15,118,110,.10), rgba(15,118,110,.02));
+            border-bottom:1px solid rgba(15,118,110,.20);
+            padding:14px 16px;
+            display:flex; align-items:center; justify-content:space-between;
+            gap: 10px;
+        }
+        .modal-title{
+            font-weight:900; color:#1f2937; font-size:14px;
+            display:flex; align-items:center; gap:10px;
+        }
+        .modal-title i{color:var(--accent);}
+        .modal-close{
+            width:34px;height:34px;border-radius:10px;
+            border:1px solid rgba(15,118,110,.35);
+            background: rgba(15,118,110,.10);
+            color: var(--accent);
+            cursor:pointer;
+        }
+        .modal-body{padding:16px; color:#111827; font-size:13px; line-height:1.6;}
+        .modal-body h4{margin: 14px 0 8px 0; font-size:12px; color:#065f46; text-transform:uppercase; letter-spacing:.08em;}
+        .modal-body code{background: rgba(15,118,110,.08); border: 1px solid rgba(15,118,110,.18); padding: 2px 6px; border-radius: 6px;}
+        .modal-body ul{margin:8px 0 12px 18px;}
+        .modal-body li{margin:6px 0;}
+    
+    </style>
+<!-- Ein Aussehen fuer alle Werkzeuge. Steht direkt hinter dem letzten
+     <style> dieses Werkzeugs: spaeter in der Reihenfolge, also gewinnt
+     es bei gleicher Spezifitaet - aber so frueh wie moeglich, damit die
+     Seite nicht erst in der alten Farbe erscheint und dann umfaerbt.
+     Am Ende des <body> geladen war genau das zu sehen: Knoepfe mit
+     transition faerbten sichtbar um. Faerbt nur, verschiebt nichts.
+     Siehe werkzeug-stil.css. -->
+<link rel="stylesheet" href="werkzeug-stil.css">
+<!-- Sprachumschaltung Deutsch / Persisch / Englisch. Was nicht im
+     Woerterbuch steht, bleibt Deutsch. Siehe uebersetzung.js. -->
+<script src="woerter.js"></script>
+<script src="woerter/Bau_CAD.js"></script>
+<script src="uebersetzung.js"></script>
+
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "./bibliotheken/three-0.150/three.module.js",
+                "three/addons/": "./bibliotheken/three-0.150/jsm/"
+            }
+        }
+    </script>
+</head>
+<body>
+
+<header class="header">
+    <div class="brand">ART ENVI <span>MASTER CAD</span></div>
+    <div class="header-actions">
+        <!-- Home Button with fixed path -->
+        <a class="icon-btn home" href="dashboard/" title="Zurück zum KI-Engineering-Dashboard"><i class="fas fa-house"></i></a>
+        <button class="icon-btn" id="openInfo" title="Info & Formeln"><i class="fas fa-circle-info"></i></button>
+    </div>
+</header>
+
+<div id="sidebar">
+    <div class="control-group">
+        <label>Werkzeuge (Tools)</label>
+        <div class="btn-grid">
+            <button class="btn-tool" id="btnMove"><i class="fas fa-arrows-alt"></i> Bewegen</button>
+            <button class="btn-tool" id="btnRotate"><i class="fas fa-sync-alt"></i> Drehen</button>
+        </div>
+        <label style="margin-top:8px; display:flex; align-items:center; gap:5px;">
+            <input type="checkbox" id="snapToggle" checked style="width:auto;"> Magnet-Snap
+        </label>
+        <div style="display:flex; gap:5px; margin-top:5px;">
+            <input type="color" id="objColor" value="#95a5a6" style="height:30px;">
+            <button onclick="updateColor()" style="background:#636e72; justify-content:center;">Farbe ändern</button>
+        </div>
+    </div>
+
+    <h3>1. Parameter</h3>
+    <div class="control-group" style="border-left: 3px solid #0984e3;">
+        <div class="btn-grid">
+            <div><label>Länge/Radius (X)</label><input type="number" id="dimX" value="2000" step="100"></div>
+            <div><label>Höhe (Y)</label><input type="number" id="dimY" value="200" step="10"></div>
+        </div>
+        <div class="btn-grid">
+             <div><label>Breite (Z)</label><input type="number" id="dimZ" value="200" step="10"></div>
+             <div><label>Dicke (t)</label><input type="number" id="dimT" value="15" step="1"></div>
+        </div>
+        <div style="margin-top:8px;">
+            <label style="color:#e17055;">Biegewinkel (Grad °) - Nur für Kurven</label>
+            <input type="number" id="dimAngle" value="90" step="15" min="1" max="360" style="border-color:#e17055; background:#fff0eb;">
+        </div>
+    </div>
+
+    <h3>2. Kurven & Spezial</h3>
+    <div class="btn-grid">
+        <button class="btn-curve" onclick="addShape('bogen_wand')"><i class="fas fa-archway"></i> Bogenwand</button>
+        <button class="btn-curve" onclick="addShape('bogen_balken')"><i class="fas fa-rainbow"></i> Bogenbalken</button>
+        <button class="btn-curve" onclick="addShape('rampe')"><i class="fas fa-caret-up"></i> Rampe</button>
+        <button class="btn-curve" onclick="addShape('rohr_bogen')"><i class="fas fa-reply"></i> Rohrbogen</button>
+    </div>
+
+    <h3>3. Stahlbau (Steel)</h3>
+    <div class="btn-grid">
+        <button class="btn-steel" onclick="addShape('ipe')"><i class="fas fa-i-cursor"></i> IPE Profil</button>
+        <button class="btn-steel" onclick="addShape('hea')"><i class="fas fa-expand-alt"></i> HEA Profil</button>
+        <button class="btn-steel" onclick="addShape('unp')"><i class="fas fa-border-style"></i> UNP Profil</button>
+        <button class="btn-steel" onclick="addShape('l_prof')"><i class="fas fa-angle-left"></i> L-Winkel</button>
+        <button class="btn-steel" onclick="addShape('t_prof')"><i class="fas fa-heading"></i> T-Profil</button>
+        <button class="btn-steel" onclick="addShape('rohr')"><i class="far fa-circle"></i> Rohr (Solid)</button>
+    </div>
+
+    <h3>4. Beton & Massiv</h3>
+    <div class="btn-grid">
+        <button class="btn-conc" onclick="addShape('fundament')"><i class="fas fa-square-full"></i> Fundament</button>
+        <button class="btn-conc" onclick="addShape('wall')"><i class="fas fa-th-large"></i> Wand</button>
+        <button class="btn-conc" onclick="addShape('column_rect')"><i class="fas fa-vector-square"></i> Stütze (Eck)</button>
+        <button class="btn-conc" onclick="addShape('column_round')"><i class="fas fa-circle"></i> Stütze (Rund)</button>
+        <button class="btn-conc" onclick="addShape('beam_conc')"><i class="fas fa-bars"></i> Betonbalken</button>
+        <button class="btn-conc" onclick="addShape('slab')"><i class="fas fa-layer-group"></i> Deckenplatte</button>
+    </div>
+
+    <h3>5. Holz & Geometrie</h3>
+    <div class="btn-grid">
+        <button class="btn-wood" onclick="addShape('wood_beam')"><i class="fas fa-tree"></i> Holzbalken</button>
+        <button class="btn-wood" onclick="addShape('wood_panel')"><i class="fas fa-clipboard"></i> Holzplatte</button>
+        <button class="btn-geom" onclick="addShape('cube')"><i class="fas fa-cube"></i> Würfel</button>
+        <button class="btn-geom" onclick="addShape('sphere')"><i class="fas fa-globe"></i> Kugel</button>
+        <button class="btn-geom" onclick="addShape('cylinder')"><i class="fas fa-database"></i> Zylinder</button>
+        <button class="btn-geom" onclick="addShape('cone')"><i class="fas fa-caret-up"></i> Kegel</button>
+    </div>
+
+    <div style="margin-top: auto; padding-top: 20px;">
+        <button id="btnDel" class="btn-danger"><i class="fas fa-trash"></i> Löschen</button>
+        <button id="btnExport" class="btn-success"><i class="fas fa-file-export"></i> DXF Export</button>
+    </div>
+
+    <div id="statusBox">Bereit.</div>
+</div>
+
+
+<div class="modal-overlay" id="infoModalOverlay" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="infoTitle">
+        <div class="modal-header">
+            <div class="modal-title" id="infoTitle"><i class="fas fa-circle-info"></i> Master CAD (All-in-One) | Anwendung, Nutzung & Formeln</div>
+            <button class="modal-close" id="closeInfo" title="Close"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-body">
+            <h4>Anwendung dieser Seite</h4>
+            <ul>
+                <li>Eine leichtgewichtige 3D-CAD-Umgebung im Browser zur schnellen Erstellung gängiger Volumen (Beton, Stahl, Holz, Grundgeometrien und gebogene Formen) und DXF-Export.</li>
+                <li>Geeignet für Vorkonzepte, Maßprüfungen und den Export einfacher Modelle (kein Ersatz für industrielle CAD-Software).</li>
+            </ul>
+
+            <h4>Nutzung</h4>
+            <ul>
+                <li>Stellen Sie die Parameter im Bereich <b>1. Parameter</b> ein: <code>X</code> Länge/Radius, <code>Y</code> Höhe, <code>Z</code> Breite, <code>t</code> Dicke und für Kurven <code>Winkel</code>.</li>
+                <li>Fügen Sie eine Form über die Kategorien-Buttons (Stahl / Beton / Holz / Geometrie / Kurven) hinzu.</li>
+                <li>Verwenden Sie die Werkzeuge <b>Bewegen</b> und <b>Drehen</b> (TransformControls), um das Objekt zu verschieben/rotieren. Taste <code>w</code> = Bewegen, Taste <code>e</code> = Drehen, Taste <code>Entf</code> = Löschen.</li>
+                <li>Die Option <b>Magnet-Snap</b> dient zum schnellen Ausrichten.</li>
+                <li>Um die Farbe zu ändern, wählen Sie eine Farbe und klicken Sie auf <b>Farbe ändern</b>.</li>
+                <li>Klicken Sie für den Export auf <b>DXF Export</b>.</li>
+            </ul>
+
+            <h4>Formeln und Berechnungslogik (exakt wie im Code dieser Seite)</h4>
+            <ul>
+                <li>Winkelumrechnung: <code>angleRad = (angleDeg * Math.PI) / 180</code></li>
+                <li>Bogenwand/Gebogener Kasten: Außenradius <code>outerR = len</code> und Innenradius <code>innerR = len - t</code>, dann Extrusion mit Tiefe <code>h</code>.</li>
+                <li>Rampe: Erstellung einer 2D-Form mit den Punkten <code>(0,0)</code>, <code>(len,h)</code>, <code>(len,0)</code> und Extrusion mit Tiefe <code>w</code>.</li>
+                <li>Rohrbogen (Torus): <code>TorusGeometry(len, w/2, 16, 32, angleRad)</code></li>
+                <li>Zylinder/Rohr: Radius <code>w/2</code> und Länge <code>len</code>, dann Rotation zur Ausrichtung: <code>rotateZ(Math.PI/2)</code></li>
+                <li>Snap: Wenn der Abstand zwischen zwei Objekten kleiner als <code>100</code> ist, wird die Position des ausgewählten Objekts auf die des anderen kopiert: <code>distanceTo(other.position) &lt; 100</code>.</li>
+                <li>DXF Export: Jede Dreiecksfläche der Geometrie wird als 3DFACE geschrieben. Koordinaten werden mit <code>mesh.matrixWorld</code> in den Weltraum transformiert.</li>
+            </ul>
+
+            <h4>Zurück zum Dashboard</h4>
+            <ul>
+                <li>Das <b>Haus-Icon</b> oben führt zum Dashboard: <code>dashboard/</code></li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<div id="canvas-container"></div>
+
+<script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+    import { TransformControls } from 'three/addons/controls/TransformControls.js';
+    import * as BufferGeometryUtils from 'three/addons/utils/BufferGeometryUtils.js';
+
+    let scene, camera, renderer, controls, transformControl;
+    let objects = []; 
+    let selectedObject = null;
+
+    const MATS = {
+        steel: new THREE.MeshStandardMaterial({ color: 0x2c3e50, metalness: 0.6, roughness: 0.4, name: 'steel' }),
+        concrete: new THREE.MeshStandardMaterial({ color: 0x95a5a6, roughness: 0.9, name: 'concrete' }),
+        wood: new THREE.MeshStandardMaterial({ color: 0xd35400, roughness: 0.8, name: 'wood' }),
+        geom: new THREE.MeshStandardMaterial({ color: 0x8e44ad, roughness: 0.5, name: 'geom' }),
+        curve: new THREE.MeshStandardMaterial({ color: 0xe17055, roughness: 0.7, name: 'curve' }),
+        selected: new THREE.MeshStandardMaterial({ color: 0xf1c40f, emissive: 0x444400 })
+    };
+
+    window.addShape = addShape; 
+    window.updateColor = updateColor;
+
+    init();
+
+    function init() {
+        const container = document.getElementById('canvas-container');
+        scene = new THREE.Scene();
+        scene.background = new THREE.Color(0xf1f2f6);
+        scene.add(new THREE.GridHelper(10000, 100, 0xb2bec3, 0xdfe6e9));
+
+        camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 10, 50000);
+        camera.position.set(3000, 3000, 3000);
+
+        renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(container.clientWidth, container.clientHeight);
+        renderer.shadowMap.enabled = true;
+        container.appendChild(renderer.domElement);
+
+        controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+
+        transformControl = new TransformControls(camera, renderer.domElement);
+        transformControl.addEventListener('dragging-changed', (e) => controls.enabled = !e.value);
+        transformControl.addEventListener('change', checkSnap);
+        scene.add(transformControl);
+
+        const light = new THREE.DirectionalLight(0xffffff, 1);
+        light.position.set(1000, 2000, 1000);
+        scene.add(light);
+        scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+
+        window.addEventListener('resize', onResize);
+        window.addEventListener('keydown', onKeyDown);
+        renderer.domElement.addEventListener('pointerdown', onPointerDown);
+
+        document.getElementById('btnDel').onclick = deleteSelected;
+        document.getElementById('btnExport').onclick = exportDXF;
+        document.getElementById('btnMove').onclick = () => transformControl.setMode('translate');
+        document.getElementById('btnRotate').onclick = () => transformControl.setMode('rotate');
+
+        animate();
+    }
+
+    function addShape(type) {
+        let len = parseFloat(document.getElementById('dimX').value);
+        let h = parseFloat(document.getElementById('dimY').value);
+        let w = parseFloat(document.getElementById('dimZ').value);
+        let t = parseFloat(document.getElementById('dimT').value);
+        let angleDeg = parseFloat(document.getElementById('dimAngle').value);
+        let angleRad = (angleDeg * Math.PI) / 180;
+
+        let geometry;
+        let material = MATS.concrete.clone();
+        let name = type;
+
+        // === 1. CURVES (Abschnitt Bogen) ===
+        if (type === 'bogen_wand' || type === 'bogen_balken') {
+            material = MATS.curve.clone();
+            const outerR = len;
+            const innerR = len - t; 
+            const shape = new THREE.Shape();
+            shape.absarc(0, 0, outerR, 0, angleRad, false);
+            shape.absarc(0, 0, innerR, angleRad, 0, true);
+            shape.closePath();
+            geometry = new THREE.ExtrudeGeometry(shape, { depth: h, bevelEnabled: false, curveSegments: 32 });
+            geometry.rotateX(-Math.PI / 2);
+            name = (type === 'bogen_wand') ? "Bogenwand" : "Bogenbalken";
+        }
+        else if (type === 'rampe') {
+            material = MATS.curve.clone();
+            const shape = new THREE.Shape();
+            shape.moveTo(0,0); shape.lineTo(len, h); shape.lineTo(len, 0); shape.lineTo(0, 0);
+            geometry = new THREE.ExtrudeGeometry(shape, { depth: w, bevelEnabled: false });
+            geometry.translate(0, 0, -w/2);
+            name = "Rampe";
+        }
+        else if (type === 'rohr_bogen') {
+             material = MATS.steel.clone();
+             geometry = new THREE.TorusGeometry(len, w/2, 16, 32, angleRad);
+             name = "Rohrbogen";
+        }
+
+        // === 2. STEEL (Stahlbau) ===
+        else if (type === 'ipe' || type === 'hea') {
+            material = MATS.steel.clone();
+            // Auto-adjust width for IPE if not set specifically
+            if(type === 'ipe' && w >= h) w = h/2; 
+            const top = new THREE.BoxGeometry(len, t, w); top.translate(0, h/2 - t/2, 0);
+            const bot = new THREE.BoxGeometry(len, t, w); bot.translate(0, -h/2 + t/2, 0);
+            const web = new THREE.BoxGeometry(len, h - 2*t, t); 
+            geometry = BufferGeometryUtils.mergeBufferGeometries([top, bot, web]);
+            name = type.toUpperCase();
+        } 
+        else if (type === 'unp') {
+            material = MATS.steel.clone();
+            const web = new THREE.BoxGeometry(len, h, t); web.translate(0, 0, -w/2 + t/2);
+            const top = new THREE.BoxGeometry(len, t, w - t); top.translate(0, h/2 - t/2, t/2); 
+            const bot = new THREE.BoxGeometry(len, t, w - t); bot.translate(0, -h/2 + t/2, t/2);
+            geometry = BufferGeometryUtils.mergeBufferGeometries([web, top, bot]);
+            name = "UNP";
+        }
+        else if (type === 'l_prof') {
+            material = MATS.steel.clone();
+            const legV = new THREE.BoxGeometry(len, h, t); legV.translate(0, 0, -w/2 + t/2);
+            const legH = new THREE.BoxGeometry(len, t, w - t); legH.translate(0, -h/2 + t/2, t/2);
+            geometry = BufferGeometryUtils.mergeBufferGeometries([legV, legH]);
+            name = "L-Profil";
+        }
+        else if (type === 't_prof') {
+            material = MATS.steel.clone();
+            const top = new THREE.BoxGeometry(len, t, w); top.translate(0, h/2 - t/2, 0);
+            const web = new THREE.BoxGeometry(len, h-t, t); web.translate(0, -t/2, 0);
+            geometry = BufferGeometryUtils.mergeBufferGeometries([top, web]);
+            name = "T-Profil";
+        }
+        else if (type === 'rohr') {
+            // Solid Cylinder instead of hollow to avoid holes/bugs
+            material = MATS.steel.clone();
+            geometry = new THREE.CylinderGeometry(w/2, w/2, len, 32);
+            geometry.rotateZ(Math.PI/2);
+            name = "Rohr (Solid)";
+        }
+
+        // === 3. CONCRETE (Beton) ===
+        else if (type === 'fundament') {
+            geometry = new THREE.BoxGeometry(len, h, w); geometry.translate(0, -h/2, 0);
+            name = "Fundament";
+        }
+        else if (type === 'wall') {
+            geometry = new THREE.BoxGeometry(len, h, t < 50 ? 200 : t); geometry.translate(0, h/2, 0);
+            name = "Wand";
+        }
+        else if (type === 'column_rect') {
+            geometry = new THREE.BoxGeometry(w, h, w); geometry.translate(0, h/2, 0);
+            name = "Stütze (Eck)";
+        }
+        else if (type === 'column_round') {
+            geometry = new THREE.CylinderGeometry(w/2, w/2, h, 32); geometry.translate(0, h/2, 0);
+            name = "Stütze (Rund)";
+        }
+        else if (type === 'beam_conc') {
+            geometry = new THREE.BoxGeometry(len, h, w);
+            name = "Betonbalken";
+        }
+        else if (type === 'slab') {
+            geometry = new THREE.BoxGeometry(len, 200, w);
+            name = "Decke";
+        }
+
+        // === 4. WOOD & GEOM ===
+        else if (type === 'wood_beam') {
+            material = MATS.wood.clone();
+            geometry = new THREE.BoxGeometry(len, h, w);
+            name = "Holzbalken";
+        }
+        else if (type === 'wood_panel') {
+            material = MATS.wood.clone();
+            geometry = new THREE.BoxGeometry(len, 20, w);
+            name = "Holzplatte";
+        }
+        else if (type === 'cube') {
+            material = MATS.geom.clone(); geometry = new THREE.BoxGeometry(w, w, w); name="Würfel";
+        }
+        else if (type === 'sphere') {
+            material = MATS.geom.clone(); geometry = new THREE.SphereGeometry(w/2, 32, 32); geometry.translate(0, w/2, 0); name="Kugel";
+        }
+        else if (type === 'cylinder') {
+            material = MATS.geom.clone(); geometry = new THREE.CylinderGeometry(w/2, w/2, h, 32); geometry.translate(0, h/2, 0); name="Zylinder";
+        }
+        else if (type === 'cone') {
+            material = MATS.geom.clone(); geometry = new THREE.ConeGeometry(w/2, h, 32); geometry.translate(0, h/2, 0); name="Kegel";
+        }
+
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.userData = { type, originalMat: material.clone(), name };
+
+        if(selectedObject) {
+            mesh.position.copy(selectedObject.position);
+            mesh.position.z += 100;
+        }
+
+        scene.add(mesh);
+        objects.push(mesh);
+        selectObject(mesh);
+        status(`Hinzugefügt: ${name}`);
+    }
+
+    function updateColor() {
+        if(!selectedObject) return;
+        const col = document.getElementById('objColor').value;
+        selectedObject.material.color.set(col);
+        selectedObject.userData.originalMat.color.set(col);
+    }
+
+    function selectObject(mesh) {
+        if(selectedObject) selectedObject.material = selectedObject.userData.originalMat;
+        selectedObject = mesh;
+        if(mesh) {
+            mesh.material = MATS.selected.clone();
+            transformControl.attach(mesh);
+            status(mesh.userData.name);
+        } else {
+            transformControl.detach();
+            status("Bereit");
+        }
+    }
+
+    function deleteSelected() {
+        if(selectedObject) {
+            transformControl.detach();
+            scene.remove(selectedObject);
+            objects = objects.filter(o => o !== selectedObject);
+            selectedObject = null;
+        }
+    }
+
+    function checkSnap() {
+        if(!document.getElementById('snapToggle').checked || !selectedObject || transformControl.mode !== 'translate') return;
+        for(let other of objects) {
+            if(other === selectedObject) continue;
+            if(selectedObject.position.distanceTo(other.position) < 100) {
+                selectedObject.position.copy(other.position);
+                return;
+            }
+        }
+    }
+
+    function exportDXF() {
+        let dxf = "0\nSECTION\n2\nENTITIES\n";
+        objects.forEach(mesh => {
+            mesh.updateMatrixWorld();
+            const pos = mesh.geometry.attributes.position;
+            const index = mesh.geometry.index;
+            let col = 7;
+            if(mesh.userData.originalMat.name === 'steel') col = 5;
+            if(mesh.userData.originalMat.name === 'concrete') col = 9;
+            if(mesh.userData.originalMat.name === 'curve') col = 1;
+            if(mesh.userData.originalMat.name === 'wood') col = 2;
+
+            const face = (a,b,c) => {
+                const v1 = new THREE.Vector3().fromBufferAttribute(pos, a).applyMatrix4(mesh.matrixWorld);
+                const v2 = new THREE.Vector3().fromBufferAttribute(pos, b).applyMatrix4(mesh.matrixWorld);
+                const v3 = new THREE.Vector3().fromBufferAttribute(pos, c).applyMatrix4(mesh.matrixWorld);
+                dxf += `0\n3DFACE\n8\n${mesh.userData.name}\n62\n${col}\n10\n${v1.x}\n20\n${v1.y}\n30\n${v1.z}\n11\n${v2.x}\n21\n${v2.y}\n31\n${v2.z}\n12\n${v3.x}\n22\n${v3.y}\n32\n${v3.z}\n13\n${v3.x}\n23\n${v3.y}\n33\n${v3.z}\n`;
+            };
+            if(index) { for(let i=0; i<index.count; i+=3) face(index.getX(i), index.getX(i+1), index.getX(i+2)); }
+            else { for(let i=0; i<pos.count; i+=3) face(i, i+1, i+2); }
+        });
+        dxf += "0\nENDSEC\n0\nEOF";
+        const blob = new Blob([dxf], {type:'application/dxf'});
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = "Master_CAD_Project.dxf";
+        link.click();
+    }
+
+    function onResize() {
+        const c = document.getElementById('canvas-container');
+        camera.aspect = c.clientWidth / c.clientHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(c.clientWidth, c.clientHeight);
+    }
+    function onPointerDown(e) {
+        if(transformControl.dragging) return;
+        const rect = renderer.domElement.getBoundingClientRect();
+        const mouse = new THREE.Vector2(((e.clientX - rect.left)/rect.width)*2-1, -((e.clientY-rect.top)/rect.height)*2+1);
+        const ray = new THREE.Raycaster(); ray.setFromCamera(mouse, camera);
+        const hits = ray.intersectObjects(objects);
+        selectObject(hits.length ? hits[0].object : null);
+    }
+    function onKeyDown(e) {
+        if(e.key === 'Delete') deleteSelected();
+        if(e.key === 'w') transformControl.setMode('translate');
+        if(e.key === 'e') transformControl.setMode('rotate');
+    }
+    function status(msg) { document.getElementById('statusBox').innerText = msg; }
+    function animate() { requestAnimationFrame(animate); controls.update(); renderer.render(scene, camera); }
+</script>
+
+<script>
+(function(){
+    const overlay = document.getElementById('infoModalOverlay');
+    const openBtn = document.getElementById('openInfo');
+    const closeBtn = document.getElementById('closeInfo');
+
+    function openInfoModal(){
+        overlay.classList.add('open');
+        overlay.setAttribute('aria-hidden','false');
+    }
+    function closeInfoModal(){
+        overlay.classList.remove('open');
+        overlay.setAttribute('aria-hidden','true');
+    }
+
+    if(openBtn) openBtn.addEventListener('click', openInfoModal);
+    if(closeBtn) closeBtn.addEventListener('click', closeInfoModal);
+    if(overlay) overlay.addEventListener('click', (e)=>{ if(e.target === overlay) closeInfoModal(); });
+    window.addEventListener('keydown', (e)=>{ if(e.key === 'Escape' && overlay.classList.contains('open')) closeInfoModal(); });
+})();
+</script>
+
+</body>
+</html>

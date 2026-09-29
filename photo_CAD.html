@@ -1,0 +1,1109 @@
+<!DOCTYPE html>
+<html lang="de" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CAD PRO Ultimate | AI Scan Edition</title>
+    <link rel="stylesheet" href="bibliotheken/fontawesome/css/all.min.css">
+    
+    <!-- Three.js & Utils -->
+    <script src="bibliotheken/three-0.128/three.min.js"></script>
+    <script src="bibliotheken/three-0.128/controls/OrbitControls.js"></script>
+    <script src="bibliotheken/three-0.128/controls/TransformControls.js"></script>
+    <script src="bibliotheken/three-0.128/utils/BufferGeometryUtils.js"></script>
+    
+    <!-- ImageTracer for Vectorization (Scan Engine) -->
+    <script src="bibliotheken/imagetracer_v1.2.6.min.js"></script>
+
+    <style>
+        :root { 
+            --bg: #1e1e1e; --panel: #2b2b2b; --accent: #00cec9; 
+            --text: #ecf0f1; --border: #444; --select: #e17055; 
+            --header: #111;
+        }
+        * { box-sizing: border-box; user-select: none; font-family: 'Segoe UI', 'Roboto', sans-serif; outline: none; }
+        body { margin: 0; background: var(--bg); color: var(--text); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+        /* Header */
+        .header { height: 50px; background: var(--header); display: flex; justify-content: space-between; align-items: center; padding: 0 15px; border-bottom: 2px solid var(--accent); flex-shrink: 0; }
+        .brand { font-weight: 900; font-size: 18px; letter-spacing: 1px; display: flex; align-items: center; gap: 15px; } 
+        .brand span { color: var(--accent); }
+        
+        .header-icons { display: flex; gap: 10px; }
+        .h-icon { color: #fff; font-size: 12px; cursor: pointer; transition: 0.2s; text-decoration: none; display: flex; align-items: center; gap: 5px; background: #333; padding: 5px 10px; border-radius: 4px; }
+        .h-icon:hover { background: var(--accent); color: #000; }
+
+        .btn { border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; display: inline-flex; align-items: center; gap: 6px; transition: 0.2s; color: #fff; background: #444; font-weight: bold; }
+        .btn:hover { filter: brightness(1.2); transform: translateY(-1px); }
+        .btn-blue { background: #0984e3; }
+        .btn-green { background: #00b894; }
+        .btn-red { background: #d63031; }
+        .btn-purple { background: #6c5ce7; }
+        .btn-orange { background: #e67e22; }
+        .btn-icon { padding: 6px; aspect-ratio: 1; justify-content: center; width: 30px; height: 30px; }
+
+        /* Main Layout */
+        .main { flex: 1; display: flex; overflow: hidden; }
+
+        /* Sidebar */
+        .sidebar { 
+            width: 360px; 
+            background: var(--panel); 
+            display: flex; 
+            flex-direction: column; 
+            border-right: 1px solid var(--border); 
+            overflow-y: auto; 
+            z-index: 10; 
+            padding: 10px; 
+            gap: 10px; 
+            flex-shrink: 0;
+        }
+        .sidebar::-webkit-scrollbar { width: 6px; }
+        .sidebar::-webkit-scrollbar-track { background: #222; }
+        .sidebar::-webkit-scrollbar-thumb { background: #555; border-radius: 3px; }
+
+        .section-header { font-size: 11px; color: #aaa; margin: 5px 0 2px 0; text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid #444; padding-bottom: 4px; font-weight: bold; }
+        
+        .box { background: #333; padding: 8px; border-radius: 6px; border: 1px solid #444; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        .box-title { color: var(--accent); font-weight: bold; font-size: 12px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+
+        .tool-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; }
+        .t-btn { background: #444; color: #ccc; border: 1px solid #555; padding: 8px 2px; border-radius: 4px; cursor: pointer; font-size: 10px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 4px; transition: all 0.2s; height: 50px; justify-content: center; }
+        .t-btn:hover { background: #555; color: #fff; border-color: #777; }
+        .t-btn.active { background: var(--accent); color: #000; border-color: #fff; font-weight: bold; box-shadow: 0 0 8px rgba(0,206,201,0.4); }
+        .t-btn i { font-size: 16px; }
+
+        /* Inputs */
+        .input-row { display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: #ddd; margin-bottom: 6px; }
+        input[type="number"], input[type="text"], select { background: #222; border: 1px solid #555; color: #fff; padding: 4px; border-radius: 3px; text-align: center; font-size: 11px; width: 60px; height: 24px; }
+        input:focus { border-color: var(--accent); }
+        select { width: 100px; text-align: left; }
+        input[type="range"] { width: 100px; }
+        
+        .vol-display { background: #222; color: var(--accent); padding: 4px; border-radius: 3px; font-family: monospace; font-size: 11px; border: 1px solid #444; width: 100px; text-align: right; }
+
+        /* Object List */
+        .obj-list { max-height: 120px; overflow-y: auto; background: #222; border: 1px solid #444; border-radius: 4px; }
+        .obj-item { padding: 4px 8px; font-size: 11px; cursor: pointer; border-bottom: 1px solid #333; display: flex; justify-content: space-between; align-items: center; color: #aaa; }
+        .obj-item:hover { background: #333; color: #fff; }
+        .obj-item.selected { background: var(--select); color: #fff; }
+
+        /* Canvas Areas */
+        .area-wrapper { flex: 1; display: flex; position: relative; }
+        
+        .area-2d { flex: 1; background: #151515; position: relative; border-right: 2px solid var(--border); overflow: hidden; }
+        #canvas2D { position: absolute; top: 0; left: 0; z-index: 2; cursor: crosshair; }
+        #bgImage { position: absolute; top: 0; left: 0; z-index: 1; pointer-events: none; opacity: 0.6; transform-origin: top left; transition: filter 0.3s; }
+        
+        .area-3d { flex: 1; background: #111; position: relative; }
+        .overlay { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.7); padding: 5px 10px; border-radius: 4px; font-size: 11px; color: #aaa; pointer-events: none; z-index: 5; border: 1px solid #444; }
+        
+        /* Loading Overlay */
+        #loader { display: none; position: absolute; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:100; justify-content:center; align-items:center; color:var(--accent); font-size:20px; flex-direction: column; gap: 10px; }
+
+        /* 3D Toolbar */
+        .toolbar-3d { 
+            position: absolute; top: 10px; left: 50%; transform: translateX(-50%); 
+            background: rgba(40,40,40,0.95); padding: 6px 20px; border-radius: 30px; 
+            display: flex; gap: 20px; border: 1px solid #666; z-index: 5; box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        }
+        .tool-icon { color: #aaa; cursor: pointer; font-size: 18px; transition: 0.2s; padding: 6px; border-radius: 50%; }
+        .tool-icon:hover { color: #fff; transform: scale(1.1); }
+        .tool-icon.active { color: var(--accent); background: rgba(0, 206, 201, 0.2); }
+
+        .view-controls { position: absolute; bottom: 10px; right: 10px; display: flex; gap: 5px; z-index: 5; }
+        .xray-btn { position: absolute; top: 10px; right: 10px; z-index: 5; opacity: 0.9; }
+        .xray-btn.active { background: var(--accent); color: #000; }
+
+        /* Modal */
+        .modal { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.8); z-index: 100; justify-content: center; align-items: center; }
+        .modal-content { background: #222; padding: 20px; border-radius: 8px; border: 1px solid var(--accent); max-width: 500px; color: #eee; }
+        .modal h2 { color: var(--accent); margin-top: 0; }
+        .modal ul { padding-left: 20px; font-size: 13px; line-height: 1.6; }
+
+    
+
+/* === KI Dashboard Standard Override (Do not remove) === */
+
+:root{
+  --accent:#00b894;          /* Emerald/Jade */
+  --select:#22c55e;          /* Green selection */
+  --header:#053a2f;          /* Deep jade header */
+  --bg:#0b0f0e;
+  --panel:#15201d;
+  --border:#214238;
+  --text:#eaf5f1;
+}
+.header{
+  background: var(--header) !important;
+  border-bottom: 2px solid var(--accent) !important;
+}
+.h-icon{
+  border-radius: 999px !important;
+  height: 34px !important;
+  padding: 0 12px !important;
+  border: 1px solid rgba(255,255,255,0.15) !important;
+  background: rgba(0,0,0,0.25) !important;
+}
+.h-icon i{ font-size: 14px !important; }
+.header-icons{ gap: 10px !important; }
+.ki-home-btn{
+  width: 40px !important;
+  justify-content: center !important;
+  padding: 0 !important;
+}
+.ki-home-btn span, .ki-home-btn .ki-text{ display:none !important; }
+.modal-content{ border-color: var(--accent) !important; }
+
+
+
+/* === KI Dashboard Standard Override (Do not remove) === */
+
+.ki-home-btn{ font-size:0 !important; }
+.ki-home-btn i{ font-size:16px !important; }
+
+</style>
+<!-- Ein Aussehen fuer alle Werkzeuge. Steht direkt hinter dem letzten
+     <style> dieses Werkzeugs: spaeter in der Reihenfolge, also gewinnt
+     es bei gleicher Spezifitaet - aber so frueh wie moeglich, damit die
+     Seite nicht erst in der alten Farbe erscheint und dann umfaerbt.
+     Am Ende des <body> geladen war genau das zu sehen: Knoepfe mit
+     transition faerbten sichtbar um. Faerbt nur, verschiebt nichts.
+     Siehe werkzeug-stil.css. -->
+<link rel="stylesheet" href="werkzeug-stil.css">
+<!-- Sprachumschaltung Deutsch / Persisch / Englisch. Was nicht im
+     Woerterbuch steht, bleibt Deutsch. Siehe uebersetzung.js. -->
+<script src="woerter.js"></script>
+<script src="woerter/photo_CAD.js"></script>
+<script src="uebersetzung.js"></script>
+
+</head>
+<body>
+
+<!-- Loader -->
+<div id="loader"><i class="fas fa-spinner fa-spin"></i><span>KI-Scan läuft... Bitte warten</span></div>
+
+<!-- Help Modal -->
+<div id="helpModal" class="modal" onclick="this.style.display='none'">
+    <div class="modal-content" onclick="event.stopPropagation()">
+        <h2><i class="fas fa-info-circle"></i> Hilfe & Funktionen</h2>
+        <ul>
+            <li><b>KI-Scan:</b> Laden Sie ein Bild und klicken Sie auf "Auto Scan", um Linien automatisch in 3D-Objekte umzuwandeln.</li>
+            <li><b>2D Entwurf:</b> Zeichnen Sie Formen auf dem Bild. Verwenden Sie 'Frei' für Polygone.</li>
+            <li><b>Formen:</b> Rechteck, Kreis, Raute, Sechseck, Achteck usw.</li>
+            <li><b>Bearbeiten:</b> Klicken Sie auf ein Objekt, um Größe, Farbe, Transparenz und Position zu ändern.</li>
+            <li><b>Löschen:</b> Objekt auswählen und Taste <b>[Entf]</b> drücken.</li>
+            <li><b>Navigation:</b> Linke Maustaste zum Drehen, Rechte zum Verschieben, Scrollen zum Zoomen.</li>
+        </ul>
+        
+<div style="margin-top:14px; padding-top:12px; border-top:1px solid #333;">
+  <h3 style="margin:0 0 8px 0; color: var(--accent); font-size:14px;">
+    <i class="fas fa-square-root-variable"></i> Zweck, Nutzung & verwendete Formeln
+  </h3>
+  <div style="font-size:12px; line-height:1.6; color:#ddd;">
+    <div style="margin-bottom:8px;">
+      <b>Zweck:</b> 2D-Skizze oder Scan (Bild) in 3D-Körper umwandeln, Objekte editieren und als DXF exportieren.
+    </div>
+    <div style="margin-bottom:8px;">
+      <b>So nutzt du es (Kurz-Workflow):</b>
+      <ol style="margin:6px 0 0 18px; padding:0;">
+        <li><b>Bild laden</b> (oben rechts). Danach wird das Bild in der 2D-Fläche skaliert und zentriert.</li>
+        <li>Entweder <b>Auto Scan</b> (Vektorisierung) oder manuell in der 2D-Fläche zeichnen.</li>
+        <li>Über <b>Eigenschaften</b> Material, Farbe, Transparenz, Position/Rotation bearbeiten.</li>
+        <li><b>DXF Export</b> erzeugt eine 2D/3D-kompatible Geometrie-Ausgabe (je nach Exportlogik im Script).</li>
+      </ol>
+    </div>
+    <div style="margin-bottom:8px;">
+      <b>Scan-Parameter (ImageTracer):</b><br>
+      <code>ltres</code> = Detail-Level, <code>qtres</code> = Glättung, <code>pathomit</code> = Rauschfilter, <code>Scan-Höhe</code> = Extrusionshöhe (Z).
+    </div>
+    <div>
+      <b>Volumenberechnung (Anzeige in cm³):</b>
+      <ul style="margin:6px 0 0 18px; padding:0;">
+        <li>Box/Rect: <code>V = w · h · d</code></li>
+        <li>Zylinder/Kreis: <code>V = π · r² · d</code></li>
+        <li>Kugel: <code>V = (4/3) · π · r³</code></li>
+        <li>Kegel: <code>V = (1/3) · π · r² · d</code></li>
+        <li>Pyramide: <code>V = (w² · d) / 3</code></li>
+        <li>Torus: <code>V = (π · tube²) · (2 · π · r)</code></li>
+        <li>Scan/Polygon: Bounding-Box-basierte Näherung (im Code mit Faktor <code>0.7</code>).</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<button class="btn btn-blue" onclick="document.getElementById('helpModal').style.display='none'" style="width:100%">Verstanden</button>
+    </div>
+</div>
+
+<div class="header">
+    <div class="brand">
+        <div class="header-icons">
+            <a href="dashboard/" class="h-icon ki-home-btn" onclick="return kiGoHome(event)" title="Zurück zum Dashboard">
+                <i class="fas fa-home"></i>
+            </a>
+            <div class="h-icon" onclick="document.getElementById('helpModal').style.display='flex'" title="Hilfe">
+                <i class="fas fa-question-circle"></i>
+            </div>
+        </div>
+    </div>
+    <div style="font-weight:bold; font-size:16px;">CAD <span style="color:var(--accent)">PRO</span> <small>AI Engineering</small></div>
+    <div style="display:flex; gap:8px;">
+        <label class="btn btn-blue">
+            <i class="fas fa-image"></i> Bild laden
+            <input type="file" hidden accept="image/*" onchange="loadImage(this)">
+        </label>
+        <button class="btn btn-green" onclick="exportDXF()"><i class="fas fa-file-export"></i> DXF Export</button>
+    </div>
+</div>
+
+<div class="main">
+    
+    <!-- Sidebar -->
+    <div class="sidebar">
+        
+        <!-- NEW: AI SCANNER SECTION -->
+        <div class="section-header">KI-Scan (Vektorisierung)</div>
+        <div class="box" style="border: 1px solid var(--accent);">
+            <div style="font-size:10px; color:#aaa; margin-bottom:5px;">Konvertiert Bildlinien automatisch in 3D.</div>
+            
+            <div class="input-row">
+                <label title="Detail Level">Details (Ltres)</label>
+                <input type="range" id="scan_ltres" min="0.1" max="4" step="0.1" value="1">
+                <span id="val_ltres" style="font-size:9px; width:20px;">1.0</span>
+            </div>
+            <div class="input-row">
+                <label title="Smoothing">Glättung (Qtres)</label>
+                <input type="range" id="scan_qtres" min="0.1" max="4" step="0.1" value="1">
+                <span id="val_qtres" style="font-size:9px; width:20px;">1.0</span>
+            </div>
+            <div class="input-row">
+                <label title="Noise Reduction">Rauschfilter</label>
+                <input type="range" id="scan_pathomit" min="0" max="64" step="1" value="8">
+                <span id="val_omit" style="font-size:9px; width:20px;">8</span>
+            </div>
+            <div class="input-row">
+                <label>Scan-Höhe (Z)</label>
+                <input type="number" id="scanHeight" value="15">
+            </div>
+
+            <button class="btn btn-orange" style="width:100%; margin-top:5px;" onclick="vectorizeImage()">
+                <i class="fas fa-magic"></i> Auto Scan Starten
+            </button>
+        </div>
+
+        <!-- 1. Drawing Tools -->
+        <div class="section-header">2D Entwurf (Zeichnen)</div>
+        <div class="box">
+            <div class="tool-grid">
+                <button class="t-btn active" id="t-poly" onclick="setTool('poly')"><i class="fas fa-draw-polygon"></i> Frei</button>
+                <button class="t-btn" id="t-rect" onclick="setTool('rect')"><i class="far fa-square"></i> Rechteck</button>
+                <button class="t-btn" id="t-circle" onclick="setTool('circle')"><i class="far fa-circle"></i> Kreis</button>
+                <button class="t-btn" id="t-semicircle" onclick="setTool('semicircle')"><i class="fas fa-adjust"></i> Halbkreis</button>
+                <button class="t-btn" id="t-rhombus" onclick="setTool('rhombus')"><i class="fas fa-shapes"></i> Raute</button>
+                <button class="t-btn" id="t-hex" onclick="setTool('hex')"><i class="fas fa-hexagon"></i> 6-Eck</button>
+                <button class="t-btn" id="t-oct" onclick="setTool('oct')"><i class="fas fa-certificate"></i> 8-Eck</button>
+                <button class="t-btn" id="t-triangle" onclick="setTool('triangle')"><i class="fas fa-caret-up"></i> Dreieck</button>
+            </div>
+            <div style="margin-top:8px; border-top:1px solid #444; padding-top:6px;">
+                <div class="input-row"><label>Start Höhe (Z)</label><input type="number" id="startZ" value="0" oninput="zHinweisZeigen()"></div>
+                <div class="input-row"><label>Extrusion (Dicke)</label><input type="number" id="drawZ" value="20" oninput="zHinweisZeigen()"></div>
+                <div id="zHinweis" style="margin-top:4px; font-size:11px; color:#888;">Einheiten, solange kein Maßstab gesetzt ist</div>
+            </div>
+        </div>
+
+        <!-- Massstab -->
+        <div class="section-header">Maßstab</div>
+        <div class="box">
+            <div class="input-row"><label>Bekannte Strecke [mm]</label>
+                <input type="number" id="refMM" value="1000" step="10"></div>
+            <button class="t-btn" id="t-mass" onclick="setTool('mass')" style="width:100%; height:auto; padding:8px; flex-direction:row; gap:6px; margin-top:6px;">
+                <i class="fas fa-ruler"></i> Zwei Punkte auf dem Foto anklicken</button>
+            <div id="massStatus" style="margin-top:6px; font-size:11px; color:#e17055;">
+                Noch kein Maßstab gesetzt - der DXF käme in Bildpunkten.</div>
+        </div>
+
+        <!-- 2. Engineering Parts -->
+        <div class="section-header">Normteile (Bibliothek)</div>
+        <div class="box">
+            <div class="tool-grid">
+                <button class="t-btn" onclick="addPart('Bolt')"><i class="fas fa-screw"></i> Schraube</button>
+                <button class="t-btn" onclick="addPart('Nut')"><i class="fas fa-circle-notch"></i> Mutter</button>
+                <button class="t-btn" onclick="addPart('Washer')"><i class="far fa-dot-circle"></i> U-Scheibe</button>
+                <button class="t-btn" onclick="addPart('Gear')"><i class="fas fa-cog"></i> Zahnrad</button>
+            </div>
+        </div>
+
+        <!-- 3. Basic Shapes -->
+        <div class="section-header">3D Grundkörper</div>
+        <div class="box">
+            <div class="tool-grid">
+                <button class="t-btn" onclick="addStandard('Box')"><i class="fas fa-cube"></i> Würfel</button>
+                <button class="t-btn" onclick="addStandard('Sphere')"><i class="fas fa-globe"></i> Kugel</button>
+                <button class="t-btn" onclick="addStandard('Cylinder')"><i class="fas fa-database"></i> Zylinder</button>
+                <button class="t-btn" onclick="addStandard('Cone')"><i class="fas fa-caret-up"></i> Kegel</button>
+                <button class="t-btn" onclick="addStandard('Pyramid')"><i class="fas fa-mountain"></i> Pyramide</button>
+                <button class="t-btn" onclick="addStandard('Torus')"><i class="fas fa-ring"></i> Donut</button>
+            </div>
+        </div>
+
+        <!-- 4. Scene List -->
+        <div class="section-header">Projekt Übersicht</div>
+        <div class="box">
+            <div class="obj-list" id="sceneList"></div>
+        </div>
+
+        <!-- 5. Edit Panel -->
+        <div class="box" id="editPanel" style="display:none; border-color:var(--select); margin-top:10px;">
+            <div class="box-title" style="color:var(--select);">
+                <span><i class="fas fa-sliders-h"></i> Eigenschaften</span>
+                <div style="display:flex; gap:2px;">
+                    <button class="btn btn-icon" onclick="copyObject()" title="Kopieren (Ctrl+C)"><i class="fas fa-copy"></i></button>
+                    <button class="btn btn-icon" onclick="pasteObject()" title="Einfügen (Ctrl+V)"><i class="fas fa-paste"></i></button>
+                </div>
+            </div>
+
+            <div class="input-row">
+                <label>Material</label>
+                <select id="matType" onchange="updateMaterialType()">
+                    <option value="Standard">Standard</option>
+                    <option value="Metal">Stahl</option>
+                    <option value="Copper">Kupfer</option>
+                    <option value="Plastic">Kunststoff</option>
+                    <option value="Glass">Glas</option>
+                </select>
+            </div>
+
+            <div id="dynamicInputs" style="margin-bottom:8px; background:#222; padding:5px; border-radius:4px; border:1px solid #444;"></div>
+            
+            <div class="input-row"><label>Volumen</label><div id="volDisplay" class="vol-display">0 cm³</div></div>
+
+            <div class="section-header" style="margin-top:5px;">Position & Rotation</div>
+            <div class="tool-grid" style="grid-template-columns: 1fr 1fr;">
+                <div class="input-row"><label>X</label><input type="number" id="posX" oninput="updateTransFromInput()"></div>
+                <div class="input-row"><label>Y</label><input type="number" id="posY" oninput="updateTransFromInput()"></div>
+                <div class="input-row"><label>Z</label><input type="number" id="posZ" oninput="updateTransFromInput()"></div>
+                <div class="input-row"><label>Rot</label><input type="number" id="rotZ" oninput="updateTransFromInput()"></div>
+            </div>
+
+            <div class="input-row" style="margin-top:8px;">
+                <label>Farbe</label>
+                <input type="color" id="objColor" oninput="updateMat()" style="width:100%; height:25px; padding:0;">
+            </div>
+            <div class="input-row">
+                <label>Transparenz</label>
+                <input type="range" id="objAlpha" min="0.1" max="1" step="0.05" oninput="updateMat()" style="width:100%;">
+            </div>
+
+            <button class="btn btn-red" style="width:100%; margin-top:8px;" onclick="deleteSelected()"><i class="fas fa-trash"></i> Löschen (Entf)</button>
+        </div>
+
+    </div>
+
+    <!-- Canvas Wrapper -->
+    <div class="area-wrapper">
+        <!-- 2D Canvas -->
+        <div class="area-2d" id="area2d">
+            <div class="overlay">2D Arbeitsfläche</div>
+            <img id="bgImage" alt="">
+            <canvas id="canvas2D"></canvas>
+        </div>
+
+        <!-- 3D Viewport -->
+        <div class="area-3d" id="view3d">
+            <div class="overlay" style="left:auto; right:10px;">3D Ansicht</div>
+            
+            <button class="btn xray-btn" id="btnXray" onclick="toggleXray()">
+                <i class="fas fa-layer-group"></i> Röntgen
+            </button>
+
+            <div class="toolbar-3d">
+                <i class="fas fa-arrows-alt tool-icon active" id="m-translate" onclick="setGizmo('translate')" title="Verschieben (T)"></i>
+                <i class="fas fa-sync-alt tool-icon" id="m-rotate" onclick="setGizmo('rotate')" title="Drehen (R)"></i>
+                <i class="fas fa-expand-arrows-alt tool-icon" id="m-scale" onclick="setGizmo('scale')" title="Skalieren (S)"></i>
+            </div>
+
+            <div class="view-controls">
+                <button class="btn" onclick="setView('top')">Oben</button>
+                <button class="btn" onclick="setView('front')">Vorne</button>
+                <button class="btn" onclick="setView('iso')">ISO</button>
+                <button class="btn" onclick="toggleGrid()">Gitter</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- UI HELPERS FOR SLIDERS ---
+    ['scan_ltres', 'scan_qtres', 'scan_pathomit'].forEach(id => {
+        document.getElementById(id).addEventListener('input', e => {
+            document.getElementById('val_' + id.split('_')[1]).innerText = e.target.value;
+        });
+    });
+
+    // --- THREE.JS SETUP ---
+    const view = document.getElementById('view3d');
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x111111); 
+    
+    const camera = new THREE.PerspectiveCamera(45, view.clientWidth/view.clientHeight, 1, 20000);
+    camera.position.set(400, -600, 500); 
+    camera.up.set(0, 0, 1);
+
+    const renderer = new THREE.WebGLRenderer({antialias: true, alpha: true});
+    renderer.setSize(view.clientWidth, view.clientHeight);
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    view.appendChild(renderer.domElement);
+
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true; controls.dampingFactor = 0.1;
+
+    // Lights
+    scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+    const dl = new THREE.DirectionalLight(0xffffff, 0.8);
+    dl.position.set(500, 200, 1000);
+    dl.castShadow = true;
+    dl.shadow.mapSize.width = 2048; dl.shadow.mapSize.height = 2048;
+    scene.add(dl);
+    const bl = new THREE.DirectionalLight(0xaaccff, 0.3); 
+    bl.position.set(-500, -500, 200);
+    scene.add(bl);
+
+    // Grid
+    let gridHelper = new THREE.GridHelper(3000, 60, 0x444444, 0x222222);
+    gridHelper.rotation.x = Math.PI/2;
+    scene.add(gridHelper);
+
+    // Gizmo
+    const transform = new THREE.TransformControls(camera, renderer.domElement);
+    transform.addEventListener('dragging-changed', e => controls.enabled = !e.value);
+    transform.addEventListener('change', () => { if(selectedObj) { syncInputs(); } });
+    scene.add(transform);
+
+    let objects = [];
+    let selectedObj = null;
+    let clipboard = null;
+    let xrayMode = false;
+    let rawImgData = null; // Store base64 for scanner
+
+    // --- 2D DRAWING ENGINE ---
+    const cvs = document.getElementById('canvas2D');
+    const ctx = cvs.getContext('2d');
+    const bgImg = document.getElementById('bgImage');
+    const area2d = document.getElementById('area2d');
+    let scale=1, panX=0, panY=0, pts=[], isDrawing=false, startP=null, currentTool='poly';
+
+    // Der Massstab. Bis er gesetzt ist, ist eine Welteinheit ein Bildpunkt -
+    // und ein DXF in Bildpunkten ist keine masstaebliche Zeichnung, auch wenn
+    // er sich oeffnen laesst. Der Katalog verspricht "Massstab ueber eine
+    // bekannte Referenzstrecke"; bis hierher gab es diese Strecke nicht.
+    let mmProEinheit = null;
+    let massPunkte = [];
+    let isPanning=false, lastX, lastY;
+
+    function resize() {
+        const rect = area2d.getBoundingClientRect();
+        cvs.width = rect.width; cvs.height = rect.height;
+        camera.aspect = view.clientWidth/view.clientHeight; camera.updateProjectionMatrix();
+        renderer.setSize(view.clientWidth, view.clientHeight); update2D();
+    }
+    window.addEventListener('resize', resize); setTimeout(resize, 100);
+
+    function loadImage(input) {
+        if(input.files[0]) {
+            const r = new FileReader();
+            r.onload = e => {
+                rawImgData = e.target.result; // Keep for AI Scanner
+                bgImg.src = rawImgData;
+                bgImg.onload = () => {
+                    scale = Math.min(cvs.width/bgImg.naturalWidth, cvs.height/bgImg.naturalHeight)*0.85;
+                    panX = (cvs.width - bgImg.naturalWidth*scale)/2; 
+                    panY = (cvs.height - bgImg.naturalHeight*scale)/2; 
+                    update2D();
+                }
+            }; r.readAsDataURL(input.files[0]);
+        }
+    }
+
+    // --- AI VECTORIZATION SCANNER LOGIC ---
+    window.vectorizeImage = function() {
+        if(!rawImgData) { alert("Bitte zuerst ein Bild laden!"); return; }
+        
+        const loader = document.getElementById('loader');
+        loader.style.display = 'flex';
+
+        // Settings from UI
+        const ltres = parseFloat(document.getElementById('scan_ltres').value);
+        const qtres = parseFloat(document.getElementById('scan_qtres').value);
+        const pathomit = parseInt(document.getElementById('scan_pathomit').value);
+        const h = parseFloat(document.getElementById('scanHeight').value);
+
+        // Options for ImageTracer
+        const options = {
+            ltres: ltres,
+            qtres: qtres,
+            pathomit: pathomit,
+            colorsampling: 0, // Disabled for better lines
+            numberofcolors: 2,
+            mincolorratio: 0.02,
+            colorquantcycles: 3,
+            strokewidth: 2,
+            linefilter: true
+        };
+
+        // Use setTimeout to allow UI to show loader
+        setTimeout(() => {
+            ImageTracer.imageToSVG(rawImgData, function(svgstr) {
+                parseSVGAndCreateObjects(svgstr, h);
+                loader.style.display = 'none';
+            }, options);
+        }, 100);
+    };
+
+    function parseSVGAndCreateObjects(svgString, height) {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(svgString, "image/svg+xml");
+        const paths = doc.querySelectorAll('path');
+        
+        let count = 0;
+        
+        // Image Dimensions for inversion
+        const imgW = bgImg.naturalWidth;
+        const imgH = bgImg.naturalHeight;
+
+        paths.forEach(path => {
+            const d = path.getAttribute('d');
+            if(!d) return;
+
+            // Simplified Parsing: ImageTracer mostly produces M, L, Z commands
+            const commands = d.match(/[a-zA-Z]|[^a-zA-Z\s,]+/g);
+            if(!commands) return;
+
+            let points = [];
+            let currentX = 0, currentY = 0;
+
+            for(let i=0; i<commands.length; i++) {
+                const cmd = commands[i];
+                if(cmd === 'M' || cmd === 'L') {
+                    // Absolute Move/Line
+                    if(i+2 < commands.length) {
+                        let x = parseFloat(commands[i+1]);
+                        let y = parseFloat(commands[i+2]);
+                        
+                        // Map Image Pixels to Canvas Logic -> World Logic
+                        // World X = panX + x * scale -> centered logic handled in spawn
+                        // But here we want relative to image, so just keep pixel coords and scale them
+                        
+                        points.push(new THREE.Vector2(x, y));
+                        currentX = x; currentY = y;
+                        i += 2;
+                    }
+                } else if(cmd === 'Z') {
+                    // Close path
+                    // points.push(points[0]); 
+                }
+            }
+
+            // Create Shape if valid
+            if(points.length > 2) {
+                // Determine Center of shape to position correctly
+                let mx=0, my=0;
+                points.forEach(p => { mx+=p.x; my+=p.y; });
+                mx /= points.length;
+                my /= points.length;
+
+                const shape = new THREE.Shape();
+                shape.moveTo(points[0].x - mx, -(points[0].y - my)); // Invert Y for 3D
+                for(let k=1; k<points.length; k++) {
+                    shape.lineTo(points[k].x - mx, -(points[k].y - my));
+                }
+
+                // Apply World Transform based on Image position
+                // Image is at (panX, panY) scaled by scale.
+                // mx, my are pixel coords in image.
+                // Final X = panX + mx * scale;
+                // Final Y = panY + my * scale;
+                
+                // Adjust for center-based coordinate system of previous logic?
+                // The previous logic used 2D Canvas coordinates directly.
+                // Let's match that:
+                const worldX = panX + mx * scale;
+                const worldY = panY + my * scale;
+
+                // Scale shape
+                const scaledShape = new THREE.Shape();
+                shape.curves.forEach(curve => {
+                    curve.v1.multiplyScalar(scale);
+                    curve.v2.multiplyScalar(scale);
+                });
+                
+                // Simpler: Just create geometry and scale mesh? No, extrude geometry is better
+                const finalPts = points.map(p => {
+                    // Relative to center mx,my
+                    return { x: (p.x - mx)*scale, y: -(p.y - my)*scale };
+                });
+                
+                const s = new THREE.Shape();
+                s.moveTo(finalPts[0].x, finalPts[0].y);
+                for(let k=1; k<finalPts.length; k++) s.lineTo(finalPts[k].x, finalPts[k].y);
+
+                const geo = new THREE.ExtrudeGeometry(s, {depth: height, bevelEnabled: false});
+                
+                spawnMesh(geo, {
+                    type: 'ScanPart', 
+                    d: height, 
+                    alpha: 1, 
+                    color: '#00cec9', 
+                    matType: 'Standard'
+                }, worldX, worldY, 0); // worldY is passed as positive to spawnMesh which negates it
+                
+                count++;
+            }
+        });
+
+        alert(count + " Objekte wurden erfolgreich gescannt und erstellt!");
+    }
+
+    // --- STANDARD DRAWING & ENGINE ---
+    const tx = v => panX+v*scale; const ty = v => panY+v*scale;
+    const itx = v => (v-panX)/scale; const ity = v => (v-panY)/scale;
+
+    function getRegularPolygonPoints(cx, cy, r, sides, rotation=0) {
+        let p = [];
+        for(let i=0; i<sides; i++) {
+            let theta = (i/sides) * Math.PI * 2 + rotation;
+            p.push({x: cx + r*Math.cos(theta), y: cy + r*Math.sin(theta)});
+        }
+        return p;
+    }
+
+    function update2D(currentMouse=null) {
+        bgImg.style.width = bgImg.naturalWidth+'px'; 
+        bgImg.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`;
+        ctx.clearRect(0,0,cvs.width,cvs.height);
+        
+        ctx.strokeStyle = '#333'; ctx.lineWidth = 1;
+        
+        // Der erste Massstabspunkt muss sichtbar sein, sonst weiss niemand,
+        // wo er hingeklickt hat.
+        if(currentTool==='mass' && massPunkte.length>0) {
+            const p0 = massPunkte[0];
+            ctx.strokeStyle="#00b894"; ctx.lineWidth=2;
+            ctx.beginPath(); ctx.arc(tx(p0.x), ty(p0.y), 5, 0, Math.PI*2); ctx.stroke();
+            if(currentMouse) {
+                ctx.setLineDash([4,3]);
+                ctx.beginPath(); ctx.moveTo(tx(p0.x), ty(p0.y));
+                ctx.lineTo(currentMouse.x, currentMouse.y); ctx.stroke();
+                ctx.setLineDash([]);
+            }
+        }
+
+        if(currentTool==='poly' && pts.length>0) {
+            ctx.strokeStyle = "#00cec9"; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(tx(pts[0].x), ty(pts[0].y));
+            for(let i=1; i<pts.length; i++) ctx.lineTo(tx(pts[i].x), ty(pts[i].y));
+            if(currentMouse) ctx.lineTo(currentMouse.x, currentMouse.y);
+            ctx.stroke(); 
+            ctx.fillStyle="#fff"; pts.forEach(p=>{ctx.beginPath();ctx.arc(tx(p.x),ty(p.y),3,0,Math.PI*2);ctx.fill()});
+        }
+
+        if(isDrawing && startP && currentMouse) {
+            ctx.strokeStyle="#e17055"; ctx.setLineDash([5,5]); ctx.lineWidth=2;
+            const sx=tx(startP.x), sy=ty(startP.y), ex=currentMouse.x, ey=currentMouse.y;
+            const dx = (ex-sx)/scale; const dy = (ey-sy)/scale;
+            const r = Math.sqrt(dx*dx+dy*dy);
+            
+            ctx.beginPath();
+            if(currentTool==='rect') ctx.strokeRect(sx,sy,ex-sx,ey-sy);
+            else if(currentTool==='circle') ctx.arc(sx,sy,r*scale,0,Math.PI*2);
+            else if(currentTool==='semicircle') ctx.arc(sx,sy,r*scale,0,Math.PI);
+            else if(currentTool==='triangle' || currentTool==='rhombus' || currentTool==='hex' || currentTool==='oct') {
+                let sides = 3;
+                if(currentTool==='rhombus') sides=4;
+                if(currentTool==='hex') sides=6;
+                if(currentTool==='oct') sides=8;
+                let rot = (currentTool==='triangle') ? -Math.PI/2 : 0;
+                if(currentTool==='rhombus') rot = Math.PI/4; 
+                const poly = getRegularPolygonPoints(sx, sy, r*scale, sides, rot);
+                ctx.moveTo(poly[0].x, poly[0].y);
+                for(let i=1; i<poly.length; i++) ctx.lineTo(poly[i].x, poly[i].y);
+                ctx.closePath();
+            }
+            ctx.stroke(); ctx.setLineDash([]);
+        }
+    }
+
+    area2d.addEventListener('wheel', e => { e.preventDefault(); scale *= e.deltaY>0?0.9:1.1; update2D(); });
+    
+    cvs.addEventListener('mousedown', e => {
+        if(e.button===2) { isPanning=true; lastX=e.clientX; lastY=e.clientY; return; }
+        const wx=itx(e.offsetX), wy=ity(e.offsetY);
+        if(currentTool==='mass') { massPunktSetzen(wx, wy); return; }
+        if(currentTool==='poly') { pts.push({x:wx, y:wy}); update2D(); } else { isDrawing=true; startP={x:wx, y:wy}; }
+    });
+
+    cvs.addEventListener('mousemove', e => {
+        if(isPanning) { panX+=e.clientX-lastX; panY+=e.clientY-lastY; lastX=e.clientX; lastY=e.clientY; update2D(); return; }
+        update2D({x:e.offsetX, y:e.offsetY});
+    });
+
+    cvs.addEventListener('mouseup', e => {
+        if(isPanning) { isPanning=false; return; }
+        if(isDrawing && startP) {
+            const wx=itx(e.offsetX), wy=ity(e.offsetY);
+            const dx=wx-startP.x, dy=wy-startP.y;
+            const dist=Math.sqrt(dx*dx+dy*dy);
+            if(dist > 2) {
+                const z = parseFloat(document.getElementById('startZ').value);
+                const depth = parseFloat(document.getElementById('drawZ').value);
+                createFromDraw(currentTool, startP, {x:wx, y:wy}, dist, z, depth);
+            }
+            isDrawing=false; startP=null; update2D();
+        }
+    });
+
+    cvs.addEventListener('dblclick', () => { 
+        if(pts.length>2) {
+            const z = parseFloat(document.getElementById('startZ').value);
+            const depth = parseFloat(document.getElementById('drawZ').value);
+            let mx=0, my=0; pts.forEach(p=>{mx+=p.x; my+=p.y}); mx/=pts.length; my/=pts.length;
+            const shape = new THREE.Shape();
+            shape.moveTo(pts[0].x-mx, -(pts[0].y-my));
+            for(let i=1; i<pts.length; i++) shape.lineTo(pts[i].x-mx, -(pts[i].y-my));
+            spawnExtrude(shape, {type:'Polygon', d:depth, points:pts, alpha:1, color:'#3498db', matType:'Standard'}, mx, my, z);
+            pts=[]; update2D();
+        }
+    });
+
+    // Zwei Punkte, eine bekannte Strecke, ein Faktor. Mehr ist es nicht - und
+    // genau das fehlte.
+    function massPunktSetzen(x, y) {
+        massPunkte.push({ x: x, y: y });
+        if (massPunkte.length < 2) { massStatusZeigen('Zweiten Punkt anklicken.'); update2D(); return; }
+        const a = massPunkte[0], b = massPunkte[1];
+        massPunkte = [];
+        const abstand = Math.hypot(b.x - a.x, b.y - a.y);
+        const mm = parseFloat(document.getElementById('refMM').value);
+        if (!isFinite(mm) || mm <= 0) {
+            massStatusZeigen('Die bekannte Strecke muss eine Zahl größer als null sein.');
+            update2D(); return;
+        }
+        if (!(abstand > 1e-6)) {
+            massStatusZeigen('Die beiden Punkte liegen aufeinander.');
+            update2D(); return;
+        }
+        mmProEinheit = mm / abstand;
+        massStatusZeigen(null);
+        update2D();
+    }
+
+    function massStatusZeigen(text) {
+        const el = document.getElementById('massStatus');
+        if (!el) return;
+        el.textContent = '';
+        if (text) { el.style.color = '#e17055'; el.textContent = text; return; }
+        if (mmProEinheit === null) {
+            el.style.color = '#e17055';
+            el.textContent = 'Noch kein Maßstab gesetzt - der DXF käme in Bildpunkten.';
+            zHinweisZeigen();
+            return;
+        }
+        el.style.color = '#00b894';
+        const wort = document.createElement('span');
+        wort.textContent = 'Maßstab gesetzt:';
+        el.appendChild(wort);
+        el.appendChild(document.createTextNode(' 1 = ' + mmProEinheit.toFixed(3) + ' mm'));
+        zHinweisZeigen();
+    }
+
+    // Die beiden Z-Felder stehen in Welteinheiten, wie X und Y auch. Das ist
+    // die richtige Wahl: die Szene ist EIN Koordinatensystem, und der
+    // Massstab sagt, was eine Einheit in Millimetern ist. Stuende die Dicke
+    // in Millimetern und X und Y in Einheiten, waere die Eingabe ein Gemisch
+    // aus zwei Systemen - und alles, was vor dem Setzen des Massstabs
+    // gezeichnet wurde, haette stillschweigend seine Bedeutung gewechselt.
+    //
+    // Das eigentliche Problem war ein anderes: man sah nicht, was die
+    // eingetragene Zahl bedeutet. Sie steht jetzt in Millimetern daneben.
+    function zHinweisZeigen() {
+        const el = document.getElementById('zHinweis');
+        if (!el) return;
+        el.textContent = '';
+        if (mmProEinheit === null) {
+            el.style.color = '#888';
+            el.textContent = 'Einheiten, solange kein Maßstab gesetzt ist';
+            return;
+        }
+        el.style.color = '#00b894';
+        const inMm = (id) => {
+            const v = parseFloat(document.getElementById(id).value);
+            return isFinite(v) ? (v * mmProEinheit) : null;
+        };
+        const teil = (wort, id) => {
+            const w = document.createElement('span');
+            w.textContent = wort;
+            el.appendChild(w);
+            const mm = inMm(id);
+            const b = document.createElement('b');
+            b.textContent = ' ' + (mm === null ? '--' : mm.toFixed(1) + ' mm');
+            el.appendChild(b);
+        };
+        teil('Höhe', 'startZ');
+        el.appendChild(document.createTextNode(' · '));
+        teil('Dicke', 'drawZ');
+    }
+
+    window.zHinweisZeigen = zHinweisZeigen;
+    window.massStatusZeigen = massStatusZeigen;
+
+    function setTool(t) {
+        currentTool=t;
+        document.querySelectorAll('.t-btn').forEach(b=>b.classList.remove('active'));
+        const k = document.getElementById('t-'+t); if (k) k.classList.add('active');
+        pts=[];
+        // Ein halb gesetzter Massstab darf nicht liegenbleiben: der naechste
+        // Klick waere sonst der zweite Punkt einer Strecke von vorhin.
+        massPunkte=[];
+        massStatusZeigen(null);
+        update2D();
+    }
+
+    function createFromDraw(tool, start, end, dist, z, depth) {
+        let shape = new THREE.Shape();
+        let p = {type:tool, d:depth, alpha:1, color:'#3498db', matType:'Standard'};
+        let cx = start.x, cy = start.y;
+
+        if(tool==='rect') {
+            let w = Math.abs(end.x - start.x); let h = Math.abs(end.y - start.y);
+            cx = start.x + (end.x-start.x)/2; cy = start.y + (end.y-start.y)/2;
+            shape.moveTo(-w/2, h/2); shape.lineTo(w/2, h/2); shape.lineTo(w/2, -h/2); shape.lineTo(-w/2, -h/2);
+            p.w = w; p.h = h;
+        } 
+        else if (tool==='circle') { shape.absarc(0, 0, dist, 0, Math.PI*2, false); p.r = dist; }
+        else if (tool==='semicircle') { shape.absarc(0, 0, dist, 0, Math.PI, false); shape.lineTo(-dist, 0); p.r = dist; }
+        else {
+            let sides = 3; if(tool==='rhombus') sides=4; if(tool==='hex') sides=6; if(tool==='oct') sides=8;
+            let rot = (tool==='triangle') ? -Math.PI/2 : 0; if(tool==='rhombus') rot = Math.PI/4; 
+            const poly = getRegularPolygonPoints(0, 0, dist, sides, rot);
+            shape.moveTo(poly[0].x, poly[0].y); for(let i=1; i<poly.length; i++) shape.lineTo(poly[i].x, poly[i].y);
+            p.r = dist;
+        }
+        spawnExtrude(shape, p, cx, cy, z);
+    }
+
+    function spawnExtrude(shape, params, x, y, z) {
+        const geo = new THREE.ExtrudeGeometry(shape, {depth: params.d, bevelEnabled: false});
+        spawnMesh(geo, params, x, y, z);
+    }
+
+    // --- PARTS & PRIMITIVES ---
+    function createBoltGeo(headR, headH, shaftR, shaftH) {
+        const headGeo = new THREE.CylinderGeometry(headR, headR, headH, 6);
+        headGeo.translate(0, headH/2 + shaftH, 0);
+        const shaftGeo = new THREE.CylinderGeometry(shaftR, shaftR, shaftH, 32);
+        shaftGeo.translate(0, shaftH/2, 0);
+        const merged = THREE.BufferGeometryUtils.mergeBufferGeometries([headGeo, shaftGeo]);
+        merged.rotateX(Math.PI/2); return merged;
+    }
+    function createNutGeo(r, h, holeR) {
+        const shape = new THREE.Shape(); const sides = 6; const step = (Math.PI * 2) / sides;
+        shape.moveTo(r, 0); for(let i=1; i<=sides; i++) shape.lineTo(r * Math.cos(step*i), r * Math.sin(step*i));
+        const hole = new THREE.Path(); hole.absarc(0, 0, holeR, 0, Math.PI*2, true); shape.holes.push(hole);
+        return new THREE.ExtrudeGeometry(shape, {depth: h, bevelEnabled: true, bevelThickness:0.5, bevelSize:0.5, bevelSegments:1});
+    }
+    function createWasherGeo(outR, inR, h) {
+        const shape = new THREE.Shape(); shape.absarc(0,0, outR, 0, Math.PI*2, false);
+        const hole = new THREE.Path(); hole.absarc(0,0, inR, 0, Math.PI*2, true); shape.holes.push(hole);
+        return new THREE.ExtrudeGeometry(shape, {depth: h, bevelEnabled: false});
+    }
+    function createGearGeo(outerR, innerR, teeth, h) {
+        const shape = new THREE.Shape(); const step = (Math.PI * 2) / (teeth * 2);
+        for(let i=0; i < teeth*2; i++) {
+            const r = (i % 2 === 0) ? outerR : outerR * 0.85;
+            const x = r * Math.cos(i * step); const y = r * Math.sin(i * step);
+            if(i===0) shape.moveTo(x,y); else shape.lineTo(x,y);
+        } shape.closePath();
+        const hole = new THREE.Path(); hole.absarc(0,0, innerR, 0, Math.PI*2, true); shape.holes.push(hole);
+        return new THREE.ExtrudeGeometry(shape, {depth:h, bevelEnabled:true, bevelThickness:1});
+    }
+
+    window.addStandard = function(type) {
+        let geo, p={type:type, w:50, h:50, d:50, r:25, alpha:1, color:'#95a5a6', matType:'Standard'};
+        if(type==='Box') geo=new THREE.BoxGeometry(50,50,50);
+        else if(type==='Cylinder') { geo=new THREE.CylinderGeometry(25,25,50,32); geo.rotateX(Math.PI/2); }
+        else if(type==='Sphere') { geo=new THREE.SphereGeometry(30,32,32); p.r=30; }
+        else if(type==='Cone') { geo=new THREE.ConeGeometry(25,50,32); geo.rotateX(Math.PI/2); }
+        else if(type==='Pyramid') { geo=new THREE.ConeGeometry(30,50,4); geo.rotateX(Math.PI/2); geo.rotateZ(Math.PI/4); p.w=60; }
+        else if(type==='Torus') { geo=new THREE.TorusGeometry(30, 10, 16, 50); p.r=30; p.tube=10; }
+        spawnMesh(geo, p, 0, 0, 0);
+    }
+    window.addPart = function(type) {
+        let geo, p={type:type, alpha:1, color:'#bdc3c7', matType:'Metal'};
+        if(type === 'Bolt') { p.headR=15; p.headH=10; p.shaftR=8; p.shaftH=40; geo = createBoltGeo(15, 10, 8, 40); } 
+        else if (type === 'Nut') { p.r=15; p.h=12; p.holeR=8; geo = createNutGeo(15, 12, 8); } 
+        else if (type === 'Washer') { p.r=16; p.holeR=8; p.h=2; geo = createWasherGeo(16, 8, 2); } 
+        else if (type === 'Gear') { p.r=30; p.holeR=5; p.teeth=12; p.h=5; geo = createGearGeo(30, 5, 12, 5); }
+        spawnMesh(geo, p, 0, 0, 0);
+    };
+
+    function spawnMesh(geo, params, cx, cy, zStart) {
+        const mat = getMaterial(params.matType, params.color, params.alpha);
+        const mesh = new THREE.Mesh(geo, mat);
+        mesh.userData = params;
+        mesh.castShadow = true; mesh.receiveShadow = true;
+        let zPos = zStart;
+        if(params.d && !params.points && !params.type.includes('ScanPart')) zPos = zStart + params.d/2;
+        mesh.position.set(cx, -cy, zPos);
+        scene.add(mesh); objects.push(mesh);
+        updateList(); selectObj(mesh);
+    }
+
+    function getMaterial(type, color, alpha) {
+        let mParams = { color: color, transparent: alpha<1, opacity: alpha, side: THREE.DoubleSide };
+        if(type === 'Metal') { mParams.metalness=0.8; mParams.roughness=0.2; }
+        else if(type === 'Copper') { mParams.metalness=0.9; mParams.roughness=0.3; mParams.color='#d35400'; }
+        else if(type === 'Plastic') { mParams.metalness=0.1; mParams.roughness=0.5; }
+        else if(type === 'Glass') { mParams.metalness=0.1; mParams.roughness=0; mParams.transparent=true; mParams.opacity=Math.min(alpha, 0.4); }
+        return new THREE.MeshStandardMaterial(mParams);
+    }
+
+    // --- SELECTION & EDITING ---
+    const ray=new THREE.Raycaster(); const mouse=new THREE.Vector2();
+    view.addEventListener('pointerdown', e => {
+        const rect=view.getBoundingClientRect(); mouse.x=((e.clientX-rect.left)/rect.width)*2-1; mouse.y=-((e.clientY-rect.top)/rect.height)*2+1;
+        ray.setFromCamera(mouse, camera); const ints=ray.intersectObjects(objects);
+        if(ints.length>0) selectObj(ints[0].object); else if(!transform.dragging) deselect();
+    });
+
+    function selectObj(m) {
+        selectedObj=m; transform.attach(m); document.getElementById('editPanel').style.display='block'; updateList();
+        const p = m.userData;
+        document.getElementById('objColor').value = p.color || '#ffffff';
+        document.getElementById('objAlpha').value = p.alpha;
+        document.getElementById('matType').value = p.matType || 'Standard';
+        genInputs(m); syncInputs(); calcVolume(m);
+    }
+    function deselect() { selectedObj=null; transform.detach(); document.getElementById('editPanel').style.display='none'; updateList(); }
+    
+    function syncInputs() {
+        if(!selectedObj)return; const p=selectedObj.position, r=selectedObj.rotation;
+        document.getElementById('posX').value=Math.round(p.x); document.getElementById('posY').value=Math.round(p.y);
+        document.getElementById('posZ').value=Math.round(p.z); document.getElementById('rotZ').value=Math.round(THREE.MathUtils.radToDeg(r.z));
+    }
+    window.updateTransFromInput = () => {
+        if(!selectedObj)return;
+        selectedObj.position.set(parseFloat(document.getElementById('posX').value), parseFloat(document.getElementById('posY').value), parseFloat(document.getElementById('posZ').value));
+        selectedObj.rotation.z=THREE.MathUtils.degToRad(parseFloat(document.getElementById('rotZ').value));
+    };
+
+    function genInputs(m) {
+        const div=document.getElementById('dynamicInputs'); div.innerHTML=''; const p=m.userData;
+        const add = (l,k,v) => div.innerHTML+=`<div class="input-row"><label>${l}</label><input type="number" value="${v}" onchange="updateGeo('${k}',this.value)"></div>`;
+        if(p.type==='Bolt') { add('Kopf R', 'headR', p.headR); add('Kopf H', 'headH', p.headH); add('Schaft R', 'shaftR', p.shaftR); add('Schaft H', 'shaftH', p.shaftH); }
+        else if(p.type==='Nut') { add('Radius', 'r', p.r); add('Loch R', 'holeR', p.holeR); add('Dicke', 'h', p.h); }
+        else if(p.type==='Washer') { add('Außen R', 'r', p.r); add('Innen R', 'holeR', p.holeR); add('Dicke', 'h', p.h); }
+        else if(p.type==='Gear') { add('Radius', 'r', p.r); add('Zähne', 'teeth', p.teeth); add('Dicke', 'h', p.h); }
+        else if(p.type==='Box'||p.type==='rect') { add('Breite', 'w', p.w); add('Länge', 'h', p.h); add('Höhe', 'd', p.d); }
+        else if(p.type==='Cylinder'||p.type==='circle'||p.type==='Cone') { add('Radius', 'r', p.r); add('Höhe', 'd', p.d); }
+        else if(p.type==='Sphere') { add('Radius', 'r', p.r); }
+        else if(p.type==='Pyramid') { add('Basis', 'w', p.w); add('Höhe', 'd', p.d); }
+        else if(p.type==='Torus') { add('Radius', 'r', p.r); add('Dicke', 'tube', p.tube); }
+        else if(p.type==='Polygon'||p.type==='triangle'||p.type==='hex'||p.type==='oct'||p.type==='rhombus'||p.type==='ScanPart') { add('Extrusion', 'd', p.d); }
+    }
+
+    window.updateGeo = (k,v) => {
+        if(!selectedObj)return; const p=selectedObj.userData; p[k]=parseFloat(v); let geo;
+        if(p.type==='Bolt') geo=createBoltGeo(p.headR, p.headH, p.shaftR, p.shaftH);
+        else if(p.type==='Nut') geo=createNutGeo(p.r, p.h, p.holeR);
+        else if(p.type==='Washer') geo=createWasherGeo(p.r, p.holeR, p.h);
+        else if(p.type==='Gear') geo=createGearGeo(p.r, p.holeR, p.teeth, p.h);
+        else if(p.type==='Box'||p.type==='rect') geo=new THREE.BoxGeometry(p.w, p.h, p.d);
+        else if(p.type==='Cylinder'||p.type==='circle') { geo=new THREE.CylinderGeometry(p.r, p.r, p.d, 32); geo.rotateX(Math.PI/2); }
+        else if(p.type==='Cone') { geo=new THREE.ConeGeometry(p.r, p.d, 32); geo.rotateX(Math.PI/2); }
+        else if(p.type==='Sphere') geo=new THREE.SphereGeometry(p.r, 32, 32);
+        else if(p.type==='Pyramid') { geo=new THREE.ConeGeometry(p.w/2, p.d, 4); geo.rotateX(Math.PI/2); geo.rotateZ(Math.PI/4); }
+        else if(p.type==='Torus') geo=new THREE.TorusGeometry(p.r, p.tube, 16, 50);
+        else if(p.type==='Polygon'||p.type.includes('circle')||p.type==='triangle'||p.type==='ScanPart'||p.type==='rhombus') { 
+            selectedObj.scale.z = p.d / selectedObj.geometry.parameters.options.depth; calcVolume(selectedObj); return; 
+        }
+        if(geo) { selectedObj.geometry.dispose(); selectedObj.geometry=geo; calcVolume(selectedObj); }
+    };
+    
+    window.updateMat = () => { if(!selectedObj) return; const c=document.getElementById('objColor').value; const a=parseFloat(document.getElementById('objAlpha').value); selectedObj.userData.color=c; selectedObj.userData.alpha=a; selectedObj.material=getMaterial(selectedObj.userData.matType,c,a); };
+    window.updateMaterialType = () => { if(!selectedObj) return; selectedObj.userData.matType=document.getElementById('matType').value; updateMat(); };
+    
+    function calcVolume(m) {
+        const p=m.userData, pi=Math.PI; let v=0;
+        if(p.type==='Box'||p.type==='rect') v=p.w*p.h*p.d;
+        else if(p.type==='Cylinder'||p.type==='circle') v=pi*p.r*p.r*p.d;
+        else if(p.type==='Sphere') v=(4/3)*pi*Math.pow(p.r,3);
+        else if(p.type==='Cone') v=(1/3)*pi*p.r*p.r*p.d;
+        else if(p.type==='Pyramid') v=(p.w*p.w*p.d)/3;
+        else if(p.type==='Torus') v=(pi*p.tube*p.tube)*(2*pi*p.r);
+        else if(p.type==='ScanPart' || p.type==='Polygon') { m.geometry.computeBoundingBox(); const b=m.geometry.boundingBox; v=(b.max.x-b.min.x)*(b.max.y-b.min.y)*(b.max.z-b.min.z)*0.7; }
+        document.getElementById('volDisplay').innerText=(v/1000).toFixed(2)+' cm³';
+    }
+
+    function updateList() {
+        const l=document.getElementById('sceneList'); l.innerHTML='';
+        objects.forEach((o,i) => {
+            const d=document.createElement('div'); d.className='obj-item '+(selectedObj===o?'selected':'');
+            d.innerHTML=`<span>${i+1}. ${o.userData.type}</span>`; d.onclick=()=>selectObj(o); l.appendChild(d);
+        });
+    }
+
+    window.toggleXray = () => { xrayMode=!xrayMode; document.getElementById('btnXray').classList.toggle('active'); objects.forEach(o=>{o.material.transparent=xrayMode||o.userData.alpha<1; o.material.opacity=xrayMode?0.3:o.userData.alpha;}); };
+    window.toggleGrid = () => gridHelper.visible = !gridHelper.visible;
+    window.setView = (v) => { controls.reset(); if(v==='top'){camera.position.set(0,0,1000);camera.up.set(0,1,0);} else if(v==='front'){camera.position.set(0,-1000,0);camera.up.set(0,0,1);} else {camera.position.set(400,-600,500);camera.up.set(0,0,1);} };
+    window.setGizmo = m => { transform.setMode(m); document.querySelectorAll('.tool-icon').forEach(i=>i.classList.remove('active')); document.getElementById('m-'+m).classList.add('active'); };
+    
+    window.deleteSelected = () => { if(selectedObj){ transform.detach(); scene.remove(selectedObj); objects=objects.filter(o=>o!==selectedObj); deselect(); }};
+    window.copyObject = () => { if(selectedObj) clipboard={geo:selectedObj.geometry.clone(), mat:selectedObj.material.clone(), p:JSON.parse(JSON.stringify(selectedObj.userData)), r:selectedObj.rotation.clone()}; };
+    window.pasteObject = () => { if(clipboard){ const m=new THREE.Mesh(clipboard.geo.clone(), clipboard.mat.clone()); m.userData=clipboard.p; m.rotation.copy(clipboard.r); m.position.copy(selectedObj?selectedObj.position:new THREE.Vector3()).addScalar(20); scene.add(m); objects.push(m); selectObj(m); }};
+    
+    window.addEventListener('keydown', e => { if(e.key==='Delete')deleteSelected(); if((e.ctrlKey||e.metaKey)&&(e.key==='c'||e.key==='C'))copyObject(); if((e.ctrlKey||e.metaKey)&&(e.key==='v'||e.key==='V'))pasteObject(); if(e.key==='t')setGizmo('translate'); if(e.key==='r')setGizmo('rotate'); if(e.key==='s')setGizmo('scale'); });
+
+    window.exportDXF = () => {
+        if(objects.length===0) return alert('Die Szene ist leer!');
+        // Ohne Massstab bleibt eine Welteinheit eine Welteinheit. Der Faktor
+        // eins ist dann ehrlich: die Datei sagt nicht, sie sei in Millimetern.
+        // Nicht "f" nennen: so heisst weiter unten die Funktion, die eine
+        // Flaeche schreibt. Sie verdeckt den Faktor in ihrem eigenen Rumpf,
+        // und aus Zahl mal Funktion wird NaN - die ganze Datei war NaN.
+        const mmFaktor = (mmProEinheit === null) ? 1 : mmProEinheit;
+        if (mmProEinheit === null &&
+            !confirm('Es ist kein Maßstab gesetzt. Der DXF entsteht dann in Bildpunkten, nicht in Millimetern. Trotzdem ausgeben?')) return;
+        let d = "0\nSECTION\n2\nENTITIES\n";
+        objects.forEach(o => {
+            o.updateMatrixWorld(); const g=o.geometry; const pos=g.attributes.position; const idx=g.index; const m=o.matrixWorld;
+            const f=(a,b,c)=>{
+                const v1=new THREE.Vector3().fromBufferAttribute(pos,a).applyMatrix4(m);
+                const v2=new THREE.Vector3().fromBufferAttribute(pos,b).applyMatrix4(m);
+                const v3=new THREE.Vector3().fromBufferAttribute(pos,c).applyMatrix4(m);
+                d+=`0\n3DFACE\n8\n0\n10\n${v1.x*mmFaktor}\n20\n${v1.y*mmFaktor}\n30\n${v1.z*mmFaktor}\n11\n${v2.x*mmFaktor}\n21\n${v2.y*mmFaktor}\n31\n${v2.z*mmFaktor}\n12\n${v3.x*mmFaktor}\n22\n${v3.y*mmFaktor}\n32\n${v3.z*mmFaktor}\n13\n${v3.x*mmFaktor}\n23\n${v3.y*mmFaktor}\n33\n${v3.z*mmFaktor}\n`;
+            };
+            if(idx) for(let i=0;i<idx.count;i+=3)f(idx.getX(i),idx.getX(i+1),idx.getX(i+2)); else for(let i=0;i<pos.count;i+=3)f(i,i+1,i+2);
+        });
+        d+="0\nENDSEC\n0\nEOF";
+        const l=document.createElement('a'); l.href=URL.createObjectURL(new Blob([d],{type:'application/dxf'})); l.download='cad_pro_export.dxf'; l.click();
+    };
+
+    function animate() { requestAnimationFrame(animate); controls.update(); renderer.render(scene, camera); }
+    animate();
+
+</script>
+
+
+
+<script>
+/* KI Dashboard navigation helper (safe fallback for file:// environments) */
+function kiGoHome(ev){
+  // Der Verweis im href fuehrt zum Dashboard. Siehe Regelventil.html: der
+  // frueher hier stehende Umweg ueber file:// samt Ersatzdatei ging im Netz
+  // in beiden Faellen ins Leere.
+  return true;
+}
+</script>
+
+</body>
+</html>

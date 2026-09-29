@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ART ENVI | Batch Loop Generator (V17 Final Clean)</title>
+    
+    <link rel="stylesheet" href="bibliotheken/fontawesome/css/all.min.css">
+    <script src="bibliotheken/xlsx.full.min.js"></script>
+
+    <style>
+        /* === THEME VARIABLES === */
+        :root { 
+            --bg: #2d3436; 
+            --sidebar-bg: #dfe6e9; 
+            --accent: #0f766e; 
+            --danger: #c0392b;
+            --warning: #d35400;
+            --success: #27ae60;
+            --text-dark: #2d3436;
+            --header-height: 60px; 
+            --border-color: #b2bec3;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        body { margin: 0; overflow: hidden; background: var(--bg); font-family: 'Segoe UI', sans-serif; height: 100vh; display: flex; flex-direction: column; }
+        
+        /* HEADER */
+        .header {
+            position: fixed; top: 0; width: 100%; height: var(--header-height);
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 0 20px; box-sizing: border-box;
+            background: #fff; border-bottom: 3px solid var(--accent); z-index: 20;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .brand { font-size: 20px; font-weight: 800; color: var(--text-dark); display: flex; align-items: center; gap:10px; }
+        .brand span { font-size: 11px; color: #fff; background: var(--accent); padding: 3px 8px; border-radius: 4px; text-transform: uppercase; }
+        
+        .header-actions{display:flex;align-items:center;gap:10px;}
+        .icon-btn{
+            width:38px;height:38px;border-radius:10px;
+            display:inline-flex;align-items:center;justify-content:center;
+            border:1px solid rgba(15,118,110,.35);
+            background: rgba(15,118,110,.10);
+            color: var(--accent);
+            cursor:pointer;
+            transition: .2s; text-decoration: none;
+        }
+        .icon-btn:hover{background: rgba(15,118,110,.18); transform: translateY(-1px);}
+
+        /* BUTTONS */
+        .btn {
+            padding: 8px 12px; border: none; border-radius: 4px; cursor: pointer; 
+            font-size: 12px; font-weight: 600; color: white; transition: 0.2s; 
+            display: inline-flex; align-items: center; gap: 6px;
+        }
+        .btn:hover { transform: translateY(-1px); filter: brightness(1.1); }
+        .btn-primary { background: var(--accent); }
+        .btn-success { background: var(--success); }
+        .btn-danger { background: var(--danger); }
+        .btn-tool { background: #0984e3; color: white;}
+        .btn label { cursor: pointer; display: flex; align-items: center; gap: 5px; }
+
+        /* LAYOUT */
+        .container { flex: 1; display: flex; margin-top: var(--header-height); height: calc(100vh - var(--header-height)); overflow: hidden; }
+
+        /* SIDEBAR */
+        .sidebar {
+            width: 380px; background: var(--sidebar-bg); border-right: 1px solid var(--border-color);
+            padding: 15px; display: flex; flex-direction: column; overflow-y: auto; z-index: 10;
+        }
+        .sidebar h3 { font-size: 12px; font-weight: 800; color: #636e72; border-bottom: 2px solid #b2bec3; margin: 0 0 15px 0; padding-bottom: 5px; text-transform: uppercase; letter-spacing: 1px;}
+        
+        .control-group { margin-bottom: 10px; background: #fff; padding: 10px; border-radius: 6px; border: 1px solid #b2bec3; }
+        .form-group { margin-bottom: 8px; }
+        .form-group label { display: block; font-size: 11px; margin-bottom: 4px; color: #2d3436; font-weight: bold; }
+        .form-group input { 
+            width: 100%; padding: 6px; border: 1px solid #b2bec3; border-radius: 4px; 
+            font-size: 12px; box-sizing: border-box; background: #fdfdfd; color: #333;
+        }
+        .form-group input:focus { border-color: var(--accent); outline: none; }
+        .extra-fields { border-left: 3px solid var(--warning); }
+
+        /* WORKSPACE */
+        .workspace {
+            flex: 1; 
+            background: radial-gradient(circle, #f1f2f6 0%, #ced6e0 100%);
+            display: flex; flex-direction: column; 
+            overflow-y: auto; align-items: center; padding: 40px; gap: 40px;
+        }
+
+        .loop-wrapper {
+            position: relative;
+            background: #ffffff;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+            transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+            width: 95%; max-width: 1550px; cursor: pointer;
+        }
+        .loop-wrapper:hover { border-color: #7f8c8d; }
+        .loop-wrapper.selected { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(15,118,110,0.25); }
+        
+        .loop-header {
+            position: absolute; top: 10px; left: 15px;
+            background: rgba(15,118,110,.10); color: var(--accent); border: 1px solid rgba(15,118,110,.20);
+            padding: 4px 10px; border-radius: 4px; font-size: 12px; font-weight: bold;
+        }
+        .loop-actions {
+            position: absolute; top: 10px; right: 10px; display: flex; gap: 5px;
+        }
+        .action-btn {
+            width: 28px; height: 28px; border-radius: 4px; border: 1px solid var(--border-color);
+            background: #f1f2f6; color: #636e72; cursor: pointer; display: flex; align-items: center; justify-content: center;
+        }
+        .action-btn:hover { background: var(--danger); color: #fff; border-color: var(--danger); }
+
+        /* SVG STYLES */
+        svg { display: block; width: 100%; height: auto; min-height: 350px; }
+        .stage-card { fill: #f8fafc; stroke: #b2bec3; stroke-width: 1.5; }
+        .text-title { fill: var(--accent); font-weight: bold; font-size: 14px; }
+        .text-label { fill: #636e72; font-size: 10px; }
+        .text-val { fill: #2d3436; font-size: 11px; font-family: monospace; font-weight: 600; }
+        
+        .wire { stroke: var(--accent); stroke-width: 2; fill: none; opacity: 0.8; }
+        .wire-shield { stroke: #7f8c8d; stroke-width: 1.5; stroke-dasharray: 6,4; fill: none; opacity: 0.7; }
+        .wire-dot { fill: var(--accent); }
+        .wire-dot-shield { fill: #7f8c8d; stroke: #fff; stroke-width: 1; }
+        .separator { stroke: #dfe6e9; stroke-width: 1; }
+
+        /* MODAL */
+        .modal-overlay{ position:fixed; inset:0; background: rgba(0,0,0,.55); display:none; align-items:center; justify-content:center; z-index:9999; padding: 20px; box-sizing:border-box; }
+        .modal-overlay.open{display:flex;}
+        .modal{ width:min(920px, 100%); max-height: min(80vh, 900px); overflow:auto; background:#ffffff; border-radius:14px; border: 1px solid rgba(15,118,110,.35); box-shadow: 0 20px 60px rgba(0,0,0,.35); }
+        .modal-header{ position:sticky; top:0; background: #fff; border-bottom:1px solid #dfe6e9; padding:14px 16px; display:flex; align-items:center; justify-content:space-between; }
+        .modal-title{ font-weight:900; color:#1f2937; font-size:14px; }
+        .modal-close{ width:30px; height:30px; cursor:pointer; background:none; border:none; font-size:18px; }
+        .modal-body{ padding:16px; font-size:13px; line-height:1.6; color:#2d3436; }
+
+        .report-summary { display: flex; gap: 15px; margin-bottom: 15px; }
+        .badge { padding: 4px 10px; border-radius: 4px; color: #fff; font-weight: bold; font-size: 11px; }
+        .bg-success { background: var(--success); }
+        .bg-error { background: var(--danger); }
+        .error-list { background: #fff0f0; border: 1px solid #ffcccc; padding: 10px; border-radius: 6px; max-height: 200px; overflow-y: auto; }
+        .error-item { border-bottom: 1px solid #ffdddd; padding: 5px 0; color: #c0392b; font-family: monospace; font-size: 12px; }
+        .mapping-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12px; }
+        .mapping-table th { background: #f1f2f6; text-align: left; padding: 6px; border-bottom: 2px solid #ccc; }
+        .mapping-table td { padding: 6px; border-bottom: 1px solid #eee; }
+
+        .empty-state { text-align: center; color: #b2bec3; margin-top: 100px; }
+        .empty-state i { font-size: 48px; margin-bottom: 20px; color: #dfe6e9; }
+    </style>
+<!-- Ein Aussehen fuer alle Werkzeuge. Steht direkt hinter dem letzten
+     <style> dieses Werkzeugs: spaeter in der Reihenfolge, also gewinnt
+     es bei gleicher Spezifitaet - aber so frueh wie moeglich, damit die
+     Seite nicht erst in der alten Farbe erscheint und dann umfaerbt.
+     Am Ende des <body> geladen war genau das zu sehen: Knoepfe mit
+     transition faerbten sichtbar um. Faerbt nur, verschiebt nichts.
+     Siehe werkzeug-stil.css. -->
+<link rel="stylesheet" href="werkzeug-stil.css">
+<!-- Sprachumschaltung Deutsch / Persisch / Englisch. Was nicht im
+     Woerterbuch steht, bleibt Deutsch. Siehe uebersetzung.js. -->
+<script src="woerter.js"></script>
+<script src="woerter/Loop_CAD.js"></script>
+<script src="uebersetzung.js"></script>
+
+</head>
+<body>
+
+<header class="header">
+    <div class="brand">ART ENVI <span>BATCH V17 (FINAL CLEAN)</span></div>
+    <div class="header-actions">
+        <label class="btn btn-tool" style="cursor: pointer;">
+            <i class="fas fa-file-excel"></i> Import Excel
+            <input type="file" id="excelInput" hidden onchange="importExcel(this)">
+        </label>
+        
+        <button class="btn btn-success" onclick="downloadTemplate()"><i class="fas fa-file-csv"></i> Download Template</button>
+
+        <button class="btn btn-primary" onclick="addNewLoop()"><i class="fas fa-plus"></i> Neuer Loop</button>
+        <button class="btn btn-primary" onclick="exportDXF()"><i class="fas fa-file-export"></i> DXF Export</button>
+        <button class="btn btn-danger" onclick="clearAll()"><i class="fas fa-trash"></i> Reset</button>
+        
+        <div style="width:1px; height:24px; background:#b2bec3; margin:0 5px;"></div>
+        <a class="icon-btn" href="dashboard/"><i class="fas fa-house"></i></a>
+        <button class="icon-btn" onclick="openModal('infoModal')"><i class="fas fa-circle-info"></i></button>
+    </div>
+</header>
+
+<div class="container">
+    <div class="sidebar" id="editor">
+        <h3><i class="fas fa-pen-to-square"></i> Loop Editor</h3>
+        <div id="editor-fields">
+            <div style="color: #636e72; font-size: 12px; font-style: italic; padding: 10px; background:#fff; border-radius:4px; border:1px solid #b2bec3;">
+                Wählen Sie einen Loop im Hauptbereich aus.
+            </div>
+        </div>
+    </div>
+
+    <div class="workspace" id="workspace">
+        <div class="empty-state" id="emptyState">
+            <i class="fas fa-layer-group"></i>
+            <h3>Keine Loops vorhanden</h3>
+            <p>Importieren Sie eine Excel-Liste oder laden Sie das Template herunter.</p>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="reportModal">
+    <div class="modal">
+        <div class="modal-header">
+            <div class="modal-title"><i class="fas fa-magic"></i> Import Bericht</div>
+            <button class="modal-close" onclick="closeModal('reportModal')">&times;</button>
+        </div>
+        <div class="modal-body" id="reportContent"></div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="infoModal">
+    <div class="modal">
+        <div class="modal-header">
+            <div class="modal-title">Hilfe & Anleitung</div>
+            <button class="modal-close" onclick="closeModal('infoModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <h4>Fixes in V17</h4>
+            <p><b>Duplicate Text Removed:</b> Die unsichtbaren Attribute, die als "kleine Kopie" angezeigt wurden, sind entfernt. Die DXF-Ausgabe ist jetzt 100% sauber.</p>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- STATE ---
+    let loops = [];
+    let selectedIndex = -1;
+
+    // --- CONFIG ---
+    const CONFIG = {
+        dwgYSpacing: 1600, 
+        stages: [
+            { title: "Field Device", x: 50,  w: 220, fields: ["TAG-No", "Signal type", "Description"] },
+            { title: "Junction Box", x: 320, w: 220, fields: ["JB No", "JB Terminals", "Cable Core"] },
+            { title: "Marshalling",  x: 590, w: 220, fields: ["Cab No", "Terminals In"] },
+            { title: "Barrier/FTA",  x: 860, w: 220, fields: ["FTA Type", "Terminals Out", "Channel"] },
+            { title: "PLC I/O",      x: 1130, w: 220, fields: ["IO Tag", "Module", "Pin Power", "Pin Signal"] },
+            { title: "Net Logic",    x: 1400, w: 120, fields: ["+SIG", "-SIG", "SHIELD"] }
+        ]
+    };
+
+    // --- SMART MAPPING DICTIONARY ---
+    const SMART_MAP = {
+        "TAG-No": ["tag", "loop", "pos", "id", "kks", "messstelle"],
+        "Signal type": ["signal", "typ", "art", "kind", "sig"],
+        "Description": ["desc", "beschreibung", "funktion", "name", "text"],
+        "JB No": ["jb", "junction", "verteiler", "box", "field box", "vk", "strip"],
+        "JB Terminals": ["jb term", "term", "klemme", "anschluss", "terminal no."],
+        "Cable Core": ["core", "ader", "wire", "kabel", "farbe", "color"],
+        "Cab No": ["cab", "marsh", "schrank", "panel", "cabinet", "rack", "rk"],
+        "Terminals In": ["term in", "eingang", "in", "terminal no_1"],
+        "FTA Type": ["fta", "barrier", "barriere", "iso", "trenner", "ex", "board"],
+        "Terminals Out": ["term out", "ausgang", "out", "terminal no_2"],
+        "Channel": ["chan", "kanal", "ch"],
+        "IO Tag": ["io", "plc", "sps", "card", "karte", "rack", "system"],
+        "Module": ["mod", "baugruppe"],
+        "Pin Power": ["pwr", "power", "l+", "versorgung", "plus"],
+        "Pin Signal": ["sig pin", "m", "gnd", "minus", "return"],
+        "SHIELD": ["shield", "schirm", "pe", "ground", "erde"] 
+    };
+
+    // --- HELPER: CHECK STRING FOR SHIELD MARKER ---
+    function checkStringForShield(str) {
+        if(!str) return false;
+        const val = str.toString().toLowerCase().trim();
+        const tokens = val.split(/[,/ +]+/).map(t => t.trim());
+        const strictMarkers = ["sh", "shield", "schirm", "pe", "s", "e", "gnd", "ye/gn"];
+        for(let t of tokens) {
+            if(strictMarkers.includes(t)) return true; 
+            if(t.startsWith("sh-")) return true; 
+            if(t.startsWith("pe-")) return true; 
+        }
+        return false;
+    }
+
+    // --- PER-SEGMENT SHIELD LOGIC ---
+    function hasShieldForSegment(segmentIdx, data) {
+        if(segmentIdx === 0) {
+            if(checkStringForShield(data["SHIELD"])) return true;
+            if(checkStringForShield(data["Cable Core"])) return true;
+            if(checkStringForShield(data["JB Terminals"])) return true;
+        }
+        else if(segmentIdx === 1) {
+            if(checkStringForShield(data["Terminals In"])) return true;
+        }
+        else if(segmentIdx === 2) {
+            if(checkStringForShield(data["Terminals Out"])) return true;
+        }
+        else if(segmentIdx === 3) {
+            if(checkStringForShield(data["Pin Signal"])) return true;
+        }
+        return false;
+    }
+
+    // --- FUNCTIONS ---
+
+    window.onload = () => renderAll();
+
+    function getSmartKey(rawHeader) {
+        if(!rawHeader) return "UNKNOWN_" + Math.random();
+        const lower = rawHeader.toString().toLowerCase().trim().replace(/[^a-z0-9]/g, ""); 
+        
+        for (const [standardKey, keywords] of Object.entries(SMART_MAP)) {
+            if (standardKey.toLowerCase().replace(/[^a-z0-9]/g, "") === lower) return standardKey;
+        }
+        for (const [standardKey, keywords] of Object.entries(SMART_MAP)) {
+            if (keywords.some(kw => lower.includes(kw))) return standardKey;
+        }
+        return rawHeader.toString().trim();
+    }
+
+    function importExcel(input) {
+        const file = input.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, {type: 'array'});
+            const firstSheet = workbook.SheetNames[0];
+            const rawRows = XLSX.utils.sheet_to_json(workbook.Sheets[firstSheet], {defval:""});
+
+            if(rawRows.length === 0) { alert("Datei ist leer!"); return; }
+
+            const report = { total: rawRows.length, success: 0, errors: [], mappedHeaders: {} };
+            const newLoops = [];
+
+            const firstRow = rawRows[0];
+            const headerMap = {};
+            Object.keys(firstRow).forEach(k => {
+                headerMap[k] = getSmartKey(k);
+                report.mappedHeaders[k] = headerMap[k];
+            });
+
+            rawRows.forEach((row, idx) => {
+                const cleanRow = {};
+                let hasTag = false;
+                
+                Object.keys(row).forEach(originalKey => {
+                    const standardKey = headerMap[originalKey];
+                    const val = row[originalKey];
+                    cleanRow[standardKey] = val;
+                    if(standardKey === "TAG-No" && val && val.toString().trim() !== "") hasTag = true;
+                });
+
+                if(hasTag) {
+                    newLoops.push(cleanRow);
+                    report.success++;
+                } else {
+                    report.errors.push(`Zeile ${idx + 2}: Kein 'TAG-No' gefunden.`);
+                }
+            });
+
+            loops.push(...newLoops);
+            renderAll();
+            showSmartReport(report);
+            input.value = ""; 
+        };
+        reader.readAsArrayBuffer(file);
+    }
+
+    function downloadTemplate() {
+        const headers = [
+            "TAG-No", "Signal type", "Description", 
+            "JB No", "JB Terminals", "Cable Core", "SHIELD",
+            "Cab No", "Terminals In", 
+            "FTA Type", "Terminals Out", "Channel", 
+            "IO Tag", "Module", "Pin Power", "Pin Signal"
+        ];
+        
+        const dummy = [
+            ["LIT-1001", "AI", "Full Shielded", "JB-01", "1, 2, S", "1, 2, S", "", "MAR-01", "10, 11, S", "Iso-Amp", "A, B, S", "CH01", "PLC-01", "AI-8x", "L+", "M"],
+            ["PIT-1002", "AI", "Field Shield Only", "JB-01", "3, 4, S", "3, 4, S", "", "MAR-01", "12, 13", "Iso-Amp", "C, D", "CH02", "PLC-01", "AI-8x", "L+", "M"]
+        ];
+
+        const ws = XLSX.utils.aoa_to_sheet([headers, ...dummy]);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "I_O_Template");
+        XLSX.writeFile(wb, "Loop_Template_SmartShield.xlsx");
+    }
+
+    function showSmartReport(rep) {
+        const content = document.getElementById('reportContent');
+        let html = `
+            <div class="report-summary">
+                <span class="badge bg-success">${rep.success} Erfolgreich</span>
+                <span class="badge bg-error">${rep.errors.length} Ignoriert</span>
+            </div>
+            <h4><i class="fas fa-map-signs"></i> Spalten-Mapping:</h4>
+            <div style="max-height:150px; overflow-y:auto; border:1px solid #eee;">
+            <table class="mapping-table">
+                <thead><tr><th>Excel Header</th><th>Erkannt als</th></tr></thead>
+                <tbody>
+        `;
+        for (const [orig, mapTo] of Object.entries(rep.mappedHeaders)) {
+            const isStandard = Object.keys(SMART_MAP).includes(mapTo);
+            const color = isStandard ? "green" : "#d35400";
+            html += `<tr><td>${orig}</td><td style="color:${color}; font-weight:bold;">${mapTo}</td></tr>`;
+        }
+        html += `</tbody></table></div>`;
+        if(rep.errors.length > 0) {
+            html += `<h4>Fehler:</h4><div class="error-list">`;
+            rep.errors.forEach(e => html += `<div class="error-item">${e}</div>`);
+            html += `</div>`;
+        }
+        content.innerHTML = html;
+        openModal('reportModal');
+    }
+
+    function addNewLoop() {
+        const newLoop = { "TAG-No": "NEW-TAG-" + (loops.length + 1), "Signal type": "AI", "Cable Core": "1, 2, S" };
+        loops.push(newLoop);
+        renderAll();
+        selectLoop(loops.length - 1);
+    }
+
+    function clearAll() {
+        if(confirm("Alles löschen?")) {
+            loops = [];
+            selectedIndex = -1;
+            renderAll();
+            document.getElementById('editor-fields').innerHTML = '<div style="padding:10px;">Wählen Sie einen Loop.</div>';
+        }
+    }
+
+    function deleteLoop(index) {
+        if(confirm("Löschen?")) {
+            loops.splice(index, 1);
+            if(selectedIndex === index) selectedIndex = -1;
+            renderAll();
+        }
+    }
+
+    // --- RENDER LOGIC ---
+
+    function renderAll() {
+        const ws = document.getElementById('workspace');
+        const empty = document.getElementById('emptyState');
+        ws.innerHTML = ''; 
+        
+        if (loops.length === 0) {
+            ws.appendChild(empty); empty.style.display = 'block'; return;
+        }
+        empty.style.display = 'none';
+
+        loops.forEach((loop, index) => {
+            const wrapper = document.createElement('div');
+            wrapper.className = `loop-wrapper ${index === selectedIndex ? 'selected' : ''}`;
+            wrapper.id = `loop-${index}`; 
+            
+            wrapper.onclick = () => selectLoop(index);
+
+            const header = document.createElement('div');
+            header.className = 'loop-header';
+            header.innerText = `#${index+1} | ${loop['TAG-No']}`;
+            if(hasShieldForSegment(0, loop) || hasShieldForSegment(1, loop)) {
+                 header.innerHTML += ` <span style="font-size:10px; color:#7f8c8d; border:1px solid #bdc3c7; padding:1px 4px; border-radius:3px;">+SHIELD</span>`;
+            }
+
+            const actions = document.createElement('div');
+            actions.className = 'loop-actions';
+            actions.innerHTML = `<button class="action-btn" onclick="event.stopPropagation(); deleteLoop(${index})"><i class="fas fa-trash"></i></button>`;
+
+            wrapper.innerHTML = generateSVG(loop);
+            wrapper.appendChild(header);
+            wrapper.appendChild(actions);
+            ws.appendChild(wrapper);
+        });
+    }
+
+    function generateSVG(data) {
+        const cardH = 260; 
+        let svg = `<svg viewBox="0 0 1550 360" preserveAspectRatio="xMidYMid meet">`;
+        
+        CONFIG.stages.forEach((stage, sIdx) => {
+            const h = cardH; const y = 50;
+            svg += `<rect x="${stage.x}" y="${y}" width="${stage.w}" height="${h}" rx="6" class="stage-card" />`;
+            svg += `<line x1="${stage.x}" y1="${y+30}" x2="${stage.x+stage.w}" y2="${y+30}" class="separator"/>`;
+            svg += `<text x="${stage.x + 10}" y="${y + 20}" class="text-title">${stage.title}</text>`;
+            
+            stage.fields.forEach((field, fIdx) => {
+                const val = data[field] || "";
+                const ty = y + 55 + (fIdx * 35);
+                svg += `<text x="${stage.x + 10}" y="${ty}" class="text-label">${field}</text>`;
+                svg += `<text x="${stage.x + 10}" y="${ty + 14}" class="text-val">${val}</text>`;
+            });
+
+            // WIRES LOGIC (Per Segment)
+            if (sIdx < CONFIG.stages.length - 1) {
+                const pinX = stage.x + stage.w;
+                const nextX = CONFIG.stages[sIdx+1].x;
+                const shield = hasShieldForSegment(sIdx, data);
+
+                svg += `<circle cx="${pinX}" cy="${y + 110}" r="3" class="wire-dot"/>`;
+                svg += `<path d="M ${pinX} ${y+110} L ${nextX} ${y+110}" class="wire"/>`;
+                
+                svg += `<circle cx="${pinX}" cy="${y + 150}" r="3" class="wire-dot"/>`;
+                svg += `<path d="M ${pinX} ${y+150} L ${nextX} ${y+150}" class="wire"/>`;
+                
+                if(shield) {
+                    svg += `<circle cx="${pinX}" cy="${y + 190}" r="3" class="wire-dot-shield"/>`;
+                    svg += `<text x="${pinX - 15}" y="${y + 193}" font-size="9" fill="#7f8c8d">S</text>`;
+                    svg += `<path d="M ${pinX} ${y+190} L ${nextX} ${y+190}" class="wire-shield"/>`;
+                }
+            }
+        });
+        svg += `</svg>`;
+        return svg;
+    }
+
+    function selectLoop(index) {
+        selectedIndex = index;
+        
+        const wrappers = document.querySelectorAll('.loop-wrapper');
+        wrappers.forEach((el, idx) => {
+            if(idx === index) el.classList.add('selected');
+            else el.classList.remove('selected');
+        });
+
+        const editor = document.getElementById('editor-fields');
+        editor.innerHTML = '';
+        const loop = loops[index];
+        const usedKeys = new Set(); 
+
+        CONFIG.stages.forEach(stage => {
+            const group = document.createElement('div');
+            group.className = 'control-group';
+            group.innerHTML = `<h4 style="margin:0 0 10px 0; font-size:11px; color:#0f766e; text-transform:uppercase;">${stage.title}</h4>`;
+            stage.fields.forEach(key => {
+                usedKeys.add(key);
+                const val = loop[key] || "";
+                group.innerHTML += `
+                    <div class="form-group">
+                        <label>${key}</label>
+                        <input type="text" value="${val}" oninput="updateLoop(${index}, '${key}', this.value)">
+                    </div>`;
+            });
+            editor.appendChild(group);
+        });
+
+        const extraKeys = Object.keys(loop).filter(k => !usedKeys.has(k) && k !== "rowId");
+        if(extraKeys.length > 0) {
+            const extraGroup = document.createElement('div');
+            extraGroup.className = 'control-group extra-fields';
+            extraGroup.innerHTML = `<h4 style="margin:0 0 10px 0; font-size:11px; color:#d35400; text-transform:uppercase;"><i class="fas fa-database"></i> Extra Data</h4>`;
+            extraKeys.forEach(key => {
+                const val = loop[key] || "";
+                extraGroup.innerHTML += `
+                    <div class="form-group">
+                        <label>${key}</label>
+                        <input type="text" value="${val}" oninput="updateLoop(${index}, '${key}', this.value)">
+                    </div>`;
+            });
+            editor.appendChild(extraGroup);
+        }
+    }
+
+    function updateLoop(index, key, value) {
+        loops[index][key] = value;
+        const wrapper = document.getElementById(`loop-${index}`);
+        if(wrapper) {
+            const svgStr = generateSVG(loops[index]);
+            const oldSvg = wrapper.querySelector('svg');
+            if(oldSvg) {
+                const temp = document.createElement('div');
+                temp.innerHTML = svgStr;
+                wrapper.replaceChild(temp.firstChild, oldSvg);
+            }
+            if(key === "TAG-No") wrapper.querySelector('.loop-header').innerText = `#${index+1} | ${value}`;
+        }
+    }
+
+    // --- DXF EXPORT (REMOVED DUPLICATE ATTRIBUTES) ---
+    function exportDXF() {
+        if (!loops.length) return alert("Keine Daten!");
+        
+        let dxf = "0\nSECTION\n2\nHEADER\n9\n$ACADVER\n1\nAC1009\n0\nENDSEC\n";
+        dxf += "0\nSECTION\n2\nTABLES\n0\nTABLE\n2\nSTYLE\n70\n1\n0\nSTYLE\n2\nSTANDARD\n70\n0\n40\n0.0\n41\n1.0\n50\n0.0\n71\n0\n42\n0.2\n3\narial.ttf\n4\n\n0\nENDTAB\n0\nENDSEC\n";
+        dxf += "0\nSECTION\n2\nENTITIES\n";
+
+        loops.forEach((loop, i) => {
+            const offsetY = i * -CONFIG.dwgYSpacing;
+            
+            CONFIG.stages.forEach(stage => {
+                const x = stage.x; const y = offsetY + 300;
+                dxf += drawRectDXF(x, y, stage.w, 260, "WD_M_SYMS");
+                dxf += drawTextDXF(x + 10, y - 25, 9, stage.title.toUpperCase(), "WD_TEXT");
+                dxf += drawLineDXF(x, y - 35, x+stage.w, y-35, "WD_M_SYMS");
+                
+                stage.fields.forEach((key, fIdx) => {
+                    const val = loop[key] || "";
+                    const blockY = y - 60 - (fIdx * 85); 
+                    
+                    // VISIBLE TEXT ONLY - No ATTDEF (This fixes the double text bug)
+                    dxf += drawTextDXF(x + 15, blockY + 22, 5, key + ":", "WD_DESC"); 
+                    dxf += drawTextDXF(x + 15, blockY, 7, val, "WD_VAL"); 
+                });
+            });
+
+            // Wires
+            for(let s=0; s<CONFIG.stages.length-1; s++) {
+                const s1 = CONFIG.stages[s];
+                const s2 = CONFIG.stages[s+1];
+                const yw1 = offsetY + 190; 
+                const yw2 = offsetY + 150; 
+                const yw3 = offsetY + 110; 
+
+                dxf += drawLineDXF(s1.x + s1.w, yw1, s2.x, yw1, "WD_WIRE");
+                dxf += drawLineDXF(s1.x + s1.w, yw2, s2.x, yw2, "WD_WIRE");
+                
+                if(hasShieldForSegment(s, loop)) {
+                    dxf += drawLineDXF(s1.x + s1.w, yw3, s2.x, yw3, "WD_SHIELD"); 
+                    dxf += drawTextDXF(s1.x + s1.w + 5, yw3 + 2, 5, "S", "WD_DESC");
+                }
+            }
+        });
+
+        dxf += "0\nENDSEC\n0\nEOF";
+        const blob = new Blob([dxf], { type: 'application/dxf' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `Batch_Loops_Clean_${loops.length}.dxf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    function drawLineDXF(x1, y1, x2, y2, l) { return `0\nLINE\n8\n${l}\n10\n${x1}\n20\n${y1}\n11\n${x2}\n21\n${y2}\n`; }
+    function drawRectDXF(x, y, w, h, l) { return drawLineDXF(x,y,x+w,y,l)+drawLineDXF(x+w,y,x+w,y-h,l)+drawLineDXF(x+w,y-h,x,y-h,l)+drawLineDXF(x,y-h,x,y,l); }
+    function drawTextDXF(x, y, h, t, l) { return `0\nTEXT\n8\n${l}\n10\n${x}\n20\n${y}\n40\n${h}\n1\n${(t||"").toString().replace(/\n/g," ")}\n`; }
+
+    function openModal(id){ document.getElementById(id).classList.add('open'); }
+    function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+    window.addEventListener('click', (e) => { if(e.target.classList.contains('modal-overlay')) e.target.classList.remove('open'); });
+
+</script>
+</body>
+</html>

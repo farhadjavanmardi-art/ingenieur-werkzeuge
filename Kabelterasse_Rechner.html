@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <title>ART ENVI | Kabeltrassen- & Rohrrechner</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  
+  <script src="bibliotheken/xlsx.full.min.js"></script>
+  
+  <link rel="stylesheet" href="bibliotheken/fontawesome/css/all.min.css" />
+
+  <style>
+    :root {
+      font-family: 'Segoe UI', sans-serif;
+      color-scheme: dark;
+      
+      /* Dashboard Theme Colors (Emerald Unified) */
+      --bg: #031b18;
+      --card-bg: #06261c;
+      --panel: #052e2b;
+      --accent: #10b981; 
+      --accent-hover: #34d399;
+      --text: #d1fae5;
+      --border: #064e42;
+      
+      --danger: #ef4444;
+      --warning: #f59e0b;
+      --success: #10b981;
+      --info: #3b82f6;
+    }
+
+    body { margin: 0; padding: 0; background: var(--bg); color: var(--text); padding-top: 60px; }
+
+    .container {
+      max-width: 1400px;
+      margin: 20px auto;
+      padding: 20px;
+    }
+
+    /* HEADER */
+    .header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding-bottom: 20px; border-bottom: 2px solid var(--accent); margin-bottom: 25px;
+    }
+    
+    .header-left { display: flex; align-items: center; gap: 20px; }
+
+    .brand-text { font-size: 24px; font-weight: 800; color: #fff; display: flex; flex-direction: column; }
+    .brand-text span { font-size: 13px; color: var(--accent); font-weight: 400; margin-top: 2px; text-transform: uppercase; letter-spacing: 1px;}
+
+    /* LAYOUT */
+    .grid-main { display: grid; grid-template-columns: 1.3fr 1fr; gap: 24px; }
+    @media (max-width: 900px) { .grid-main { grid-template-columns: 1fr; } }
+
+    .card {
+      background: var(--card-bg); border-radius: 12px; padding: 25px;
+      border: 1px solid var(--border); box-shadow: 0 10px 30px rgba(0,0,0,0.2); margin-bottom: 20px;
+    }
+    .card h3 { margin-top: 0; color: var(--accent); font-size: 18px; border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+
+    /* FORMS */
+    .form-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; }
+    label { display: block; font-size: 12px; color: #aaa; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+    select, input {
+      width: 100%; background: #02110d; border: 1px solid var(--border); padding: 12px; border-radius: 6px;
+      color: #fff; font-size: 14px; box-sizing: border-box; transition: 0.3s;
+    }
+    select:focus, input:focus { border-color: var(--accent); outline: none; }
+
+    /* CABLE SELECTION AREA */
+    .cable-selector-area {
+        background: rgba(16, 185, 129, 0.05);
+        padding: 20px;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+    }
+
+    /* TABLE */
+    .cable-list-container { margin-top: 20px; max-height: 350px; overflow-y: auto; background: #02110d; border-radius: 8px; border: 1px solid var(--border); }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th { position: sticky; top: 0; background: #052e2b; padding: 12px; text-align: left; color: #fff; z-index: 2; border-bottom: 2px solid var(--border); }
+    td { padding: 10px; border-bottom: 1px solid var(--border); color: #ccc; }
+    .btn-remove { background: none; border: none; color: var(--danger); cursor: pointer; transition: 0.2s; font-size: 14px; }
+    .btn-remove:hover { transform: scale(1.2); }
+
+    /* BUTTONS */
+    .btn { padding: 12px 20px; border-radius: 6px; border: none; font-weight: bold; cursor: pointer; font-size: 14px; transition: 0.3s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+    .btn-primary { background: var(--accent); color: #000; width: 100%; }
+    .btn-primary:hover { background: #fff; }
+    
+    .btn-secondary { background: #052e2b; color: #fff; border: 1px solid var(--border); }
+    .btn-secondary:hover { background: var(--accent); color: #000; border-color: var(--accent); }
+
+    /* RESULT BOXES */
+    .suggestion-box {
+        background: rgba(16, 185, 129, 0.1);
+        border: 1px solid var(--accent);
+        border-radius: 8px;
+        padding: 20px;
+        text-align: center;
+        margin-bottom: 20px;
+        box-shadow: 0 0 20px rgba(16, 185, 129, 0.1);
+    }
+    .suggestion-title { font-size: 12px; color: var(--accent); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; }
+    .suggestion-value { font-size: 32px; font-weight: 800; color: #fff; margin: 10px 0; }
+    .suggestion-sub { font-size: 13px; color: #aaa; }
+
+    .stat-row { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 14px; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+    .stat-val { font-weight: bold; color: #fff; }
+    
+    .bar-container { background: #333; height: 10px; border-radius: 5px; overflow: hidden; margin-top: 5px; margin-bottom: 20px;}
+    .bar-fill { height: 100%; transition: width 0.5s ease; background: var(--accent); box-shadow: 0 0 10px var(--accent); }
+
+    .hidden { display: none !important; }
+    
+    /* SYSTEM TOGGLE */
+    .system-toggle { display: flex; gap: 10px; margin-bottom: 20px; background: #02110d; padding: 5px; border-radius: 8px; border: 1px solid var(--border); }
+    .toggle-btn { flex: 1; padding: 10px; border: none; background: transparent; color: #888; cursor: pointer; border-radius: 6px; transition: 0.3s; font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 8px; }
+    .toggle-btn:hover { color: #fff; }
+    .toggle-btn.active { background: var(--accent); color: #000; box-shadow: 0 2px 10px rgba(16, 185, 129, 0.3); }
+
+    /* NAV BUTTONS STANDARD */
+    .nav-buttons { display: inline-flex; gap: 10px; align-items: center; position: absolute; top: 15px; right: 15px; z-index: 1000; }
+    .nav-btn {
+        width: 40px; height: 40px; background: rgba(16,185,129,0.12);
+        border: 1px solid rgba(16,185,129,0.45); border-radius: 12px;
+        display: inline-flex; align-items: center; justify-content: center;
+        color: #10b981; font-size: 18px; cursor: pointer;
+        text-decoration: none;
+        box-shadow: 0 6px 18px rgba(0,0,0,0.35);
+        transition: transform 0.15s ease, background 0.15s ease, color 0.15s ease;
+        flex: 0 0 auto;
+    }
+    .nav-btn:hover { background: #10b981; color: #00150d; transform: translateY(-1px); }
+    
+    /* INFO MODAL */
+    .modal-overlay {
+        display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,0.8); z-index: 2000; backdrop-filter: blur(5px);
+        align-items: center; justify-content: center;
+    }
+    .modal-box {
+        background: #06261c; width: 650px; max-width: 90%; border-radius: 12px; border: 1px solid var(--accent);
+        padding: 25px; position: relative; box-shadow: 0 20px 50px rgba(0,0,0,0.5); color: #fff;
+        max-height: 80vh; overflow-y: auto;
+    }
+    .modal-header { font-size: 18px; font-weight: bold; color: var(--accent); margin-bottom: 15px; border-bottom: 1px solid var(--border); padding-bottom: 10px; display:flex; justify-content:space-between; align-items:center; }
+    .modal-close { color: #aaa; cursor: pointer; font-size: 20px; transition:0.2s; }
+    .modal-close:hover { color: #fff; transform: scale(1.1); }
+    
+    .help-content h3 { font-size: 14px; color: var(--accent); margin-top: 20px; margin-bottom: 8px; text-transform: uppercase; }
+    .help-content ul { padding-left: 20px; color: #d1fae5; font-size: 13px; line-height: 1.6; }
+    .help-content li { margin-bottom: 6px; }
+    .help-content pre { background: rgba(0,0,0,0.3); padding: 10px; border-radius: 6px; border: 1px solid var(--border); color: #a9b7c6; font-size: 11px; }
+
+  </style>
+<!-- Ein Aussehen fuer alle Werkzeuge. Steht direkt hinter dem letzten
+     <style> dieses Werkzeugs: spaeter in der Reihenfolge, also gewinnt
+     es bei gleicher Spezifitaet - aber so frueh wie moeglich, damit die
+     Seite nicht erst in der alten Farbe erscheint und dann umfaerbt.
+     Am Ende des <body> geladen war genau das zu sehen: Knoepfe mit
+     transition faerbten sichtbar um. Faerbt nur, verschiebt nichts.
+     Siehe werkzeug-stil.css. -->
+<link rel="stylesheet" href="werkzeug-stil.css">
+<!-- Sprachumschaltung Deutsch / Persisch / Englisch. Was nicht im
+     Woerterbuch steht, bleibt Deutsch. Siehe uebersetzung.js. -->
+<script src="woerter.js"></script>
+<script src="woerter/Kabelterasse_Rechner.js"></script>
+<script src="uebersetzung.js"></script>
+
+</head>
+<body>
+
+<div class="nav-buttons">
+    <a href="dashboard/" class="nav-btn" title="Zurück zum Dashboard">
+        <i class="fas fa-home"></i>
+    </a>
+    <div class="nav-btn" onclick="openHelp()" title="Hilfe & Anleitung">
+        <i class="fas fa-question"></i>
+    </div>
+</div>
+
+<div id="helpModal" class="modal-overlay">
+    <div class="modal-box">
+        <div class="modal-header">
+            <span><i class="fas fa-info-circle"></i> Kabeltrassen-Rechner Info</span>
+            <div class="modal-close" onclick="closeHelp()"><i class="fas fa-times"></i></div>
+        </div>
+        <div class="help-content">
+            <p>Berechnung und Dimensionierung von Kabeltrassen/Rinnen oder Installationsrohren inklusive Materialschätzung (BOM) und Excel-Export.</p>
+
+            <h3>Anleitung</h3>
+            <ul>
+                <li><b>Kabelwahl:</b> Wählen Sie Kategorie und Kabeltyp, geben Sie die Menge ein und klicken Sie auf „Hinzufügen“.</li>
+                <li><b>System:</b> Wechseln Sie oben zwischen „Kabeltrasse“ und „Installationsrohr“.</li>
+                <li><b>Parameter:</b> Definieren Sie Seitenhöhe, Reserve (z.B. 30%) und Streckenlänge.</li>
+                <li><b>Ergebnis:</b> Das System empfiehlt automatisch die passende Breite oder den Rohr-Durchmesser.</li>
+            </ul>
+
+            <h3>Berechnungslogik (DIN/VDE)</h3>
+            <pre><code>// 1. Kabeltrasse (Tray)
+Benötigte Breite, je nach Verlegeart:
+  einlagig berührend   = Summe(Kabel-Ø) * Reserve
+  einlagig mit Abstand = 2 * Summe(Kabel-Ø) * Reserve
+  mehrlagig/gebündelt  = Summe(Kabelquerschnitt) / (Füllgrad * Höhe) * Reserve
+
+Die Verlegeart ist keine Kleinigkeit: 20 Steuerkabel 12 mm brauchen
+einlagig 312 mm und gebündelt 123 mm - Trasse 400 gegen Trasse 150.
+Energiekabel dagegen müssen mit Abstand liegen, weil die
+Minderungsfaktoren aus der Kabelauslegung genau das voraussetzen.
+Vorschlag = Nächste Standardgröße (50, 100, ..., 600mm)
+
+// 2. Installationsrohr (Conduit)
+Max. Füllgrad = 40% (um Ziehbarkeit zu gewährleisten)
+Benötigter Innen-Ø = 2 * sqrt( (Summe Kabel-Fläche / 0.40) / π )
+Vorschlag = Nächste metrische Größe (M16 - M63)</code></pre>
+
+            <h3>Export</h3>
+            <ul>
+                <li>Klicken Sie auf den Button oben rechts, um eine Stückliste (BOM) und die Berechnungsergebnisse als Excel-Datei herunterzuladen.</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+  <div class="header">
+    <div class="header-left">
+        <div class="brand-text">
+            ART ENVI 
+            <span>Kabeltrassen- & Rohrrechner (DIN/VDE)</span>
+        </div>
+    </div>
+    <button class="btn btn-secondary" onclick="exportExcel()">
+        <i class="fas fa-file-excel"></i> Stückliste Exportieren
+    </button>
+  </div>
+
+  <div class="grid-main">
+    
+    <div class="left-col">
+      
+      <section class="card">
+        <h3><i class="fas fa-cogs"></i> Systemkonfiguration</h3>
+        
+        <div class="system-toggle">
+            <button class="toggle-btn active" id="btnModeTray" onclick="setMode('tray')"><i class="fas fa-grip-lines"></i> Kabeltrasse / Rinne</button>
+            <button class="toggle-btn" id="btnModeConduit" onclick="setMode('conduit')"><i class="fas fa-dot-circle"></i> Installationsrohr</button>
+        </div>
+        <input type="hidden" id="systemMode" value="tray">
+
+        <div class="form-grid">
+          <div class="tray-field">
+            <label>Seitenhöhe (mm)</label>
+            <select id="trayHeight" onchange="calculate()">
+              <option value="35">35 mm</option>
+              <option value="60" selected>60 mm (Standard)</option>
+              <option value="85">85 mm</option>
+              <option value="110">110 mm</option>
+            </select>
+          </div>
+          
+          <div class="tray-field">
+             <label>Verlegeart auf der Trasse</label>
+             <select id="verlegeart" onchange="calculate()">
+                 <option value="beruehrend" selected>einlagig, ber&uuml;hrend</option>
+                 <option value="abstand">einlagig, Abstand = 1 Kabel-&Oslash;</option>
+                 <option value="gebuendelt">mehrlagig / geb&uuml;ndelt</option>
+             </select>
+          </div>
+
+          <div id="fuellgradFeld" style="display:none;">
+             <label>Zul&auml;ssiger F&uuml;llgrad im Querschnitt</label>
+             <select id="fuellgrad" onchange="calculate()">
+                 <option value="0.30">30 % (vorsichtig)</option>
+                 <option value="0.40" selected>40 % (&uuml;blich)</option>
+                 <option value="0.50">50 % (dicht)</option>
+             </select>
+          </div>
+
+          <div class="tray-field">
+             <label>Platzreserve (Zukunft)</label>
+             <select id="reserveSpace" onchange="calculate()">
+                 <option value="1.0">0% (Exakt)</option>
+                 <option value="1.2">20% (Standard)</option>
+                 <option value="1.3" selected>30% (DIN Empfohlen)</option>
+                 <option value="1.5">50% (Hoch)</option>
+             </select>
+          </div>
+
+          <div class="conduit-field hidden">
+             <label>Rohrart</label>
+             <select id="conduitType" onchange="calculate()">
+                 <option value="pvc">PVC Starr (Stangen)</option>
+                 <option value="flex">Flexibles Wellrohr</option>
+                 <option value="steel">Stahl / Metall</option>
+             </select>
+             <div id="conduitTypeHint" style="font-size:10.5px; color:#8a8a8a; margin-top:5px; line-height:1.45;"></div>
+          </div>
+
+          <div>
+             <label>Streckenlänge (m)</label>
+             <input type="number" id="routeLength" value="50" oninput="calculate()">
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <h3><i class="fas fa-plug"></i> Kabelauswahl</h3>
+        
+        <div class="cable-selector-area">
+            <div class="form-grid" style="grid-template-columns: 1fr; margin-bottom: 15px;">
+                <div>
+                    <label>1. Kategorie wählen</label>
+                    <select id="categorySelect" onchange="populateCables()">
+                        </select>
+                </div>
+            </div>
+            
+            <div class="form-grid" style="grid-template-columns: 2fr 1fr;">
+                <div>
+                    <label>2. Kabeltyp wählen</label>
+                    <select id="cableSelect">
+                        </select>
+                </div>
+                <div>
+                    <label>Menge (Stück)</label>
+                    <input type="number" id="cableQty" value="1" min="1">
+                </div>
+            </div>
+
+            <div style="margin-top:15px;">
+                <button class="btn btn-primary" onclick="addCable()"><i class="fas fa-plus"></i> Zur Liste hinzufügen</button>
+            </div>
+        </div>
+
+        <div class="cable-list-container">
+          <table id="cableTable">
+            <thead>
+              <tr>
+                <th>Typ</th>
+                <th>Anz.</th>
+                <th>Ø (mm)</th>
+                <th>Gewicht (Gesamt)</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+
+    </div>
+
+    <div class="right-col">
+      
+      <section class="card">
+        <h3><i class="fas fa-magic"></i> Empfohlenes System</h3>
+        
+        <div id="traySuggestion" class="suggestion-box">
+            <div class="suggestion-title">Empfohlene Trassengröße</div>
+            <div class="suggestion-value" id="suggestedSizeText">0 x 60 mm</div>
+            <div class="suggestion-sub" id="suggestedSizeSub">Basierend auf Kabeln + 30% Reserve</div>
+        </div>
+
+        <div id="conduitSuggestion" class="suggestion-box hidden" style="border-color:var(--info); background:rgba(30, 144, 255, 0.1);">
+            <div class="suggestion-title" style="color:var(--info)">Empfohlener Rohr-Ø</div>
+            <div class="suggestion-value" id="suggestedConduitText">M20</div>
+            <div class="suggestion-sub">Innenfüllgrad < 40%</div>
+        </div>
+
+        <div style="padding: 15px; background: rgba(255,255,255,0.03); border-radius: 8px; border: 1px solid var(--border);">
+            <div class="stat-row">
+                <span>Gesamtbreite Kabel (Linear):</span>
+                <span class="stat-val" id="totalWidthVal">0 mm</span>
+            </div>
+            <div class="stat-row">
+                <span>Benötigte Breite (inkl. Reserve):</span>
+                <span class="stat-val" style="color:var(--accent);" id="reqWidthVal">0 mm</span>
+            </div>
+            <div class="stat-row">
+                <span>Grundlage:</span>
+                <span class="stat-val" id="grundlageVal" style="font-size:12px;">--</span>
+            </div>
+            <hr style="border-color:var(--border); opacity:0.3; margin: 15px 0;">
+            <div class="stat-row">
+                <span>Gesamtgewicht (Last):</span>
+                <span class="stat-val" id="totalWeightVal">0.00 kg/m</span>
+            </div>
+            <div class="bar-container">
+                <div id="weightBar" class="bar-fill" style="width: 0%;"></div>
+            </div>
+            <div style="font-size:11px; color:#888; text-align:right;">% der Standardtraglast (ca. 150kg/m)</div>
+        </div>
+
+      </section>
+
+      <section class="card">
+        <h3><i class="fas fa-list-ol"></i> Materialschätzung (BOM)</h3>
+        <table class="bom-table" style="width:100%; font-size:13px; text-align:left; border-collapse:collapse;">
+            <thead>
+                <tr style="color:#aaa; border-bottom:1px solid var(--border);">
+                    <th style="padding:8px;">Position</th>
+                    <th style="padding:8px;">Menge</th>
+                    <th style="padding:8px;">Einheit</th>
+                </tr>
+            </thead>
+            <tbody id="bomPreviewBody">
+                </tbody>
+        </table>
+      </section>
+
+    </div>
+  </div>
+</div>
+
+<script>
+    // --- HELPER FUNCTIONS FOR MODAL ---
+    function openHelp() { document.getElementById('helpModal').style.display = 'flex'; }
+    function closeHelp() { document.getElementById('helpModal').style.display = 'none'; }
+    window.onclick = function(event) { if (event.target == document.getElementById('helpModal')) closeHelp(); }
+
+    /**
+     * DATABASE: COMPLETE GERMAN MARKET CABLES
+     * Sources: Lapp Kabel, Helukabel, DIN VDE Standards
+     */
+    const cableDatabase = {
+        "NYM-J (Hausinstallation)": [
+            { name: "NYM-J 3x1.5", d: 9.7, w: 0.135 },
+            { name: "NYM-J 3x2.5", d: 10.8, w: 0.190 },
+            { name: "NYM-J 4x1.5", d: 10.5, w: 0.160 },
+            { name: "NYM-J 5x1.5", d: 11.4, w: 0.195 },
+            { name: "NYM-J 5x2.5", d: 12.9, w: 0.270 },
+            { name: "NYM-J 5x4",   d: 15.3, w: 0.410 },
+            { name: "NYM-J 5x6",   d: 16.8, w: 0.550 },
+            { name: "NYM-J 5x10",  d: 20.2, w: 0.900 },
+            { name: "NYM-J 5x16",  d: 24.5, w: 1.450 },
+            { name: "NYM-J 7x1.5", d: 13.0, w: 0.250 }
+        ],
+        "NYY-J (Starkstrom/Erdkabel)": [
+            { name: "NYY-J 3x1.5", d: 12.0, w: 0.21 },
+            { name: "NYY-J 3x2.5", d: 13.0, w: 0.26 },
+            { name: "NYY-J 5x1.5", d: 14.0, w: 0.29 },
+            { name: "NYY-J 5x2.5", d: 15.0, w: 0.36 },
+            { name: "NYY-J 5x4",   d: 17.0, w: 0.54 },
+            { name: "NYY-J 5x6",   d: 18.5, w: 0.69 },
+            { name: "NYY-J 5x10",  d: 20.5, w: 1.00 },
+            { name: "NYY-J 5x16",  d: 23.0, w: 1.50 },
+            { name: "NYY-J 5x25",  d: 28.0, w: 2.40 },
+            { name: "NYY-J 4x35",  d: 26.0, w: 1.90 },
+            { name: "NYY-J 4x50",  d: 29.0, w: 2.50 },
+            { name: "NYY-J 4x70",  d: 33.0, w: 3.40 },
+            { name: "NYY-J 4x95",  d: 38.0, w: 4.60 },
+            { name: "NYY-J 4x120", d: 42.0, w: 5.60 },
+            { name: "NYY-J 4x150", d: 46.0, w: 6.80 },
+            { name: "NYY-J 4x185", d: 50.0, w: 8.50 },
+            { name: "NYY-J 4x240", d: 56.0, w: 11.0 }
+        ],
+        "NHXH (Sicherheitskabel E30/E90)": [
+            { name: "NHXH-J 3x1.5 E90", d: 13.0, w: 0.25 },
+            { name: "NHXH-J 5x1.5 E90", d: 15.0, w: 0.35 },
+            { name: "NHXH-J 5x2.5 E90", d: 16.5, w: 0.45 },
+            { name: "NHXH-J 5x4 E90",   d: 18.0, w: 0.60 },
+            { name: "NHXH-J 5x6 E90",   d: 20.0, w: 0.75 },
+            { name: "NHXH-J 5x10 E90",  d: 22.0, w: 1.10 },
+            { name: "NHXH-J 5x16 E90",  d: 26.0, w: 1.80 },
+            { name: "NHXH-J 4x50 E90",  d: 34.0, w: 3.20 }
+        ],
+        "Daten & Netzwerk": [
+            { name: "Cat.7 Simplex (Orange)", d: 7.8, w: 0.065 },
+            { name: "Cat.7 Duplex (Twin)",    d: 16.0, w: 0.130 },
+            { name: "Cat.6 UTP",              d: 6.0, w: 0.050 },
+            { name: "Koax (TV/SAT) 110dB",    d: 7.2, w: 0.055 },
+            { name: "LWL / Glasfaser (4-12 Adern)",d: 8.5, w: 0.080 },
+            { name: "LWL / Glasfaser (24 Adern)",  d: 11.0, w: 0.120 }
+        ],
+        "Steuerleitungen / Bus": [
+            { name: "KNX / EIB Bus (2x2x0.8)", d: 6.5, w: 0.055 },
+            { name: "J-Y(St)Y 2x2x0.8",        d: 6.0, w: 0.050 },
+            { name: "J-Y(St)Y 4x2x0.8",        d: 7.5, w: 0.090 },
+            { name: "J-Y(St)Y 10x2x0.8",       d: 11.0, w: 0.200 },
+            { name: "J-Y(St)Y 20x2x0.8",       d: 13.5, w: 0.350 },
+            { name: "LiYCY 4x0.75 (Geschirmt)", d: 7.0, w: 0.085 },
+            { name: "LiYCY 7x1.0 (Geschirmt)",  d: 9.0, w: 0.150 }
+        ],
+        "Industrie / Gummileitung": [
+            { name: "H07RN-F 3G1.5", d: 10.0, w: 0.16 },
+            { name: "H07RN-F 3G2.5", d: 12.0, w: 0.23 },
+            { name: "H07RN-F 5G2.5", d: 14.0, w: 0.35 },
+            { name: "H07RN-F 5G6",   d: 18.0, w: 0.65 },
+            { name: "H07RN-F 5G16",  d: 26.0, w: 1.50 },
+            { name: "H07RN-F 5G35",  d: 36.0, w: 3.10 }
+        ]
+    };
+
+    // State
+    let selectedCables = [];
+    let currentMode = 'tray';
+
+    // --- INITIALIZATION ---
+    window.onload = function() {
+        populateCategories();
+        setMode('tray');
+    };
+
+    function populateCategories() {
+        const catSel = document.getElementById("categorySelect");
+        catSel.innerHTML = "";
+        Object.keys(cableDatabase).forEach(cat => {
+            const opt = document.createElement("option");
+            opt.value = cat;
+            opt.textContent = cat;
+            catSel.appendChild(opt);
+        });
+        populateCables(); // Trigger cable fill
+    }
+
+    function populateCables() {
+        const cat = document.getElementById("categorySelect").value;
+        const cabSel = document.getElementById("cableSelect");
+        cabSel.innerHTML = "";
+        
+        if(cableDatabase[cat]) {
+            cableDatabase[cat].forEach((c, index) => {
+                const opt = document.createElement("option");
+                // Store details in value as JSON string for easy access
+                opt.value = JSON.stringify(c);
+                opt.textContent = `${c.name} (Ø ${c.d}mm)`;
+                cabSel.appendChild(opt);
+            });
+        }
+    }
+
+    // --- APP LOGIC ---
+
+    function setMode(mode) {
+        currentMode = mode;
+        document.getElementById('systemMode').value = mode;
+        
+        // Toggle UI
+        const trayF = document.querySelectorAll('.tray-field');
+        const condF = document.querySelectorAll('.conduit-field');
+        const btnTray = document.getElementById('btnModeTray');
+        const btnCond = document.getElementById('btnModeConduit');
+        
+        const traySug = document.getElementById('traySuggestion');
+        const condSug = document.getElementById('conduitSuggestion');
+
+        if(mode === 'tray') {
+            trayF.forEach(el => el.classList.remove('hidden'));
+            condF.forEach(el => el.classList.add('hidden'));
+            btnTray.classList.add('active');
+            btnCond.classList.remove('active');
+            traySug.classList.remove('hidden');
+            condSug.classList.add('hidden');
+        } else {
+            trayF.forEach(el => el.classList.add('hidden'));
+            condF.forEach(el => el.classList.remove('hidden'));
+            btnTray.classList.remove('active');
+            btnCond.classList.add('active');
+            traySug.classList.add('hidden');
+            condSug.classList.remove('hidden');
+        }
+        calculate();
+    }
+
+    function addCable() {
+        const raw = document.getElementById("cableSelect").value;
+        const qty = parseInt(document.getElementById("cableQty").value);
+        
+        if(!raw || qty < 1) return;
+
+        const cObj = JSON.parse(raw);
+        
+        // Add to list
+        selectedCables.push({ ...cObj, qty: qty });
+        renderTable();
+        calculate();
+    }
+
+    function removeCable(idx) {
+        selectedCables.splice(idx, 1);
+        renderTable();
+        calculate();
+    }
+
+    function renderTable() {
+        const tbody = document.querySelector("#cableTable tbody");
+        tbody.innerHTML = "";
+        
+        selectedCables.forEach((c, i) => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+                <td>${c.name}</td>
+                <td>${c.qty}</td>
+                <td>${c.d}</td>
+                <td>${(c.w * c.qty).toFixed(2)} kg/m</td>
+                <td><button class="btn-remove" onclick="removeCable(${i})"><i class="fas fa-trash"></i></button></td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    // --- THE CALCULATION ENGINE ---
+
+    function calculate() {
+        const reserveFactor = parseFloat(document.getElementById("reserveSpace").value);
+        
+        // 1. Calculate Total Load
+        let totalWeight = 0;
+        let totalDiameterSum = 0; // For width calc (simple placement)
+        let totalAreaSum = 0;     // For conduit fill
+        
+        selectedCables.forEach(c => {
+            totalWeight += (c.w * c.qty);
+            totalDiameterSum += (c.d * c.qty);
+            
+            // Exact area for conduit
+            const cableArea = Math.PI * Math.pow((c.d/2), 2);
+            totalAreaSum += (cableArea * c.qty);
+        });
+
+        // Display basic stats
+        document.getElementById("totalWidthVal").innerText = totalDiameterSum.toFixed(1) + " mm";
+        document.getElementById("totalWeightVal").innerText = totalWeight.toFixed(2) + " kg/m";
+        
+        // Weight Visualizer (Assume max 150kg/m standard tray)
+        let maxLoad = currentMode === 'tray' ? 150 : 50;
+        let loadPct = (totalWeight / maxLoad) * 100;
+        document.getElementById("weightBar").style.width = Math.min(loadPct, 100) + "%";
+
+        // Das Feld fuer den Fuellgrad gehoert nur zur gebuendelten Verlegung.
+        const art = (document.getElementById("verlegeart") || {}).value || "beruehrend";
+        const fFeld = document.getElementById("fuellgradFeld");
+        // Der Fuellgrad gilt fuer die gebuendelte Trasse und fuer das Rohr.
+        const brauchtFuellgrad = (art === "gebuendelt") || (currentMode !== "tray");
+        if (fFeld) fFeld.style.display = brauchtFuellgrad ? "" : "none";
+
+        // 2. SUGGESTION LOGIC
+        if (currentMode === 'tray') {
+            calculateTraySuggestion(totalDiameterSum, reserveFactor, totalWeight, art, totalAreaSum);
+        } else {
+            calculateConduitSuggestion(totalAreaSum);
+        }
+
+        updateBOMPreview(totalWeight);
+    }
+
+    // Die Trassenbreite haengt daran, WIE die Kabel liegen - und das stand
+    // nirgends. Gerechnet wurde immer Summe(Durchmesser) mal Reserve, also
+    // stillschweigend: alle Kabel einlagig nebeneinander, beruehrend.
+    //
+    // Das ist fuer Steuerkabel viel zu breit und fuer Energiekabel zu schmal:
+    //
+    //   20 Steuerkabel 12 mm, Hoehe 60 mm, Reserve 1,3
+    //     einlagig beruehrend (bisher):  312 mm  ->  Trasse 400
+    //     mehrlagig, Fuellgrad 40 %:     123 mm  ->  Trasse 150
+    //
+   //    Das Zweieinhalbfache an Breite, an Gewicht und an Geld - und im
+    //   Plan ein Trassenweg, der so breit gar nicht gebraucht wird.
+    //
+    // Umgekehrt: Energiekabel muessen mit Abstand liegen, weil die
+    // Minderungsfaktoren aus der Kabelauslegung genau das voraussetzen. Dann
+    // braucht es das Doppelte von Summe(Durchmesser), nicht das Einfache.
+    // Eine zu schmale Trasse zwingt die Kabel zusammen - und der
+    // Querschnitt, der mit Abstand gerechnet wurde, liegt dann daneben.
+    function calculateTraySuggestion(diaSum, reserve, weight, art, areaSum) {
+        const hoehe = parseFloat(document.getElementById("trayHeight").value) || 60;
+        const fuell = parseFloat((document.getElementById("fuellgrad") || {}).value) || 0.40;
+
+        let requiredWidth, grundlage;
+        if (art === "abstand") {
+            requiredWidth = 2 * diaSum * reserve;
+            grundlage = "<span>einlagig mit Abstand: 2 x Summe(\u00d8)</span>";
+        } else if (art === "gebuendelt") {
+            // Flaechenbezogen: die Summe der Kabelquerschnitte darf nur den
+            // zulaessigen Anteil des Trassenquerschnitts einnehmen.
+            requiredWidth = areaSum / (fuell * hoehe) * reserve;
+            grundlage = "<span>geb\u00fcndelt: Querschnitt bei</span> <b>" + (fuell*100).toFixed(0) + " %</b> <span>F\u00fcllgrad</span>";
+        } else {
+            requiredWidth = diaSum * reserve;
+            grundlage = "<span>einlagig ber\u00fchrend: Summe(\u00d8)</span>";
+        }
+
+        document.getElementById("reqWidthVal").innerText = requiredWidth.toFixed(0) + " mm";
+        const gFeld = document.getElementById("grundlageVal");
+        if (gFeld) gFeld.innerHTML = grundlage;
+        
+        // Standard Tray Widths
+        const standards = [50, 100, 150, 200, 300, 400, 500, 600];
+        const height = document.getElementById("trayHeight").value;
+        
+        let suggested = null;
+        
+        for (let w of standards) {
+            if (w >= requiredWidth) {
+                suggested = w;
+                break;
+            }
+        }
+
+        const txt = document.getElementById("suggestedSizeText");
+        const sub = document.getElementById("suggestedSizeSub");
+
+        if (suggested) {
+            txt.innerHTML = `<span style="color:#fff">${suggested}</span> x ${height} mm`;
+            txt.style.color = "#fff";
+            sub.innerHTML = `<span>Standardgröße (Belegung:</span> <b>${((requiredWidth/suggested)*100).toFixed(0)}%</b><span>) · </span>${grundlage}`;
+        } else {
+            txt.innerHTML = `> 600 mm`;
+            txt.style.color = "var(--warning)";
+            sub.innerText = "Sondergröße oder mehrere Trassen erforderlich";
+        }
+        
+        // Update global for BOM
+        window.suggestedWidth = suggested || 600;
+    }
+
+    function calculateConduitSuggestion(cableAreaSum) {
+        // Der Fuellgrad ist seit der Trassenrechnung ein Eingabefeld. Hier
+        // stand er weiter fest auf 0,40 - dasselbe Werkzeug mit zwei
+        // Antworten auf dieselbe Frage. Jetzt liest auch das Rohr das Feld.
+        const maxFillRate = parseFloat((document.getElementById("fuellgrad") || {}).value) || 0.40;
+        const requiredConduitArea = cableAreaSum / maxFillRate;
+        const requiredInnerDia = 2 * Math.sqrt(requiredConduitArea / Math.PI);
+        
+        document.getElementById("reqWidthVal").innerText = `Min. Innen-Ø: ${requiredInnerDia.toFixed(1)} mm`;
+
+        // Innendurchmesser nach EN 61386 fuer STARRES PVC-Rohr. Wellrohr und
+        // Stahlrohr haben bei gleicher M-Groesse einen anderen, beim Wellrohr
+        // deutlich kleineren nutzbaren Innendurchmesser. Belastbare Zahlen dafuer
+        // liegen hier nicht vor, deshalb wird der Nutzer darauf hingewiesen,
+        // statt eine falsche Groesse vorzuschlagen.
+        const sizes = [
+            { m: 16, in: 11 },
+            { m: 20, in: 15 },
+            { m: 25, in: 19 },
+            { m: 32, in: 26 },
+            { m: 40, in: 34 },
+            { m: 50, in: 43 },
+            { m: 63, in: 54 }
+        ];
+
+        let suggested = null;
+        for (let s of sizes) {
+            if (s.in >= requiredInnerDia) {
+                suggested = s.m;
+                break;
+            }
+        }
+
+        // Rohrtyp auswerten. Vorher loeste das Feld nur calculate() aus und wurde
+        // nie gelesen: die Auswahl rechnete neu und identisch.
+        const rohrTyp = document.getElementById("conduitType").value;
+        const typHinweis = document.getElementById("conduitTypeHint");
+        if (typHinweis) {
+            typHinweis.innerText = rohrTyp === 'pvc'
+                ? "Innendurchmesser nach EN 61386 für starres PVC-Rohr."
+                : rohrTyp === 'flex'
+                ? "Achtung: die Werte gelten für starres PVC. Wellrohr hat bei gleicher M-Größe einen kleineren nutzbaren Innendurchmesser, Herstellerangabe prüfen."
+                : "Achtung: die Werte gelten für starres PVC. Stahlrohr weicht ab, Herstellerangabe prüfen.";
+        }
+
+        const txt = document.getElementById("suggestedConduitText");
+        if(suggested) {
+            txt.innerText = "M" + suggested;
+        } else {
+            txt.innerText = "> M63";
+        }
+        window.suggestedWidth = suggested || 63; 
+    }
+
+    function updateBOMPreview(totalWeight) {
+        const tbody = document.getElementById("bomPreviewBody");
+        tbody.innerHTML = "";
+        
+        const length = parseFloat(document.getElementById("routeLength").value) || 0;
+        const size = window.suggestedWidth;
+        
+        if(currentMode === 'tray') {
+            const height = document.getElementById("trayHeight").value;
+            addBomRow(tbody, `Kabeltrasse ${size}x${height}mm`, length + " m");
+            addBomRow(tbody, `Verbinder / Kupplungen`, Math.ceil(length/3) + " Stk");
+            addBomRow(tbody, `Wandkonsolen (${size}mm)`, Math.ceil(length/1.5) + " Stk");
+        } else {
+            addBomRow(tbody, `Installationsrohr M${size}`, length + " m");
+            addBomRow(tbody, `Schellen / Halter M${size}`, Math.ceil(length/1.2) + " Stk");
+        }
+    }
+
+    function addBomRow(tbody, item, qty) {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td style="padding:8px;">${item}</td><td style="padding:8px;">${qty.split(' ')[0]}</td><td style="padding:8px;">${qty.split(' ')[1]}</td>`;
+        tbody.appendChild(tr);
+    }
+
+    function exportExcel() {
+        const wb = XLSX.utils.book_new();
+        
+        // 1. Cables Sheet
+        const cableData = [["Kategorie", "Name", "Menge", "Durchmesser (mm)", "Gewicht/m (kg)"]];
+        selectedCables.forEach(c => {
+            cableData.push(["Kabel", c.name, c.qty, c.d, c.w]);
+        });
+        const wsCables = XLSX.utils.aoa_to_sheet(cableData);
+        XLSX.utils.book_append_sheet(wb, wsCables, "Kabel");
+
+        // 2. Result Sheet
+        const size = window.suggestedWidth;
+        const height = document.getElementById("trayHeight").value;
+        const resData = [
+            ["Parameter", "Wert"],
+            ["System Typ", currentMode.toUpperCase()],
+            ["Streckenlänge", document.getElementById("routeLength").value + " m"],
+            ["Vorschlag Größe", currentMode === 'tray' ? `${size}x${height}mm` : `M${size}`],
+            ["Gesamtgewicht", document.getElementById("totalWeightVal").innerText]
+        ];
+        const wsRes = XLSX.utils.aoa_to_sheet(resData);
+        XLSX.utils.book_append_sheet(wb, wsRes, "Ergebnisse");
+
+        XLSX.writeFile(wb, "Kabelberechnung_Ergebnis.xlsx");
+    }
+
+</script>
+
+<!-- KI-Helfer: ordnet das Ergebnis ein, rechnet es nicht. Der
+     Schluessel steht nicht hier, sondern hinter der Edge Function
+     werkzeug-assistent. Siehe ki-helfer.js. -->
+<script src="ki-helfer.js"></script>
+<script>
+  KI_HELFER.einbauen({
+    werkzeug: "Trassen- und Rohrrechner",
+    modus: "deutung",
+    knopf: "Ergebnis einordnen",
+    titel: "Einordnung des Ergebnisses",
+    platzhalter: "Frage dazu, optional. Zum Beispiel: welche Stellschraube zuerst?",
+    ergebnisse: {
+      "reqWidthVal": "Erforderliche Breite",
+      "totalWidthVal": "Gesamtbreite",
+      "totalWeightVal": "Gewicht je Meter",
+      "suggestedSizeText": "Vorschlag Trasse",
+      "suggestedConduitText": "Vorschlag Rohr"
+    }
+  });
+</script>
+</body>
+</html>

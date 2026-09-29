@@ -1,0 +1,1080 @@
+<!-- FILE: Druckverlustberechnung.html -->
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ART ENVI | Ultimate Hydraulik Calculator</title>
+    <!-- Icons -->
+    <link rel="stylesheet" href="bibliotheken/fontawesome/css/all.min.css">
+    <!-- Chart.js -->
+  <script src="formstuecke.js"></script>
+    <script src="bibliotheken/chart.umd.js"></script>
+    <!-- MathJax for Formulas -->
+    <script id="MathJax-script" async src="bibliotheken/mathjax/tex-mml-chtml.js"></script>
+    <!-- Excel Export -->
+    <script src="bibliotheken/xlsx.full.min.js"></script>
+
+    <style>
+        :root {
+            --bg: #0f172a;
+            --card: #1e293b;
+            --input: #334155;
+            --primary: #06b6d4; /* Cyan */
+            --text: #f1f5f9;
+            --border: #475569;
+            --danger: #ef4444;
+            --success: #22c55e;
+            --warn: #eab308;
+        }
+
+        body { 
+            margin: 0; padding: 0; 
+            background: var(--bg); color: var(--text); 
+            font-family: 'Segoe UI', Roboto, sans-serif; 
+            overflow-x: hidden;
+        }
+        
+        .container { max-width: 1600px; margin: 0 auto; padding: 20px; }
+
+        /* --- NAVIGATION BUTTONS REMOVED --- */
+        .nav-buttons { display: none; }
+
+        /* HEADER */
+        header { 
+            display: flex; justify-content: space-between; align-items: center; 
+            border-bottom: 2px solid var(--primary); padding-bottom: 15px; margin-bottom: 25px; 
+            padding-left: 90px; position: sticky; top: 0; z-index: 1000; background: var(--bg);
+            padding-top: 10px;
+        }
+        .brand h1 { margin: 0; color: var(--primary); font-size: 26px; text-transform: uppercase; letter-spacing: 2px; }
+        .brand span { font-size: 13px; color: #94a3b8; }
+
+        /* BUTTONS */
+        .btn { padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: bold; border: none; transition: 0.2s; display: inline-flex; align-items: center; gap: 8px; }
+        .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--text); }
+        .btn-ghost:hover { border-color: var(--primary); color: var(--primary); }
+        .btn-danger { background: rgba(239, 68, 68, 0.2); color: var(--danger); padding: 4px 8px; font-size: 12px; }
+        .btn-danger:hover { background: var(--danger); color: #fff; }
+
+        /* LAYOUT */
+        .grid { display: grid; grid-template-columns: 380px 1fr; gap: 25px; }
+        @media(max-width: 1100px) { .grid { grid-template-columns: 1fr; } }
+
+        /* CARDS */
+        .card { background: var(--card); padding: 20px; border-radius: 10px; border: 1px solid var(--border); margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+        .card h3 { margin-top: 0; color: var(--primary); border-bottom: 1px solid var(--border); padding-bottom: 10px; font-size: 16px; display: flex; align-items: center; gap: 10px; }
+
+        /* FORMS */
+        label { display: block; font-size: 11px; margin-bottom: 4px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; }
+        .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+        select, input { width: 100%; padding: 8px 10px; background: var(--input); border: 1px solid var(--border); color: #fff; border-radius: 4px; box-sizing: border-box; }
+        select:focus, input:focus { border-color: var(--primary); outline: none; }
+        input[readonly] { background: #1a202c; color: #64748b; cursor: not-allowed; }
+
+        /* SECTIONS - UPDATED LAYOUT */
+        .section-item { 
+            background: rgba(255,255,255,0.02); border: 1px solid var(--border); 
+            border-left: 3px solid var(--primary); padding: 15px; margin-bottom: 15px; border-radius: 4px; 
+            animation: fadeIn 0.3s ease; position: relative;
+            display: grid; grid-template-columns: 1fr 220px; gap: 20px;
+        }
+        .section-left { display: flex; flex-direction: column; gap: 5px; }
+        .section-right { 
+            background: rgba(0,0,0,0.3); border-radius: 6px; padding: 10px; 
+            display: flex; flex-direction: column; justify-content: center; font-size: 12px;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+        @media(max-width: 600px) { .section-item { grid-template-columns: 1fr; } }
+
+        .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px dashed #333; }
+        .fit-list { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; }
+        .fit-tag { background: #0f172a; border: 1px solid #333; padding: 4px 8px; border-radius: 4px; font-size: 12px; display: flex; align-items: center; gap: 5px; }
+
+        /* STATS IN SECTION */
+        .stat-row { display: flex; justify-content: space-between; margin-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 2px; }
+        .stat-lbl { color: #94a3b8; }
+        .stat-val { color: #fff; font-weight: bold; }
+
+        /* RESULTS BOX */
+        .res-big { text-align: center; padding: 20px; background: rgba(6, 182, 212, 0.05); border: 1px solid var(--primary); border-radius: 8px; margin-bottom: 15px; }
+        .res-val { font-size: 36px; font-weight: 800; color: #fff; }
+        .res-unit { color: var(--primary); font-weight: bold; }
+        
+        /* ALERTS */
+        .alert { padding: 12px; border-radius: 6px; font-size: 13px; font-weight: 600; display: none; margin-top: 15px; align-items: center; gap: 10px; }
+        .alert-ok { background: rgba(34, 197, 94, 0.15); color: var(--success); border: 1px solid var(--success); }
+        .alert-warn { background: rgba(234, 179, 8, 0.15); color: var(--warn); border: 1px solid var(--warn); }
+        .alert-err { background: rgba(239, 68, 68, 0.15); color: var(--danger); border: 1px solid var(--danger); }
+
+        /* MODAL */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 10000; backdrop-filter: blur(5px); justify-content: center; align-items: center; }
+        .modal-content { background: var(--card); padding: 30px; border-radius: 12px; max-width: 700px; width: 90%; border: 1px solid var(--primary); color: #fff; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
+        .formula-box { background: #0f172a; padding: 15px; border-radius: 6px; border: 1px solid #333; margin: 10px 0; overflow-x: auto; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+
+<style id="ki-global-topbar">
+:root {
+  --ki-topbar-h: 60px;
+  --ki-emerald: #10b981;
+  --ki-emerald-2: #0f766e;
+  --ki-bg: rgba(2, 6, 23, 0.92);
+  --ki-card: rgba(15, 23, 42, 0.92);
+  --ki-border: rgba(16, 185, 129, 0.28);
+  --ki-text: #e5e7eb;
+}
+/* Force unified accent */
+:root { --primary: var(--ki-emerald) !important; --accent: var(--ki-emerald) !important; }
+
+body {
+  padding-top: var(--ki-topbar-h);
+}
+
+.ki-topbar {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: var(--ki-topbar-h);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  box-sizing: border-box;
+  background: linear-gradient(180deg, var(--ki-bg), rgba(2, 6, 23, 0.70));
+  border-bottom: 1px solid var(--ki-border);
+  z-index: 2147483000; /* higher than your random z-index wars */
+  backdrop-filter: blur(10px);
+}
+.ki-topbar .ki-left {
+  display: flex; align-items: center; gap: 10px;
+  min-width: 0;
+}
+.ki-badge {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #052e2b;
+  background: var(--ki-emerald);
+  padding: 4px 10px;
+  border-radius: 999px;
+}
+.ki-title {
+  font-size: 13px;
+  color: var(--ki-text);
+  opacity: 0.95;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ki-actions {
+  display: flex; align-items: center; gap: 10px;
+}
+.ki-iconbtn {
+  width: 42px; height: 42px;
+  border-radius: 999px;
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  background: rgba(15, 23, 42, 0.65);
+  color: var(--ki-emerald);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  text-decoration: none;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.25);
+  transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+}
+.ki-iconbtn:hover {
+  transform: translateY(-1px);
+  background: rgba(16, 185, 129, 0.15);
+  border-color: rgba(16, 185, 129, 0.65);
+}
+.ki-iconbtn svg {
+  width: 22px; height: 22px;
+  fill: currentColor;
+}
+.ki-modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.80);
+  z-index: 2147483640;
+  justify-content: center;
+  align-items: center;
+  backdrop-filter: blur(6px);
+}
+.ki-modal .ki-modal-content {
+  background: var(--ki-card);
+  border: 1px solid rgba(16, 185, 129, 0.55);
+  border-radius: 14px;
+  width: min(860px, calc(100% - 28px));
+  max-height: calc(100vh - 28px);
+  overflow: auto;
+  padding: 22px;
+  color: #e5e7eb;
+  box-shadow: 0 25px 70px rgba(0,0,0,0.55);
+}
+.ki-modal h2 {
+  margin: 0;
+  color: var(--ki-emerald);
+  letter-spacing: 0.5px;
+}
+.ki-modal .ki-close {
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  background: transparent;
+  color: #cbd5e1;
+  border-radius: 10px;
+  width: 40px; height: 40px;
+  cursor: pointer;
+}
+.ki-modal .ki-close:hover {
+  border-color: rgba(16, 185, 129, 0.65);
+  color: var(--ki-emerald);
+}
+.ki-modal .ki-section {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px dashed rgba(148, 163, 184, 0.25);
+}
+.ki-modal .ki-formula {
+  background: rgba(2, 6, 23, 0.75);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-left: 3px solid rgba(16, 185, 129, 0.85);
+  border-radius: 10px;
+  padding: 12px;
+  overflow-x: auto;
+  margin-top: 10px;
+}
+.ki-hidden { display:none !important; }
+</style>
+
+
+<style id="ki-page-patch">
+/* Place existing sticky header under our fixed topbar */
+header { top: var(--ki-topbar-h) !important; }
+/* If any element tried to be clever with z-index, we are cleverer */
+header { z-index: 2147482000 !important; }
+</style>
+<!-- Ein Aussehen fuer alle Werkzeuge. Steht direkt hinter dem letzten
+     <style> dieses Werkzeugs: spaeter in der Reihenfolge, also gewinnt
+     es bei gleicher Spezifitaet - aber so frueh wie moeglich, damit die
+     Seite nicht erst in der alten Farbe erscheint und dann umfaerbt.
+     Am Ende des <body> geladen war genau das zu sehen: Knoepfe mit
+     transition faerbten sichtbar um. Faerbt nur, verschiebt nichts.
+     Siehe werkzeug-stil.css. -->
+<link rel="stylesheet" href="werkzeug-stil.css">
+<!-- Sprachumschaltung Deutsch / Persisch / Englisch. Was nicht im
+     Woerterbuch steht, bleibt Deutsch. Siehe uebersetzung.js. -->
+<script src="woerter.js"></script>
+<script src="woerter/Druckverlustberechnung.js"></script>
+<script src="uebersetzung.js"></script>
+
+
+</head>
+<body>
+
+<div class="ki-topbar" role="navigation" aria-label="KI Engineering Topbar">
+  <div class="ki-left">
+    <div class="ki-badge">KI-Engineering</div>
+    <div class="ki-title">Druckverlustberechnung (Hydraulik)</div>
+  </div>
+  <div class="ki-actions">
+    <!-- Corrected Home Button -->
+    <a class="ki-iconbtn" href="dashboard/" title="Zurück zum KI-Engineering Dashboard" aria-label="Home"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 3 10v11h6v-7h6v7h6V10z"/></svg></a>
+    <!-- Info Button -->
+    <button class="ki-iconbtn" type="button" onclick="kiOpenInfo()" title="Info: Zweck, Nutzung & Formeln" aria-label="Info"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 1 0 .001 20.001A10 10 0 0 0 12 2Zm0 4.75a1.25 1.25 0 1 1 0 2.5 1.25 1.25 0 0 1 0-2.5ZM13 18h-2v-8h2v8Z"/></svg></button>
+  </div>
+</div>
+
+<div class="container">
+    <header>
+        <div class="brand">
+            <h1>ART ENVI <span style="color:#fff">HYDRAULIK</span> <span style="font-size:12px; background:var(--primary); color:#000; padding:2px 6px; border-radius:4px; vertical-align:middle;">ULTIMATE</span></h1>
+            <span>Erweiterte Berechnung nach Dubbel / Steinmüller</span>
+        </div>
+        <div>
+            <button class="btn btn-ghost" onclick="openFormulaModal()"><i class="fas fa-square-root-alt"></i> Formeln anzeigen</button>
+            <button class="btn btn-ghost" onclick="exportToExcel()"><i class="fas fa-file-excel"></i> Export Excel (Detail)</button>
+        </div>
+    </header>
+
+    <div class="grid">
+        
+        <!-- LEFT PANEL: SETTINGS -->
+        <div class="left-col">
+            <div class="card">
+                <h3><i class="fas fa-sliders-h"></i> Prozessdaten</h3>
+                
+                <div class="row">
+                    <div style="grid-column: span 2;">
+                        <label>Fluid (Medium)</label>
+                        <select id="fluidType" onchange="updateFluid()">
+                            <option value="water20">Wasser (20°C)</option>
+                            <option value="water80">Wasser (80°C)</option>
+                            <option value="oil">Hydrauliköl (ISO 46)</option>
+                            <option value="diesel">Diesel / Heizöl</option>
+                            <option value="air">Druckluft (7 bar)</option>
+                            <option value="gas">Erdgas</option>
+                            <option value="steam">Sattdampf (2 bar)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div>
+                        <label>Dichte (kg/m³)</label>
+                        <input type="number" id="density" value="998" readonly>
+                    </div>
+                    <div>
+                        <label>Viskosität (mPa·s)</label>
+                        <input type="number" id="viscosity" value="1.002" readonly>
+                    </div>
+                </div>
+
+                <hr style="border-color:#333; opacity:0.5; margin:15px 0;">
+
+                <div class="row">
+                    <div>
+                        <label>Volumenstrom (Q)</label>
+                        <input type="number" id="flowRate" value="10" oninput="calculate()">
+                    </div>
+                    <div>
+                        <label>Einheit</label>
+                        <select id="flowUnit" onchange="calculate()">
+                            <option value="m3h">m³/h</option>
+                            <option value="lpm">L/min</option>
+                            <option value="lps">L/s</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div style="margin-top:10px;">
+                    <label>Anwendungsfall (Grenzwerte nach Sheet 7)</label>
+                    <select id="appCase" onchange="calculate()">
+                        <optgroup label="Wasser">
+                            <option value="w_suc_pump">Saugleitung Kreiselpumpe (1.0 - 1.5 m/s)</option>
+                            <option value="w_suc_gen">Saugleitung Allgemein (0.5 - 2.0 m/s)</option>
+                            <option value="w_p_pump">Druckleitung Pumpe (2.5 - 3.0 m/s)</option>
+                            <option value="w_p_perm">Druckleitung Dauerbetrieb (1.5 - 5.0 m/s)</option>
+                            <option value="w_heat">Heizung / Sanitär (1.0 - 2.0 m/s)</option>
+                        </optgroup>
+                        <optgroup label="Öl / Brennstoff">
+                            <option value="oil_p">Schweröl Druckleitung (1.0 - 2.0 m/s)</option>
+                            <option value="oil_s">Schweröl Saugleitung (0.5 - 1.0 m/s)</option>
+                        </optgroup>
+                        <optgroup label="Gas / Dampf">
+                            <option value="air_net">Druckluft Netz (2 - 10 m/s)</option>
+                            <option value="gas_low">Gas Niederdruck (5 - 10 m/s)</option>
+                            <option value="steam_sat">Sattdampf (15 - 30 m/s)</option>
+                        </optgroup>
+                    </select>
+                </div>
+            </div>
+
+            <!-- RESULTS SUMMARY -->
+            <div class="card">
+                <h3><i class="fas fa-tachometer-alt"></i> Gesamtergebnis</h3>
+                
+                <div class="res-big">
+                    <div style="font-size:11px; color:#94a3b8; margin-bottom:5px;">GESAMTDRUCKVERLUST</div>
+                    <span class="res-val" id="resTotalBar">0.00</span> <span class="res-unit">bar</span>
+                    <div style="margin-top:5px; color:#94a3b8; font-size:13px;">
+                        (<span id="resTotalPa">0</span> Pascal)
+                    </div>
+                </div>
+
+                <!-- ALERTS -->
+                <div id="mainAlert" class="alert"></div>
+            </div>
+        </div>
+
+        <!-- RIGHT PANEL: SECTIONS & CHARTS -->
+        <div class="right-col">
+            
+            <!-- CHARTS -->
+            <div class="card">
+                <h3><i class="fas fa-chart-line"></i> Druckverlauf (inkl. Armaturen)</h3>
+                <div style="height:250px; width:100%;">
+                    <canvas id="pressureProfileChart"></canvas>
+                </div>
+            </div>
+
+            <!-- SECTIONS MANAGER -->
+            <div class="card">
+                <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); padding-bottom:10px; margin-bottom:15px;">
+                    <h3 style="border:none; margin:0; padding:0;"><i class="fas fa-project-diagram"></i> Rohrleitungsabschnitte</h3>
+                    <button class="btn btn-ghost" style="font-size:12px; padding:6px 12px;" onclick="addSection()"><i class="fas fa-plus"></i> Abschnitt hinzufügen</button>
+                </div>
+
+                <div id="sectionsContainer">
+                    <!-- Dynamic Sections -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- FORMULA MODAL -->
+<div id="formulaModal" class="modal" onclick="if(event.target==this) this.style.display='none'">
+    <div class="modal-content">
+        <div style="display:flex; justify-content:space-between;">
+            <h2 style="color:var(--primary); margin-top:0;">Berechnungsgrundlagen</h2>
+            <button class="btn-ghost" style="border:none; font-size:20px;" onclick="document.getElementById('formulaModal').style.display='none'">&times;</button>
+        </div>
+        <p>Das Tool berechnet den Druckverlust basierend auf der erweiterten Bernoulli-Gleichung.</p>
+        <h4>1. Gesamtdruckverlust</h4>
+        <div class="formula-box">$$ \Delta P_{ges} = \sum (\Delta P_{Rohr} + \Delta P_{Armatur} + \Delta P_{Höhe}) $$</div>
+        <h4>2. Rohrreibung (Darcy-Weisbach)</h4>
+        <div class="formula-box">$$ \Delta P_{Rohr} = \lambda \cdot \frac{L}{d} \cdot \frac{\rho}{2} v^2 $$</div>
+        <h4>3. Einzelverluste (Armaturen)</h4>
+        <div class="formula-box">$$ \Delta P_{Armatur} = \zeta \cdot \frac{\rho}{2} v^2 $$</div>
+        <p><small>K-Wert (\( \zeta \)) ist DN-abhängig.</small></p>
+    </div>
+</div>
+
+<!-- HELP MODAL -->
+<div id="helpModal" class="modal" onclick="if(event.target==this) this.style.display='none'">
+    <div class="modal-content">
+        <div style="display:flex; justify-content:space-between;">
+            <h2 style="color:var(--primary); margin-top:0;">Hilfe & Anleitung</h2>
+            <button class="btn-ghost" style="border:none; font-size:20px;" onclick="document.getElementById('helpModal').style.display='none'">&times;</button>
+        </div>
+        <p><strong>Verwendung:</strong></p>
+        <ol style="line-height:1.8; color:#cbd5e1;">
+            <li>Wählen Sie Fluid und Durchfluss.</li>
+            <li>Fügen Sie Rohrabschnitte hinzu (Länge, DN, Höhe).</li>
+            <li>Fügen Sie Armaturen hinzu. Die Ergebnisse werden in Echtzeit berechnet.</li>
+            <li>Das Diagramm zeigt den Druckverlustverlauf: Schräge Linien sind Rohre, vertikale Sprünge sind Armaturen.</li>
+            <li>Exportieren Sie die Ergebnisse nach Excel.</li>
+        </ol>
+    </div>
+</div>
+
+<script>
+    // --- DATABASE ---
+    const fluids = {
+        'water20': { rho: 998, mu: 1.002 },
+        'water80': { rho: 971, mu: 0.355 },
+        'oil':     { rho: 890, mu: 40.0 },
+        'diesel':  { rho: 830, mu: 3.0 },
+        'air':     { rho: 1.2, mu: 0.018 },
+        'gas':     { rho: 0.7, mu: 0.011 },
+        'steam':   { rho: 2.5, mu: 0.013 }
+    };
+
+    const velocityLimits = {
+        'w_suc_pump': { min: 1.0, max: 1.5, label: "Wasser Saug (Pumpe)" },
+        'w_suc_gen':  { min: 0.5, max: 2.0, label: "Wasser Saug (Allg.)" },
+        'w_p_pump':   { min: 2.5, max: 3.0, label: "Wasser Druck (Pumpe)" },
+        'w_p_perm':   { min: 1.5, max: 5.0, label: "Wasser Druck (Dauer)" },
+        'w_heat':     { min: 1.0, max: 2.0, label: "Heizung" },
+        'oil_p':      { min: 1.0, max: 2.0, label: "Öl Druck" },
+        'oil_s':      { min: 0.5, max: 1.0, label: "Öl Saug" },
+        'air_net':    { min: 2.0, max: 10.0, label: "Luft Netz" },
+        'gas_low':    { min: 5.0, max: 10.0, label: "Gas Niederdruck" },
+        'steam_sat':  { min: 15.0, max: 30.0, label: "Sattdampf" }
+    };
+
+    // Absolute Rauheit in mm. Im Code stand frueher fest eps = 0,045 mm, also
+// neues Handelsstahlrohr - fuer jedes Rohr, auch fuer Kunststoff und fuer
+// eine zwanzig Jahre alte, verkrustete Leitung. Der Unterschied ist nicht
+// klein: bei DN100 mit 2 m/s auf 100 m sind das 0,371 bar gegen 0,975 bar,
+// also das Zweieinhalbfache. Wer danach die Pumpe auswaehlt, waehlt sie zu
+// klein - und zu klein ist bei der Pumpe die Richtung, die im Betrieb weh tut.
+//
+// Die Werte sind die ueblichen Tabellenwerte der Rohrleitungstechnik. Sie
+// sind Anhaltswerte, keine Messung an Ihrem Rohr: das Feld daneben ist
+// darum frei beschreibbar, und was dort steht, gilt.
+const RAUHEIT = {
+    kunststoff: { name: "Kunststoff PE/PVC, glatt",        eps: 0.007 },
+    edelstahl:  { name: "Edelstahl, gezogen",              eps: 0.015 },
+    kupfer:     { name: "Kupfer, gezogen",                 eps: 0.0015 },
+    stahl_neu:  { name: "Stahl, neu, nahtlos",             eps: 0.045 },
+    stahl_verz: { name: "Stahl, verzinkt",                 eps: 0.15 },
+    guss:       { name: "Gusseisen, neu",                  eps: 0.25 },
+    korr_leicht:{ name: "Stahl, leicht korrodiert",        eps: 0.5 },
+    korr_stark: { name: "Stahl, stark korrodiert",         eps: 1.0 },
+    verkrustet: { name: "verkrustet / Ablagerungen",       eps: 2.0 }
+};
+
+// Rohrreibungszahl nach Colebrook-White, exakt geloest.
+//
+// Frueher stand hier die Naeherung nach Swamee-Jain. Die ist nicht falsch -
+// im Arbeitsbereich liegt sie hoechstens 3 Prozent daneben, gemessen gegen
+// die iterative Loesung -, aber die Iteration kostet im Browser nichts und
+// laesst die Frage gar nicht erst aufkommen. Swamee-Jain bleibt als
+// Startwert; damit sind es zwei bis drei Durchlaeufe.
+//
+//   1/sqrt(lambda) = -2 * log10( eps/(3,7*d) + 2,51/(Re*sqrt(lambda)) )
+function rohrreibung(Re, epsD) {
+    if (!(Re > 0)) return 0;
+    if (Re < 2300) return 64 / Re;      // laminar, Hagen-Poiseuille
+    let x = 0.25 / Math.pow(Math.log10(epsD/3.7 + 5.74/Math.pow(Re, 0.9)), 2);
+    for (let i = 0; i < 40; i++) {
+        const neu = Math.pow(-2 * Math.log10(epsD/3.7 + 2.51/(Re*Math.sqrt(x))), -2);
+        if (Math.abs(neu - x) < 1e-12) return neu;
+        x = neu;
+    }
+    return x;
+}
+
+// Der Werkstoff setzt die Rauheit, das Feld daneben darf sie ueberschreiben.
+function werkstoffWechsel(id) {
+    const sel = document.getElementById(`mat-${id}`);
+    const feld = document.getElementById(`eps-${id}`);
+    if (sel && feld) feld.value = sel.value;
+    calculate();
+}
+const pipeSizes = {
+        '15': 15.8, '20': 20.9, '25': 26.6, '32': 35.1, '40': 40.9,
+        '50': 52.5, '65': 62.7, '80': 77.9, '100': 102.3, 
+        '150': 154.1, '200': 202.7, '250': 254.5, '300': 303.2, '400': 395.0
+    };
+
+    // Die Widerstandsbeiwerte standen hier als eigene Tabelle - und in
+    // Petrochem_Hydraulic_Analysis.html stand eine zweite, mit anderen
+    // Zahlen fuer dieselben Formstuecke. Jetzt gibt es nur noch
+    // formstuecke.js, und eine Pruefung haelt beide Werkzeuge dagegen.
+    const fittingsDB = FORMSTUECKE.WERTE;
+
+    let sectionCount = 0;
+    let chartSystem = null;
+
+    // --- INIT ---
+    window.onload = function() {
+        updateFluid();
+        addSection();
+        initChart();
+        setTimeout(calculate, 100);
+    };
+
+    function openFormulaModal() { document.getElementById('formulaModal').style.display = 'flex'; }
+    function openHelpModal() { document.getElementById('helpModal').style.display = 'flex'; }
+
+    function updateFluid() {
+        const type = document.getElementById('fluidType').value;
+        document.getElementById('density').value = fluids[type].rho;
+        document.getElementById('viscosity').value = fluids[type].mu;
+        calculate();
+    }
+
+    function getZeta(key, dn) {
+        return FORMSTUECKE.zeta(key, dn);
+    }
+
+    // --- SECTIONS ---
+    function addSection() {
+        sectionCount++;
+        const id = sectionCount;
+        const html = `
+        <div class="section-item" id="sec-${id}">
+            <div class="section-left">
+                <div class="section-header">
+                    <span style="font-weight:bold; color:var(--primary);">Abschnitt #${id}</span>
+                    <div>
+                        <span id="res-sec-drop-${id}" style="margin-right:15px; font-weight:bold;">0.00 bar</span>
+                        <button class="btn-danger" style="border:none; border-radius:4px; cursor:pointer;" onclick="removeSection(${id})"><i class="fas fa-trash"></i></button>
+                    </div>
+                </div>
+                <div class="row">
+                    <div>
+                        <label>Nennweite (DN)</label>
+                        <select id="dn-${id}" onchange="updateDia(${id}); calculate();">
+                            ${Object.keys(pipeSizes).map(k => `<option value="${k}" ${k==='50'?'selected':''}>DN ${k}</option>`).join('')}
+                        </select>
+                    </div>
+                    <div>
+                        <label>ID (mm)</label>
+                        <input type="number" id="di-${id}" value="52.5" readonly>
+                    </div>
+                </div>
+                <div class="row">
+                    <div>
+                        <label>Länge (m)</label>
+                        <input type="number" id="len-${id}" value="10" oninput="calculate()">
+                    </div>
+                    <div>
+                        <label>Höhe (m)</label>
+                        <input type="number" id="geo-${id}" value="0" placeholder="Aufwärts (+)" oninput="calculate()">
+                    </div>
+                </div>
+                <div class="row">
+                    <div>
+                        <label>Werkstoff / Zustand</label>
+                        <select id="mat-${id}" onchange="werkstoffWechsel(${id})">
+                            ${Object.entries(RAUHEIT).map(([k,w]) => `<option value="${w.eps}" ${k==='stahl_neu'?'selected':''}>${w.name}</option>`).join('')}
+                        </select>
+                    </div>
+                    <div>
+                        <label>Rauheit &epsilon; (mm)</label>
+                        <input type="number" id="eps-${id}" value="0.045" step="0.001" min="0" oninput="calculate()">
+                    </div>
+                </div>
+                <div style="margin-top:10px; border-top:1px solid rgba(255,255,255,0.1); padding-top:10px;">
+                    <label>Armaturen hinzufügen</label>
+                    <div style="display:flex; gap:5px;">
+                        <input type="number" id="fit-qty-${id}" value="1" style="width:60px;" min="1">
+                        <select id="fit-type-${id}">
+                            ${Object.keys(fittingsDB).map(k => `<option value="${k}">${fittingsDB[k].name}</option>`).join('')}
+                        </select>
+                        <button class="btn btn-ghost" style="padding:5px 10px;" onclick="addFitting(${id})">Hinzufügen</button>
+                    </div>
+                    <div id="fits-list-${id}" class="fit-list"></div>
+                </div>
+            </div>
+            
+            <div class="section-right">
+                <div class="stat-row">
+                    <span class="stat-lbl">Geschwindigkeit</span>
+                    <span class="stat-val" id="stat-vel-${id}">-</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-lbl">Reynolds (Re)</span>
+                    <span class="stat-val" id="stat-re-${id}">-</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-lbl">Strömungsart</span>
+                    <span class="stat-val" id="stat-regime-${id}">-</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-lbl">Rohrreibungszahl (λ)</span>
+                    <span class="stat-val" id="stat-f-${id}">-</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-lbl">Verlusthöhe (m)</span>
+                    <span class="stat-val" id="stat-head-${id}">-</span>
+                </div>
+            </div>
+        </div>`;
+        document.getElementById('sectionsContainer').insertAdjacentHTML('beforeend', html);
+        calculate();
+    }
+
+    function removeSection(id) {
+        if(document.querySelectorAll('.section-item').length <= 1) {
+            alert("Mindestens ein Abschnitt erforderlich!");
+            return;
+        }
+        document.getElementById(`sec-${id}`).remove();
+        calculate();
+    }
+
+    function updateDia(id) {
+        const dn = document.getElementById(`dn-${id}`).value;
+        document.getElementById(`di-${id}`).value = pipeSizes[dn];
+    }
+
+    function addFitting(secId) {
+        const key = document.getElementById(`fit-type-${secId}`).value;
+        const qty = document.getElementById(`fit-qty-${secId}`).value;
+        const tagId = `fit-${secId}-${Date.now()}`;
+        const html = `
+        <div class="fit-tag" id="${tagId}" data-key="${key}" data-qty="${qty}">
+            <span>${qty}x ${fittingsDB[key].name}</span>
+            <span class="zeta-disp" style="color:#aaa; font-size:10px;">(ζ=?)</span>
+            <i class="fas fa-times" style="cursor:pointer; margin-left:5px; color:var(--danger);" onclick="document.getElementById('${tagId}').remove(); calculate();"></i>
+        </div>`;
+        document.getElementById(`fits-list-${secId}`).insertAdjacentHTML('beforeend', html);
+        calculate();
+    }
+
+    // --- CALCULATION ---
+    function calculate() {
+        try {
+            const Q_raw = parseFloat(document.getElementById('flowRate').value) || 0;
+            const unit = document.getElementById('flowUnit').value;
+            const rho = parseFloat(document.getElementById('density').value) || 998;
+            const mu = (parseFloat(document.getElementById('viscosity').value) || 1.002) / 1000;
+
+            let Q = 0;
+            if(unit === 'm3h') Q = Q_raw/3600;
+            else if(unit === 'lpm') Q = Q_raw/60000;
+            else Q = Q_raw/1000;
+
+            let totalP = 0;
+            let maxV_System = 0;
+            
+            let cumulativeLen = 0;
+            let cumulativeP = 0;
+            const chartData = [{x: 0, y: 0}];
+
+            document.querySelectorAll('.section-item').forEach(sec => {
+                const id = sec.id.split('-')[1];
+                const dn = document.getElementById(`dn-${id}`).value;
+                const d = (parseFloat(document.getElementById(`di-${id}`).value) || 50) / 1000;
+                const L = parseFloat(document.getElementById(`len-${id}`).value) || 0;
+                const dz = parseFloat(document.getElementById(`geo-${id}`).value) || 0;
+
+                // 1. Calculations
+                const A = Math.PI * Math.pow(d/2, 2);
+                const v = Q / A;
+                if(v > maxV_System) maxV_System = v;
+
+                const Re = (rho * v * d) / mu;
+                // Rauheit je Abschnitt, in mm eingegeben.
+                const epsFeld = document.getElementById(`eps-${id}`);
+                const eps = (parseFloat(epsFeld && epsFeld.value) || 0) / 1000;
+                const lambda = rohrreibung(Re, eps / d);
+                const regime = Re < 2300 ? "Laminar" : (Re > 4000 ? "Turbulent" : "Übergang");
+
+                // Fittings
+                let sumZeta = 0;
+                sec.querySelectorAll('.fit-tag').forEach(tag => {
+                    const key = tag.getAttribute('data-key');
+                    const qty = parseFloat(tag.getAttribute('data-qty')) || 0;
+                    const k = getZeta(key, dn);
+                    tag.querySelector('.zeta-disp').innerText = `(ζ=${k})`;
+                    sumZeta += qty * k;
+                });
+
+                // Pressure Drops (Pascals)
+                const dynP = 0.5 * rho * v * v;
+                const dP_pipe = lambda * (L/d) * dynP;
+                const dP_fit = sumZeta * dynP;
+                const dP_geo = rho * 9.81 * dz;
+
+                const dP_sec = dP_pipe + dP_fit + dP_geo;
+                const dP_bar = dP_sec / 100000;
+                const headLossM = dP_sec / (rho * 9.81);
+                
+                totalP += dP_sec;
+
+                // 2. Update Per-Section Statistics
+                document.getElementById(`res-sec-drop-${id}`).innerText = dP_bar.toFixed(3) + " bar";
+                document.getElementById(`stat-vel-${id}`).innerText = v.toFixed(2) + " m/s";
+                document.getElementById(`stat-re-${id}`).innerText = Re.toFixed(0);
+                document.getElementById(`stat-regime-${id}`).innerText = regime;
+                document.getElementById(`stat-f-${id}`).innerText = lambda.toFixed(4);
+                document.getElementById(`stat-head-${id}`).innerText = headLossM.toFixed(2) + " m";
+
+                // 3. Update Chart Logic (Step Chart)
+                const bar_pipe = dP_pipe / 100000;
+                const bar_geo = dP_geo / 100000;
+                const bar_fit = dP_fit / 100000;
+
+                // Move along pipe length (Pipe Friction + Geo)
+                cumulativeP += (bar_pipe + bar_geo);
+                cumulativeLen += L;
+                chartData.push({x: cumulativeLen, y: cumulativeP});
+
+                // Vertical Jump for Fittings (visualized at end of section)
+                if(bar_fit > 0) {
+                    cumulativeP += bar_fit;
+                    chartData.push({x: cumulativeLen, y: cumulativeP});
+                }
+            });
+
+            const barTotal = totalP / 100000;
+            document.getElementById('resTotalBar').innerText = barTotal.toFixed(4);
+            document.getElementById('resTotalPa').innerText = totalP.toFixed(0);
+
+            checkAlerts(maxV_System);
+            updateChartProfile(chartData);
+
+        } catch(e) {
+            console.error(e);
+        }
+    }
+
+    function checkAlerts(v) {
+        const app = document.getElementById('appCase').value;
+        const lim = velocityLimits[app];
+        const box = document.getElementById('mainAlert');
+        box.style.display = 'flex';
+        box.className = 'alert';
+        
+        if(v < lim.min) {
+            box.classList.add('alert-warn');
+            box.innerHTML = `<i class="fas fa-exclamation-triangle"></i> <span>Zu langsam: h\u00f6chste Geschwindigkeit</span> <b>${v.toFixed(2)} m/s</b><span>, gefordert sind mindestens</span> <b>${lim.min} m/s</b>`;
+        } else if (v > lim.max) {
+            box.classList.add('alert-err');
+            box.innerHTML = `<i class="fas fa-exclamation-circle"></i> <span>Zu schnell: h\u00f6chste Geschwindigkeit</span> <b>${v.toFixed(2)} m/s</b><span>, zul\u00e4ssig sind h\u00f6chstens</span> <b>${lim.max} m/s</b>`;
+        } else {
+            box.classList.add('alert-ok');
+            box.innerHTML = `<i class="fas fa-check-circle"></i> <span>Geschwindigkeit im Bereich, h\u00f6chstens</span> <b>${v.toFixed(2)} m/s</b>`;
+        }
+    }
+
+    // --- CHART ---
+    function initChart() {
+        const ctx = document.getElementById('pressureProfileChart').getContext('2d');
+        chartSystem = new Chart(ctx, {
+            type: 'line',
+            data: {
+                datasets: [{
+                    label: 'Druckverlauf (bar)',
+                    data: [],
+                    borderColor: '#06b6d4',
+                    backgroundColor: 'rgba(6, 182, 212, 0.1)',
+                    fill: true,
+                    tension: 0.1, // Low tension for sharp steps
+                    pointRadius: 3
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: { type: 'linear', grid: { color: '#333' }, title: {display:true, text:'Rohrlänge (m)', color:'#999'}, ticks: { color: '#aaa' } },
+                    y: { grid: { color: '#333' }, title: {display:true, text:'Druckverlust kumulativ (bar)', color:'#999'}, ticks: { color: '#aaa' } }
+                },
+                plugins: { legend: { labels: { color: '#fff' } } }
+            }
+        });
+    }
+
+    function updateChartProfile(dataPoints) {
+        if(!chartSystem) return;
+        chartSystem.data.datasets[0].data = dataPoints;
+        chartSystem.update();
+    }
+
+    // --- EXPORT ---
+    function exportToExcel() {
+        calculate(); 
+        const wb = XLSX.utils.book_new();
+        const fluid = document.getElementById('fluidType').options[document.getElementById('fluidType').selectedIndex].text;
+        const totalDrop = document.getElementById('resTotalBar').innerText;
+        
+        const data = [
+            ["ART ENVI HYDRAULIK - DETAILBERICHT"],
+            ["Datum", new Date().toLocaleString()],
+            ["Medium", fluid],
+            ["Dichte", document.getElementById('density').value + " kg/m³"],
+            ["Gesamtdruckverlust", totalDrop + " bar"],
+            [""],
+            ["DETAILS PRO ABSCHNITT"],
+            [
+                "ID", "Nennweite", "Länge (m)", "Höhe (m)", "Rauheit (mm)", "dP (bar)", 
+                "Geschw. (m/s)", "Re", "Art", "Lambda", "Head Loss (m)",
+                "Armaturen Details"
+            ]
+        ];
+
+        document.querySelectorAll('.section-item').forEach(sec => {
+            const id = sec.id.split('-')[1];
+            const dn = document.getElementById(`dn-${id}`).value;
+            const len = document.getElementById(`len-${id}`).value;
+            const geo = document.getElementById(`geo-${id}`).value;
+            const eps = document.getElementById(`eps-${id}`).value;
+            const res = document.getElementById(`res-sec-drop-${id}`).innerText;
+            
+            // Stats
+            const v = document.getElementById(`stat-vel-${id}`).innerText;
+            const re = document.getElementById(`stat-re-${id}`).innerText;
+            const reg = document.getElementById(`stat-regime-${id}`).innerText;
+            const lam = document.getElementById(`stat-f-${id}`).innerText;
+            const hl = document.getElementById(`stat-head-${id}`).innerText;
+
+            let fitStr = "";
+            sec.querySelectorAll('.fit-tag').forEach(tag => {
+                const k = tag.getAttribute('data-key');
+                const q = tag.getAttribute('data-qty');
+                const z = getZeta(k, dn);
+                fitStr += `[${q}x ${fittingsDB[k].name} (ζ=${z})] `;
+            });
+            if(fitStr === "") fitStr = "-";
+
+            data.push([
+                `Abschnitt ${id}`, `DN ${dn}`, len, geo, eps, res, 
+                v, re, reg, lam, hl,
+                fitStr
+            ]);
+        });
+
+        const ws = XLSX.utils.aoa_to_sheet(data);
+        ws['!cols'] = [{wch:15}, {wch:10}, {wch:10}, {wch:10}, {wch:15}, {wch:12}, {wch:12}, {wch:12}, {wch:12}, {wch:15}, {wch:60}];
+        XLSX.utils.book_append_sheet(wb, ws, "Hydraulik_Calc");
+        XLSX.writeFile(wb, "Hydraulik_Detail_Report.xlsx");
+    }
+
+</script>
+
+
+<div id="kiInfoModal" class="ki-modal" onclick="if(event.target===this) kiCloseInfo()">
+  <div class="ki-modal-content" role="dialog" aria-modal="true" aria-label="Info: Druckverlustberechnung">
+    <div style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+      <h2>Info: Druckverlustberechnung (Hydraulik)</h2>
+      <button class="ki-close" type="button" onclick="kiCloseInfo()" aria-label="Schließen">✕</button>
+    </div>
+
+    <div class="ki-section">
+      <h3 style="margin:0; color:#cbd5e1; font-size:13px;">Anwendung dieser Seite</h3>
+      <p style="margin:10px 0 0; line-height:1.7; color:#cbd5e1;">
+        Dieses Tool berechnet den <b>Gesamtdruckverlust</b> in einer Rohrleitung (Rohrreibung + lokale Verluste durch Armaturen + Höhenunterschied).
+        Die Ausgabe erfolgt in <b>bar</b> und <b>Pa</b>, und das Druckverlustprofil wird entlang der Strecke im Diagramm dargestellt.
+      </p>
+    </div>
+
+    <div class="ki-section">
+      <h3 style="margin:0; color:#cbd5e1; font-size:13px;">Nutzung</h3>
+      <ol style="margin:10px 0 0; line-height:1.9; color:#cbd5e1;">
+        <li>Stellen Sie Medium/Fluid und Durchfluss (Q) ein.</li>
+        <li>Geben Sie für jeden Abschnitt (Abschnitt) DN, Länge (L) und Höhendifferenz (Δz) ein.</li>
+        <li>Fügen Sie Armaturen/Fittings für jeden Abschnitt hinzu.</li>
+        <li>Die Ergebnisse werden in Echtzeit aktualisiert: Gesamtdruckverlust, Verlust pro Abschnitt, Geschwindigkeit, Re und λ.</li>
+      </ol>
+      <p style="margin:10px 0 0; color:#94a3b8; font-size:12px;">
+        Hinweis: Wenn keine Internetverbindung besteht, werden CDN-Bibliotheken (Chart.js / XLSX / MathJax) möglicherweise nicht geladen. Die Seite öffnet sich, aber Diagramme/Excel/Formeln funktionieren möglicherweise nicht.
+      </p>
+    </div>
+
+    <div class="ki-section">
+      <h3 style="margin:0; color:#cbd5e1; font-size:13px;">Formeln und Berechnungslogik (entspricht dem Code dieser Datei)</h3>
+
+      <div class="ki-formula">
+        <div><b>Durchflussumrechnung:</b></div>
+        <div style="margin-top:8px;">Wenn Einheit m³/h: \(Q = Q_{raw}/3600\)</div>
+        <div>Wenn L/min: \(Q = Q_{raw}/60000\)</div>
+        <div>Wenn L/s: \(Q = Q_{raw}/1000\)</div>
+      </div>
+
+      <div class="ki-formula">
+        <div><b>Fläche und Geschwindigkeit:</b></div>
+        <div style="margin-top:8px;">\(A = \pi \left(\frac{d}2\right)^2\)</div>
+        <div>\(v = \frac{Q}{A}\)</div>
+      </div>
+
+      <div class="ki-formula">
+        <div><b>Reynolds-Zahl:</b></div>
+        <div style="margin-top:8px;">Im Code wird die Viskosität von mPa·s in Pa·s umgerechnet: \(\mu = \mu_{mPa\cdot s}/1000\)</div>
+        <div>\(Re = \frac{\rho v d}{\mu}\)</div>
+      </div>
+
+      <div class="ki-formula">
+        <div><b>Reibungsbeiwert (λ):</b></div>
+        <div style="margin-top:8px;">Für laminare Strömung: \(\lambda = \frac{64}{Re}\)</div>
+        <div>Für Re&gt;2300 (turbulent/Übergang) wird im Code die explizite Formel verwendet:</div>
+        <div style="margin-top:6px;">\(\lambda = \frac{0.25}{\left[\log_{10}\left(\frac{\varepsilon}{3.7d} + \frac{5.74}{Re^{0.9}}\right)\right]^2}\)</div>
+        <div style="margin-top:6px;">Gelöst wird Colebrook-White iterativ: \(\frac{1}{\sqrt{\lambda}} = -2\log_{10}\left(\frac{\varepsilon}{3.7d} + \frac{2.51}{Re\sqrt{\lambda}}\right)\)</div>
+        <div style="margin-top:6px; color:#94a3b8; font-size:12px;">Die Formel darüber ist die Näherung nach Swamee-Jain; sie dient nur noch als Startwert. \(\varepsilon\) wird je Abschnitt eingegeben - Werkstoff und Zustand entscheiden, nicht das Werkzeug.</div>
+        <div style="margin-top:6px; color:#94a3b8; font-size:12px;">Zwischen Re 2300 und 4000 wird mit der turbulenten Formel gerechnet. Das ist üblich, aber der Übergangsbereich ist von Natur aus unsicher; die Zeile "Regime" sagt es an.</div>
+      </div>
+
+      <div class="ki-formula">
+        <div><b>Dynamischer Druck:</b></div>
+        <div style="margin-top:8px;">\(p_{dyn} = \frac{1}{2}\rho v^2\)</div>
+      </div>
+
+      <div class="ki-formula">
+        <div><b>Druckverlust pro Abschnitt:</b></div>
+        <div style="margin-top:8px;">Rohrreibung (Darcy-Weisbach): \(\Delta p_{pipe} = \lambda \frac{L}{d} p_{dyn}\)</div>
+        <div>Lokale Verluste (Armaturen): \(\Delta p_{fit} = \left(\sum \zeta\right) p_{dyn}\)</div>
+        <div>Verlust/Gewinn durch Höhe: \(\Delta p_{geo} = \rho g \Delta z\) mit \(g=9.81\)</div>
+        <div style="margin-top:6px;">\(\Delta p_{sec} = \Delta p_{pipe} + \Delta p_{fit} + \Delta p_{geo}\)</div>
+      </div>
+
+      <div class="ki-formula">
+        <div><b>Einheitenumrechnung:</b></div>
+        <div style="margin-top:8px;">\(\Delta p_{bar} = \Delta p_{Pa} / 100000\)</div>
+      </div>
+
+      <div class="ki-formula">
+        <div><b>ζ für Armaturen:</b></div>
+        <div style="margin-top:8px;">Der Code enthält eine interne Datenbank (fittingsDB). Für einige Artikel ist ζ fest, für andere ist es DN-abhängig und der nächstgelegene DN wird aus der Tabelle ausgewählt.</div>
+      </div>
+
+      <p style="margin:12px 0 0; color:#94a3b8; font-size:12px;">
+        Diese Seite ist ein Ingenieurtool, kein Normdokument. Wenn Sie es an Normen/Projektbedingungen anpassen möchten, müssen Sie die Datenbank für Rauheit/Armaturen/Strömungsbeziehungen entsprechend den tatsächlichen Spezifikationen konfigurieren.
+      </p>
+    </div>
+  </div>
+</div>
+
+
+
+<script id="ki-global-topbar-js">
+(function() {
+  window.kiGoHome = function(ev) {
+    // Der Verweis im href fuehrt zum Dashboard nebenan, es braucht keinen
+    // Umweg. Frueher zeigte er auf eine file://-Adresse des Netzlaufwerks,
+    // mit einer Ersatzdatei, die es nicht gibt.
+    return true;
+  };
+
+  window.kiOpenInfo = function() {
+    const m = document.getElementById('kiInfoModal');
+    if (m) m.style.display = 'flex';
+    if (window.MathJax && window.MathJax.typeset) {
+      try { window.MathJax.typeset(); } catch(e) {}
+    }
+  };
+
+  window.kiCloseInfo = function() {
+    const m = document.getElementById('kiInfoModal');
+    if (m) m.style.display = 'none';
+  };
+})();
+</script>
+
+
+<script id="ki-page-js-patch">
+(function(){
+  // Make chart use the same emerald accent (without rewriting your whole chart code).
+  function hexToRgba(hex, a){
+    try{
+      hex = (hex||'').trim();
+      if(!hex) return `rgba(16,185,129,${a})`;
+      if(hex.startsWith('rgb')) return hex; // already rgb/rgba
+      if(hex[0]==='#') hex = hex.slice(1);
+      if(hex.length===3) hex = hex.split('').map(c=>c+c).join('');
+      const r = parseInt(hex.slice(0,2),16);
+      const g = parseInt(hex.slice(2,4),16);
+      const b = parseInt(hex.slice(4,6),16);
+      return `rgba(${r},${g},${b},${a})`;
+    }catch(e){
+      return `rgba(16,185,129,${a})`;
+    }
+  }
+
+  const _initChart = window.initChart;
+  if (typeof _initChart === 'function') {
+    window.initChart = function(){
+      _initChart.apply(this, arguments);
+      try{
+        const p = getComputedStyle(document.documentElement).getPropertyValue('--primary').trim() || '#10b981';
+        if(window.chartSystem && window.chartSystem.data && window.chartSystem.data.datasets && window.chartSystem.data.datasets[0]){
+          window.chartSystem.data.datasets[0].borderColor = p;
+          window.chartSystem.data.datasets[0].backgroundColor = hexToRgba(p, 0.12);
+          window.chartSystem.update();
+        }
+      }catch(e){}
+    };
+  }
+
+  // CDN/offline sanity checks: show a small warning instead of silently failing.
+  window.addEventListener('load', function(){
+    if(!window.Chart){
+      console.warn('Chart.js missing (offline/CDN blocked).');
+    }
+    if(!window.XLSX){
+      console.warn('XLSX missing (offline/CDN blocked). Excel export will not work.');
+    }
+    if(!window.MathJax){
+      console.warn('MathJax missing (offline/CDN blocked). Formulas will not render.');
+    }
+  });
+})();
+</script>
+
+
+<!-- KI-Helfer: ordnet das Ergebnis ein, rechnet es nicht. Der
+     Schluessel steht nicht hier, sondern hinter der Edge Function
+     werkzeug-assistent. Siehe ki-helfer.js. -->
+<script src="ki-helfer.js"></script>
+<script>
+  KI_HELFER.einbauen({
+    werkzeug: "Hydraulik Calculator",
+    modus: "deutung",
+    knopf: "Ergebnis einordnen",
+    titel: "Einordnung des Ergebnisses",
+    platzhalter: "Frage dazu, optional. Zum Beispiel: welche Stellschraube zuerst?",
+    ergebnisse: {
+      "resTotalBar": "Druckverlust gesamt in bar",
+      "resTotalPa": "Druckverlust gesamt in Pa"
+    }
+  });
+</script>
+</body>
+</html>

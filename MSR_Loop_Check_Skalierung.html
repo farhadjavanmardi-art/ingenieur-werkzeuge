@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ART ENVI | MSR Loop Check Pro</title>
+    <link rel="stylesheet" href="bibliotheken/fontawesome/css/all.min.css">
+    <style>
+        :root {
+            /* Emerald Theme */
+            --bg: #031b18;
+            --panel: #052e2b;
+            --primary: #10b981; /* Emerald */
+            --primary-hover: #34d399;
+            --accent: #34d399;
+            --text: #d1fae5;
+            --border: #064e42;
+            --input-bg: #02110d;
+            
+            --shadow: 0 8px 24px rgba(0,0,0,0.4);
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Inter', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0; padding: 20px;
+            padding-top: 80px; /* Space for fixed Topbar */
+        }
+
+        .container { max-width: 1100px; margin: 0 auto; }
+
+        /* HEADER */
+        header {
+            margin-bottom: 30px; border-bottom: 2px solid var(--primary); padding-bottom: 20px;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .title h1 { margin: 0; font-size: 26px; color: var(--primary); text-transform: uppercase; letter-spacing: 2px; }
+        .title span { color: #fff; }
+
+        /* CARDS */
+        .card { 
+            background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 25px; 
+            margin-bottom: 20px; box-shadow: var(--shadow); 
+        }
+        .card-header { 
+            display: flex; align-items: center; gap: 12px; margin-bottom: 20px; color: var(--primary); 
+            font-weight: bold; border-bottom: 1px solid var(--border); padding-bottom: 10px; font-size: 16px;
+        }
+
+        label { display: block; font-size: 11px; color: #888; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+        input, select { 
+            width: 100%; background: var(--input-bg); border: 1px solid var(--border); color: #fff; 
+            padding: 12px; border-radius: 8px; font-family: monospace; margin-bottom: 15px; 
+            transition: 0.2s; box-sizing: border-box;
+        }
+        input:focus, select:focus { border-color: var(--primary); outline: none; }
+
+        /* HMI DISPLAY */
+        .hmi-display { 
+            background: #000; border: 1px solid var(--border); border-radius: 12px; padding: 30px; 
+            text-align: center; display: flex; justify-content: space-around; align-items: center;
+            box-shadow: inset 0 0 20px rgba(16, 185, 129, 0.1);
+        }
+        .hmi-value { font-size: 48px; font-weight: bold; color: var(--primary); text-shadow: 0 0 15px rgba(16, 185, 129, 0.4); }
+        #resultUnit { color: #888; font-size: 14px; margin-top: 5px; }
+
+        /* BUTTONS */
+        .btn-calc { 
+            background: rgba(16, 185, 129, 0.1); color: var(--primary); border: 1px solid var(--primary); 
+            padding: 12px; width: 100%; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.3s; 
+        }
+        .btn-calc:hover { background: var(--primary); color: #00150d; transform: translateY(-2px); }
+
+        /* RANGE SLIDER */
+        input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; padding: 0; border: none; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 20px; width: 20px; border-radius: 50%; background: var(--primary); cursor: pointer; margin-top: -8px; box-shadow: 0 0 10px var(--primary); }
+        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 4px; cursor: pointer; background: #333; border-radius: 2px; }
+
+        /* MODAL */
+        .modal-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8); z-index: 10000; backdrop-filter: blur(5px);
+            align-items: center; justify-content: center;
+        }
+        .modal-box {
+            background: var(--panel); width: 650px; max-width: 90%; border-radius: 12px; border: 1px solid var(--primary);
+            padding: 25px; position: relative; box-shadow: 0 20px 50px rgba(0,0,0,0.6); color: #fff;
+        }
+        .modal-header { font-size: 20px; font-weight: bold; color: var(--primary); margin-bottom: 15px; border-bottom: 1px solid var(--border); padding-bottom: 10px; display:flex; justify-content:space-between; align-items:center; }
+        .modal-close { color: #aaa; cursor: pointer; font-size: 20px; transition: 0.2s; }
+        .modal-close:hover { color: #fff; }
+
+        /* NEW TOPBAR */
+        .ki-topbar {
+            position: fixed; top: 0; left: 0; right: 0; height: 60px;
+            background: rgba(5, 46, 43, 0.95); border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: space-between; padding: 0 20px; z-index: 9999;
+            backdrop-filter: blur(10px);
+        }
+        .ki-actions { display: flex; gap: 10px; }
+        .ki-btn {
+            width: 40px; height: 40px; border-radius: 10px; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3);
+            color: var(--primary); display: flex; align-items: center; justify-content: center; text-decoration: none; font-size: 18px; transition: 0.2s; cursor: pointer;
+        }
+        .ki-btn:hover { background: var(--primary); color: #00150d; transform: translateY(-1px); }
+
+    </style>
+<!-- Ein Aussehen fuer alle Werkzeuge. Steht direkt hinter dem letzten
+     <style> dieses Werkzeugs: spaeter in der Reihenfolge, also gewinnt
+     es bei gleicher Spezifitaet - aber so frueh wie moeglich, damit die
+     Seite nicht erst in der alten Farbe erscheint und dann umfaerbt.
+     Am Ende des <body> geladen war genau das zu sehen: Knoepfe mit
+     transition faerbten sichtbar um. Faerbt nur, verschiebt nichts.
+     Siehe werkzeug-stil.css. -->
+<link rel="stylesheet" href="werkzeug-stil.css">
+<!-- Sprachumschaltung Deutsch / Persisch / Englisch. Was nicht im
+     Woerterbuch steht, bleibt Deutsch. Siehe uebersetzung.js. -->
+<script src="woerter.js"></script>
+<script src="woerter/MSR_Loop_Check_Skalierung.js"></script>
+<script src="uebersetzung.js"></script>
+
+</head>
+<body>
+
+<div class="ki-topbar">
+    <div style="font-weight:bold; color:#fff; display:flex; align-items:center; gap:10px;">
+        <i class="fas fa-wave-square" style="color:var(--primary)"></i> ART ENVI | Loop Check
+    </div>
+    <div class="ki-actions">
+        <a href="dashboard/" class="ki-btn" title="Zurück zum Dashboard">
+            <i class="fas fa-home"></i>
+        </a>
+        <div class="ki-btn" onclick="openHelpModal()" title="Hilfe & Anleitung">
+            <i class="fas fa-question"></i>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    <header>
+        <div class="title">
+            <h1>MSR <span>LOOP CHECK</span></h1>
+            <span style="color:#888; font-size:12px;">Analogwert-Kalibrierung & Sensorik</span>
+        </div>
+    </header>
+
+    <div class="card">
+        <div class="card-header"><i class="fas fa-sliders-h"></i> Analog-Skalierung (Scaling)</div>
+        <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:15px;">
+            <div><label>Eingang Min (mA/V)</label><input type="number" id="inMin" value="4"></div>
+            <div><label>Eingang Max (mA/V)</label><input type="number" id="inMax" value="20"></div>
+            <div><label>Skala Min (EU)</label><input type="number" id="outMin" value="0"></div>
+            <div><label>Skala Max (EU)</label><input type="number" id="outMax" value="100"></div>
+        </div>
+        
+        <label style="margin-top:10px;">Signal Simulation</label>
+        <div style="display:flex; align-items:center; gap:15px; margin-bottom:20px;">
+            <span style="font-size:12px; color:var(--primary);">4 mA</span>
+            <input type="range" id="signalSlider" min="4" max="20" step="0.01" value="12" oninput="updateFromSlider(this.value)">
+            <span style="font-size:12px; color:var(--primary);">20 mA</span>
+        </div>
+        
+        <div class="hmi-display">
+            <div>
+                <div style="font-size:11px; color:#666; text-transform:uppercase;">Aktueller Wert</div>
+                <div class="hmi-value" id="resultVal">50.00</div>
+                <div id="resultUnit">Einheit</div>
+            </div>
+            <div style="width:1px; height:50px; background:#333;"></div>
+            <div>
+                <div style="font-size:11px; color:#666; text-transform:uppercase;">Eingang</div>
+                <div style="font-size: 24px; color: #fff; font-weight:bold;" id="inputDisplay">12.00 mA</div>
+            </div>
+            <div style="width:1px; height:50px; background:#333;"></div>
+            <div>
+                <div style="font-size:11px; color:#666; text-transform:uppercase;">Prozent</div>
+                <div style="font-size: 24px; color: var(--accent); font-weight:bold;" id="percentVal">50.0%</div>
+            </div>
+        </div>
+    </div>
+
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
+        <div class="card">
+            <div class="card-header"><i class="fas fa-thermometer-half"></i> Pt100 / Pt1000 (IEC 60751, -200 bis 850 °C)</div>
+            <label>Fuehlertyp</label>
+            <select id="rtdTyp" onchange="calcRTD()">
+                <option value="100" selected>Pt100</option>
+                <option value="1000">Pt1000</option>
+            </select>
+            <label>Modus</label>
+            <select id="rtdMode" onchange="calcRTD()">
+                <option value="t2r">Temp (°C) → Widerstand (Ω)</option>
+                <option value="r2t">Widerstand (Ω) → Temp (°C)</option>
+            </select>
+            <label>Eingabewert</label>
+            <input type="number" id="rtdInput" placeholder="Wert eingeben..." oninput="calcRTD()">
+            <div style="margin-top:15px; text-align:center;">
+                <div style="font-size:11px; color:#888;">ERGEBNIS</div>
+                <div id="rtdResult" style="font-size:32px; color:var(--primary); font-weight:bold;">---</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header"><i class="fas fa-exchange-alt"></i> Einheiten-Konverter</div>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:15px;">
+                <button class="btn-calc" onclick="convert('bar_psi')">Bar → PSI</button>
+                <button class="btn-calc" onclick="convert('psi_bar')">PSI → Bar</button>
+                <button class="btn-calc" onclick="convert('c_f')">°C → °F</button>
+                <button class="btn-calc" onclick="convert('f_c')">°F → °C</button>
+            </div>
+            <label>Wert</label>
+            <input type="number" id="convInput" value="1" oninput="doConvert()">
+            <div style="margin-top:15px; text-align:center;">
+                <div style="font-size:11px; color:#888;">KONVERTIERT</div>
+                <div id="convResult" style="font-size:32px; color:var(--primary); font-weight:bold;">---</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="helpModal" class="modal-overlay">
+    <div class="modal-box">
+        <div class="modal-header">
+            <span><i class="fas fa-info-circle"></i> MSR Loop Check - Hilfe</span>
+            <div class="modal-close" onclick="closeHelpModal()"><i class="fas fa-times"></i></div>
+        </div>
+        <div style="line-height:1.6; font-size:13px; color:#d1fae5;">
+            <p><strong>1. Analog-Skalierung:</strong><br>
+            Dient zur Umrechnung von elektrischen Signalen (z.B. 4-20 mA) in physikalische Prozesswerte (EU). Ideal für die Prüfung von SPS-Eingängen oder Feldgeräten.</p>
+            
+            <p><strong>2. PT100 (RTD):</strong><br>
+            Berechnung nach Norm DIN EN 60751 (Callendar-Van Dusen). Wandelt Widerstandswerte präzise in Temperatur um und umgekehrt.</p>
+            
+            <p><strong>3. Einheiten:</strong><br>
+            Schnelle Konvertierung der gängigsten Industriestandards für Druck und Temperatur.</p>
+            
+            <div style="margin-top:15px; padding:10px; background:rgba(16, 185, 129, 0.1); border-radius:6px; border:1px solid var(--border);">
+                <i class="fas fa-exclamation-triangle"></i> <strong>Hinweis:</strong> Überprüfen Sie bei Loop-Checks immer die Polarität der Messumformer und die Bürde.
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function updateFromSlider(val) {
+        const inMin = parseFloat(document.getElementById('inMin').value);
+        const inMax = parseFloat(document.getElementById('inMax').value);
+        const outMin = parseFloat(document.getElementById('outMin').value);
+        const outMax = parseFloat(document.getElementById('outMax').value);
+        
+        const pct = (val - inMin) / (inMax - inMin);
+        const out = pct * (outMax - outMin) + outMin;
+        
+        document.getElementById('inputDisplay').innerText = parseFloat(val).toFixed(2) + " mA";
+        document.getElementById('resultVal').innerText = out.toFixed(2);
+        document.getElementById('percentVal').innerText = (pct * 100).toFixed(1) + "%";
+    }
+
+    // Callendar-Van-Dusen nach IEC 60751. Die Gleichung hat zwei Aeste:
+    //   t >= 0:  R = R0 * (1 + A*t + B*t^2)
+    //   t <  0:  R = R0 * (1 + A*t + B*t^2 + C*(t-100)*t^3)
+    // Der C-Term fehlte, und darum hat das Werkzeug unter null Grad gar nichts
+    // gerechnet. Das war ehrlich, aber halb: in der Kaelteanlage und im
+    // Tanklager steht die Haelfte der Messstellen unter null.
+    const RTD_A = 3.9083e-3, RTD_B = -5.775e-7, RTD_C = -4.183e-12;
+    const RTD_T_MIN = -200, RTD_T_MAX = 850;   // Geltungsbereich der Norm
+
+    function rtdWiderstand(t, R0) {
+        if (t >= 0) return R0 * (1 + RTD_A * t + RTD_B * t * t);
+        return R0 * (1 + RTD_A * t + RTD_B * t * t + RTD_C * (t - 100) * t * t * t);
+    }
+
+    // Rueckweg. Ueber null Grad gibt es die geschlossene Loesung der
+    // quadratischen Gleichung. Darunter gibt es keine - der C-Term macht sie
+    // zur vierten Ordnung -, also wird eingeschachtelt. R(t) steigt im ganzen
+    // Bereich streng monoton, damit ist die Halbierung sicher und trifft.
+    function rtdTemperatur(R, R0) {
+        if (R >= R0) {
+            const w = Math.sqrt(RTD_A * RTD_A - 4 * RTD_B * (1 - R / R0));
+            return (-RTD_A + w) / (2 * RTD_B);
+        }
+        let unten = RTD_T_MIN, oben = 0;
+        for (let i = 0; i < 100; i++) {
+            const mitte = (unten + oben) / 2;
+            if (rtdWiderstand(mitte, R0) < R) unten = mitte; else oben = mitte;
+        }
+        return (unten + oben) / 2;
+    }
+
+    function calcRTD() {
+        const mode = document.getElementById('rtdMode').value;
+        const val = parseFloat(document.getElementById('rtdInput').value);
+        const feld = document.getElementById('rtdResult');
+        if (isNaN(val)) { feld.innerText = "---"; return; }
+
+        const typ = document.getElementById('rtdTyp');
+        const R0 = typ ? Number(typ.value) : 100;
+
+        if (mode === 't2r') {
+            if (val < RTD_T_MIN || val > RTD_T_MAX) {
+                feld.innerText = RTD_T_MIN + " bis " + RTD_T_MAX + " \u00b0C";
+                return;
+            }
+            feld.innerText = rtdWiderstand(val, R0).toFixed(2) + " \u03a9";
+        } else {
+            const rMin = rtdWiderstand(RTD_T_MIN, R0), rMax = rtdWiderstand(RTD_T_MAX, R0);
+            if (val < rMin || val > rMax) {
+                feld.innerText = rMin.toFixed(2) + " bis " + rMax.toFixed(2) + " \u03a9";
+                return;
+            }
+            feld.innerText = rtdTemperatur(val, R0).toFixed(2) + " \u00b0C";
+        }
+    }
+
+    let currentMode = 'bar_psi';
+    function convert(m) { 
+        currentMode = m; 
+        // Reset active state logic if needed, for now just calc
+        doConvert(); 
+    }
+    
+    function zahl(id) {
+        const el = document.getElementById(id);
+        if (!el) return null;
+        const t = (el.value || '').trim();
+        if (t === '') return null;
+        const v = Number(t);
+        return Number.isFinite(v) ? v : null;
+    }
+
+    function doConvert() {
+        const v = zahl('convInput');
+        if (v === null) {
+            document.getElementById('convResult').innerText = 'Zahl eingeben';
+            return;
+        }
+        let res = 0;
+        let unit = "";
+        
+        if(currentMode==='bar_psi') { res = v * 14.5038; unit = "PSI"; }
+        if(currentMode==='psi_bar') { res = v / 14.5038; unit = "Bar"; }
+        if(currentMode==='c_f') { res = (v*9/5)+32; unit = "°F"; }
+        if(currentMode==='f_c') { res = (v-32)*5/9; unit = "°C"; }
+        
+        document.getElementById('convResult').innerText = res.toFixed(2) + " " + unit;
+    }
+
+    function openHelpModal() { document.getElementById('helpModal').style.display = 'flex'; }
+    function closeHelpModal() { document.getElementById('helpModal').style.display = 'none'; }
+    
+    // Close on outside click
+    window.onclick = function(event) {
+        const m = document.getElementById('helpModal');
+        if (event.target == m) closeHelpModal();
+    }
+    
+    // Init
+    updateFromSlider(12);
+</script>
+</body>
+</html>

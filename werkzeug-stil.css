@@ -1,0 +1,179 @@
+/* Ein Aussehen fuer alle Werkzeuge.
+
+   Die 27 Werkzeuge sind ueber Jahre einzeln entstanden. Gemessen am
+   gerenderten Dokument waren es vorher: 11 verschiedene Hintergruende,
+   19 verschiedene Akzentfarben, 6 verschiedene Eckenradien und zwei
+   Schriftfamilien. Jedes einzelne Werkzeug sah fuer sich in Ordnung aus;
+   nebeneinander sahen sie nach 27 Herkuenften aus.
+
+   Diese Datei wird in jedem Werkzeug als LETZTES geladen, nach dem eigenen
+   <style> des Werkzeugs. Bei gleicher Spezifitaet gewinnt die spaetere
+   Regel - deshalb steht sie am Ende und nicht im <head>.
+
+   Die Farben sind nicht neu erfunden, sondern die des Produkts: der Akzent
+   ist das Gruen der Verkaufsseite und des Dashboards, ins Dunkle gezogen.
+   Der Grundton ist derselbe Slate, den zwei Werkzeuge schon hatten.
+
+   Was hier NICHT passiert: Layout. Keine Breiten, keine Raster, keine
+   Abstaende der Werkzeuge werden angefasst. Wer Farben vereinheitlicht,
+   darf nicht nebenbei Spalten verschieben - sonst weiss man bei einem
+   kaputten Werkzeug nicht, woran es lag. */
+
+:root {
+  --wz-grund:        #0f172a;   /* Seitenhintergrund */
+  --wz-flaeche:      #1b2537;   /* Karten, Panels */
+  --wz-flaeche-hoch: #223047;   /* Eingabefelder, erhabene Flaechen */
+  --wz-linie:        #334155;
+  --wz-text:         #e2e8f0;
+  --wz-leise:        #94a3b8;
+
+  --wz-akzent:        #10b981;  /* das Gruen des Produkts, dunkeltauglich */
+  --wz-akzent-dunkel: #059669;
+  --wz-akzent-leise:  rgba(16, 185, 129, 0.14);
+
+  --wz-warn:   #fbbf24;
+  --wz-fehler: #f87171;
+  --wz-gut:    #34d399;
+
+  --wz-radius:       10px;
+  --wz-radius-klein: 6px;
+  --wz-schrift: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+                "Helvetica Neue", Arial, sans-serif;
+  --wz-schrift-fest: ui-monospace, SFMono-Regular, Menlo, Consolas,
+                     "Liberation Mono", monospace;
+}
+
+/* Die eigenen Akzentvariablen der Werkzeuge auf denselben Ton ziehen.
+
+   Das ist der wirksamere Hebel als eine Liste von Klassennamen: 26 der 27
+   Werkzeuge fuehren ihre Akzentfarbe in einer Variablen. Wer die Variable
+   umdefiniert, erreicht damit auch Regeln, die im Werkzeug mit !important
+   stehen - der Wert kommt ja aus der Variablen, und die Regel selbst wird
+   gar nicht angefasst. Bau_Rechner hat genau so eine Regel; ueber den
+   Klassennamen waere sie nicht zu erreichen gewesen.
+
+   Die Namen stehen hier vollstaendig und nicht als Muster: CSS kennt keine
+   Platzhalter fuer Variablennamen, und eine Liste, die man nachzaehlen kann,
+   ist besser als eine Regel, von der man hofft, dass sie trifft. */
+:root {
+  --accent:           var(--wz-akzent);
+  --accent-hover:     var(--wz-akzent-dunkel);
+  --accent-dim:       var(--wz-akzent-leise);
+  --accent-2:         var(--wz-akzent-dunkel);
+  --primary:          var(--wz-akzent);
+  --primary-hover:    var(--wz-akzent-dunkel);
+  --ki-accent:        var(--wz-akzent);
+  --ki-accent-2:      var(--wz-akzent-dunkel);
+  --ki-emerald:       var(--wz-akzent);
+  --ki-emerald-2:     var(--wz-akzent-dunkel);
+  --ki-emerald-600:   var(--wz-akzent);
+  --ki-emerald-900:   #05221a;
+}
+
+/* ------------------------------------------------------------- Grundflaeche */
+html, body {
+  background: var(--wz-grund);
+  color: var(--wz-text);
+  font-family: var(--wz-schrift);
+}
+
+/* Schrift auch dort, wo ein Werkzeug sie je Element gesetzt hat. Die
+   Groesse bleibt unberuehrt: die dichten Werkzeuge (Estimatoren, Selector,
+   Petrochem) rechnen mit ihrer kleineren Grundgroesse, und eine erzwungene
+   Vergroesserung wuerde ihre Tabellen umbrechen. */
+body, body h1, body h2, body h3, body h4, body h5, body h6,
+body p, body div, body span, body td, body th, body li, body label,
+body button, body input, body select, body textarea {
+  font-family: var(--wz-schrift);
+}
+body code, body pre, body kbd, body samp, body .mono, body [class*="mono"] {
+  font-family: var(--wz-schrift-fest);
+}
+
+/* ---------------------------------------------------------------- Bedienung */
+body button, body .btn, body [class*="btn-"], body input[type="button"],
+body input[type="submit"] {
+  border-radius: var(--wz-radius);
+  font-family: var(--wz-schrift);
+  cursor: pointer;
+}
+
+/* Der Hauptknopf traegt die Akzentfarbe. Erkannt wird er an den Namen, die
+   in diesen Werkzeugen tatsaechlich vorkommen - nicht an einer Konvention,
+   die hier niemand eingehalten hat. */
+body .btn-calc, body .btn-primary, body .btn-main, body .primary,
+body button.calc, body button[class*="calc"], body button[class*="primary"],
+body button[class*="berechn"] {
+  background: var(--wz-akzent);
+  border-color: var(--wz-akzent);
+  color: #05221a;
+  font-weight: 600;
+}
+body .btn-calc:hover, body .btn-primary:hover, body .btn-main:hover,
+body .primary:hover, body button.calc:hover,
+body button[class*="calc"]:hover, body button[class*="primary"]:hover,
+body button[class*="berechn"]:hover {
+  background: var(--wz-akzent-dunkel);
+  border-color: var(--wz-akzent-dunkel);
+}
+
+body input:not([type="button"]):not([type="submit"]):not([type="checkbox"]):not([type="radio"]),
+body select, body textarea {
+  background: var(--wz-flaeche-hoch);
+  color: var(--wz-text);
+  border: 1px solid var(--wz-linie);
+  border-radius: var(--wz-radius-klein);
+}
+body input:focus, body select:focus, body textarea:focus {
+  outline: none;
+  border-color: var(--wz-akzent);
+  box-shadow: 0 0 0 3px var(--wz-akzent-leise);
+}
+
+/* Die wiederkehrenden Nebenknoepfe auf denselben Gruenton.
+
+   Gemessen waren es elf verschiedene Gruen. Fuenf davon meinten dasselbe:
+   bestaetigen oder ausgeben - btn-success, btn-export, btn-dxf, btn-excel,
+   btn-exp, btn-gen, btn-green. Nebeneinander sah das nach Zufall aus, weil
+   es Zufall war.
+
+   Bewusst NICHT angefasst: Knoepfe, deren Farbe eine Bedeutung traegt. Die
+   Modusknoepfe in Trasse_CAD sind blau, weil sie einen Zustand zeigen und
+   nicht eine Aktion; photo_CAD codiert seine Schritte in Blau, Gruen und
+   Orange. Wer das alles gruen macht, hat ein einheitliches Bild und ein
+   schlechteres Werkzeug. */
+body .btn-success, body .btn-export, body .btn-dxf, body .btn-excel,
+body .btn-exp, body .btn-gen, body .btn-green,
+body [class*="btn-success"], body [class*="btn-export"],
+body [class*="btn-excel"], body [class*="btn-dxf"] {
+  background: var(--wz-akzent);
+  border-color: var(--wz-akzent);
+  color: #05221a;
+}
+body .btn-success:hover, body .btn-export:hover, body .btn-dxf:hover,
+body .btn-excel:hover, body .btn-exp:hover, body .btn-gen:hover,
+body .btn-green:hover {
+  background: var(--wz-akzent-dunkel);
+  border-color: var(--wz-akzent-dunkel);
+}
+
+/* Der ausgewaehlte Reiter und der aktive Modus. Auch das ist ein Zustand
+   "hier stehst du" und trug in drei Werkzeugen drei verschiedene Gruen.
+   Unterscheidbar von einer Aktion bleiben sie durch Form und Ort, nicht
+   durch einen vierten Gruenton. */
+body .tab-btn.active, body .btn-mode.active, body .nav-btn.active,
+body .mode-btn.active {
+  background: var(--wz-akzent);
+  color: #05221a;
+  border-color: var(--wz-akzent);
+}
+
+/* Earthing setzt seinen Export-Knopf halbdurchsichtig. Derselbe Ton, aber
+   neben den anderen sichtbar blasser. */
+body .btn-action.btn-export { background: var(--wz-akzent); }
+
+/* ------------------------------------------------------------------- Linien */
+body hr, body table, body th, body td {
+  border-color: var(--wz-linie);
+}
+body a:not([class]) { color: var(--wz-akzent); }

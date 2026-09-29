@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EMSR-Werkzeuge | 27 Berechnungswerkzeuge für den Anlagenbau</title>
+<meta name="description" content="27 Berechnungs- und Zeichenwerkzeuge für EMSR, Verfahrenstechnik und Anlagenbau. Im Browser, ohne Installation. Ab 39 Euro im Monat.">
+<style>
+  :root{
+    --tinte:#0f172a; --grau:#475569; --hell:#64748b;
+    --linie:#e2e8f0; --flaeche:#f8fafc; --weiss:#fff;
+    --akzent:#0d7a5f; --akzent-dunkel:#095c47; --akzent-hell:#e6f4f0;
+    --warn:#b45309; --warn-hell:#fffbeb;
+  }
+  *{box-sizing:border-box; margin:0; padding:0}
+  html{scroll-behavior:smooth; scroll-padding-top:70px}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    color:var(--tinte); background:var(--weiss); line-height:1.65; font-size:16px;
+    -webkit-font-smoothing:antialiased;
+  }
+  .breite{max-width:1140px; margin:0 auto; padding:0 24px}
+  a{color:var(--akzent); text-decoration:none}
+  a:hover{text-decoration:underline}
+
+  /* Kopf */
+  .kopfleiste{
+    position:sticky; top:0; z-index:50; background:rgba(255,255,255,.94);
+    backdrop-filter:blur(10px); border-bottom:1px solid var(--linie);
+  }
+  .kopfleiste .breite{display:flex; align-items:center; justify-content:space-between; height:64px; gap:20px}
+  .marke{font-weight:800; font-size:18px; letter-spacing:-.3px; color:var(--tinte); display:flex; align-items:center; gap:9px}
+  .marke span{width:26px;height:26px;border-radius:7px;background:var(--akzent);color:#fff;display:grid;place-items:center;font-size:12px}
+  .navi{display:flex; gap:26px; font-size:14.5px; font-weight:500}
+  .navi a{color:var(--grau)}
+  .navi a:hover{color:var(--akzent); text-decoration:none}
+  .knopf{
+    display:inline-block; background:var(--akzent); color:#fff; padding:10px 20px;
+    border-radius:8px; font-weight:600; font-size:14.5px; border:none; cursor:pointer;
+    transition:background .15s;
+  }
+  .knopf:hover{background:var(--akzent-dunkel); text-decoration:none; color:#fff}
+  .knopf.hell{background:var(--weiss); color:var(--akzent); border:1.5px solid var(--akzent)}
+  .knopf.hell:hover{background:var(--akzent-hell)}
+  @media(max-width:900px){.navi{display:none}}
+
+  /* Aufmacher */
+  .aufmacher{padding:82px 0 66px; background:linear-gradient(170deg,var(--flaeche) 0%,var(--weiss) 62%)}
+  .aufmacher h1{font-size:47px; line-height:1.14; letter-spacing:-1.3px; font-weight:800; max-width:16ch}
+  .aufmacher .unter{font-size:19.5px; color:var(--grau); margin-top:22px; max-width:60ch}
+  .aufmacher .knoepfe{display:flex; gap:13px; margin-top:34px; flex-wrap:wrap}
+  .marker{
+    display:inline-block; background:var(--akzent-hell); color:var(--akzent-dunkel);
+    padding:6px 13px; border-radius:100px; font-size:13px; font-weight:600; margin-bottom:22px;
+  }
+  @media(max-width:700px){.aufmacher h1{font-size:33px} .aufmacher .unter{font-size:17px}}
+
+  /* Zahlen */
+  .zahlen{display:grid; grid-template-columns:repeat(4,1fr); gap:1px; background:var(--linie);
+          border:1px solid var(--linie); border-radius:12px; overflow:hidden; margin-top:52px}
+  .zahlen div{background:var(--weiss); padding:22px 18px; text-align:center}
+  .zahlen b{display:block; font-size:29px; font-weight:800; color:var(--akzent); letter-spacing:-.6px}
+  .zahlen small{color:var(--hell); font-size:13px; display:block; margin-top:3px}
+  @media(max-width:700px){.zahlen{grid-template-columns:repeat(2,1fr)}}
+
+  /* Abschnitte */
+  section{padding:76px 0}
+  section.grau{background:var(--flaeche); border-top:1px solid var(--linie); border-bottom:1px solid var(--linie)}
+  h2{font-size:33px; font-weight:800; letter-spacing:-.8px; margin-bottom:14px}
+  .einleitung{color:var(--grau); font-size:17.5px; max-width:70ch; margin-bottom:42px}
+
+  /* Problem */
+  .problem{display:grid; grid-template-columns:repeat(3,1fr); gap:26px}
+  .problem article{background:var(--weiss); border:1px solid var(--linie); border-radius:12px; padding:26px}
+  .problem.vier{grid-template-columns:repeat(2,1fr)}
+  .problem h3{font-size:17.5px; margin-bottom:9px}
+  .problem p{color:var(--grau); font-size:15px}
+  @media(max-width:860px){.problem{grid-template-columns:1fr}}
+
+  /* Werkzeuge */
+  .filter{display:flex; gap:9px; flex-wrap:wrap; margin-bottom:32px}
+  .filter button{
+    background:var(--weiss); border:1.5px solid var(--linie); color:var(--grau);
+    padding:8px 16px; border-radius:100px; font-size:14px; font-weight:600; cursor:pointer;
+    font-family:inherit; transition:.15s;
+  }
+  .filter button:hover{border-color:var(--akzent); color:var(--akzent)}
+  .filter button.an{background:var(--akzent); border-color:var(--akzent); color:#fff}
+
+  .gruppe-titel{margin:44px 0 20px; padding-bottom:11px; border-bottom:2px solid var(--linie)}
+  .gruppe-titel h3{font-size:22px; font-weight:800; letter-spacing:-.4px}
+  .gruppe-titel p{color:var(--hell); font-size:14.5px; margin-top:2px}
+
+  .werkzeuge{display:grid; grid-template-columns:repeat(2,1fr); gap:20px; align-items:start}
+  @media(max-width:900px){.werkzeuge{grid-template-columns:1fr}}
+  .wz{border:1px solid var(--linie); border-radius:12px; overflow:hidden; background:var(--weiss); transition:.15s}
+  .wz:hover{border-color:#cbd5e1; box-shadow:0 3px 14px rgba(15,23,42,.06)}
+  .wz-kopf{padding:20px 22px 0; cursor:pointer; display:flex; gap:13px; align-items:flex-start}
+  .wz-kopf h4{font-size:17.5px; font-weight:700; letter-spacing:-.2px; display:flex; justify-content:space-between; align-items:flex-start; gap:12px}
+  .wz-text{min-width:0; flex:1}
+  /* Das Sinnbild ist selbst der Weg ins Werkzeug. */
+  .sinnbild{
+    flex:0 0 auto; width:36px; height:36px; border-radius:9px; margin-top:2px;
+    background:var(--akzent-hell); color:var(--akzent-dunkel);
+    display:grid; place-items:center; border:1px solid #cde8e0; transition:.15s;
+  }
+  .sinnbild:hover{background:var(--akzent); color:#fff; border-color:var(--akzent); text-decoration:none}
+  .sinnbild svg{width:19px; height:19px; stroke:currentColor; stroke-width:1.7; fill:none;
+                stroke-linecap:round; stroke-linejoin:round}
+  .oeffnen{
+    display:inline-flex; align-items:center; gap:8px; margin-top:6px;
+    background:var(--akzent-hell); color:var(--akzent-dunkel); border:1px solid #cde8e0;
+    padding:9px 15px; border-radius:8px; font-size:13.5px; font-weight:600;
+  }
+  .oeffnen:hover{background:var(--akzent); color:#fff; border-color:var(--akzent); text-decoration:none}
+  .oeffnen svg{width:15px; height:15px; stroke:currentColor; stroke-width:1.9; fill:none;
+               stroke-linecap:round; stroke-linejoin:round}
+  .pfeil{color:var(--hell); font-size:13px; flex:0 0 auto; margin-top:4px; transition:transform .18s}
+  .wz.offen .pfeil{transform:rotate(180deg)}
+  .wz-kurz{color:var(--grau); font-size:14.8px; margin:7px 0 20px}
+  .wz-mehr{display:none; padding:0 22px 22px; border-top:1px solid var(--linie); margin-top:0}
+  .wz.offen .wz-mehr{display:block; padding-top:18px}
+  .wz-mehr p{font-size:14.8px; color:var(--grau); margin-bottom:15px}
+  .zeile{display:flex; gap:11px; font-size:13.8px; margin-bottom:11px; align-items:flex-start}
+  .etikett{
+    flex:0 0 auto; font-weight:700; font-size:11px; text-transform:uppercase; letter-spacing:.6px;
+    padding:3px 9px; border-radius:5px; margin-top:2px;
+  }
+  .et-nutzen{background:var(--akzent-hell); color:var(--akzent-dunkel)}
+  .et-grundlage{background:#eff6ff; color:#1d4ed8}
+  .et-grenze{background:var(--warn-hell); color:var(--warn)}
+  .zeile span{color:var(--grau)}
+  .datei{font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:11.5px; color:var(--hell); margin-top:13px; display:block}
+
+  /* Preise */
+  .preise{display:grid; grid-template-columns:repeat(3,1fr); gap:22px; align-items:start}
+  @media(max-width:900px){.preise{grid-template-columns:1fr}}
+  .preis{border:1.5px solid var(--linie); border-radius:14px; padding:30px 26px; background:var(--weiss); position:relative}
+  .preis.beliebt{border-color:var(--akzent); border-width:2px; box-shadow:0 8px 28px rgba(13,122,95,.1)}
+  .fahne{position:absolute; top:-11px; left:26px; background:var(--akzent); color:#fff;
+         font-size:11.5px; font-weight:700; padding:4px 12px; border-radius:100px; letter-spacing:.3px}
+  .preis h3{font-size:19px; font-weight:800}
+  .preis .wieviel{font-size:41px; font-weight:800; letter-spacing:-1.4px; margin:14px 0 2px}
+  .preis .wieviel small{font-size:15px; font-weight:600; color:var(--hell); letter-spacing:0}
+  .preis .jahr{font-size:13.5px; color:var(--hell); margin-bottom:18px}
+  .preis > p{color:var(--grau); font-size:14.5px; margin-bottom:20px; min-height:44px}
+  .preis ul{list-style:none; margin-bottom:24px}
+  .preis li{font-size:14.5px; color:var(--grau); padding:7px 0 7px 25px; position:relative}
+  .preis li::before{content:"✓"; position:absolute; left:0; color:var(--akzent); font-weight:800}
+  .preis .knopf{width:100%; text-align:center}
+
+  /* Hinweiskasten */
+  .kasten{border:1px solid var(--linie); border-left:4px solid var(--akzent); background:var(--flaeche);
+          border-radius:9px; padding:22px 26px; margin-top:34px}
+  .kasten.warn{border-left-color:var(--warn); background:var(--warn-hell); border-color:#fde68a}
+  .kasten h4{font-size:16px; margin-bottom:8px}
+  .kasten p{color:var(--grau); font-size:14.8px}
+  .kasten p + p{margin-top:10px}
+
+  /* Vergleich */
+  table.vgl{width:100%; border-collapse:collapse; font-size:14.8px; margin-top:26px}
+  table.vgl th, table.vgl td{padding:13px 15px; text-align:left; border-bottom:1px solid var(--linie)}
+  table.vgl th{font-size:12.5px; text-transform:uppercase; letter-spacing:.6px; color:var(--hell); font-weight:700}
+  table.vgl td:first-child{font-weight:600}
+  table.vgl tr.unser td{background:var(--akzent-hell); font-weight:700}
+  .tabellenrahmen{overflow-x:auto}
+
+  /* Formular */
+  .formular{display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:26px}
+  .formular .voll{grid-column:1/-1}
+  @media(max-width:700px){.formular{grid-template-columns:1fr}}
+  label{display:block; font-size:13.5px; font-weight:600; margin-bottom:6px; color:var(--tinte)}
+  input,select,textarea{
+    width:100%; padding:11px 13px; border:1.5px solid var(--linie); border-radius:8px;
+    font-family:inherit; font-size:15px; color:var(--tinte); background:var(--weiss);
+  }
+  input:focus,select:focus,textarea:focus{outline:none; border-color:var(--akzent)}
+  textarea{resize:vertical; min-height:96px}
+  .meldung{margin-top:16px; padding:13px 16px; border-radius:8px; font-size:14.5px; display:none}
+  .meldung.gut{display:block; background:var(--akzent-hell); color:var(--akzent-dunkel)}
+  .meldung.schlecht{display:block; background:#fef2f2; color:#b91c1c}
+
+  /* Fuss */
+  footer{background:var(--tinte); color:#cbd5e1; padding:52px 0 30px; font-size:14.5px}
+  footer h4{color:#fff; font-size:14px; text-transform:uppercase; letter-spacing:.8px; margin-bottom:14px}
+  footer a{color:#cbd5e1}
+  footer a:hover{color:#fff}
+  .fuss-raster{display:grid; grid-template-columns:2fr 1fr 1fr; gap:38px; margin-bottom:34px}
+  @media(max-width:800px){.fuss-raster{grid-template-columns:1fr; gap:26px}}
+  .fuss-unten{border-top:1px solid #1e293b; padding-top:20px; color:var(--hell); font-size:13px;
+              display:flex; justify-content:space-between; gap:16px; flex-wrap:wrap}
+</style>
+<!-- Sprachumschaltung Deutsch / Persisch / Englisch.
+     Was nicht im Woerterbuch steht, bleibt Deutsch. -->
+<script src="../woerter.js"></script>
+<script src="../woerter/werkzeugliste.js"></script>
+<script src="../woerter/shop.js"></script>
+<script src="../uebersetzung.js"></script>
+</head>
+<body>
+
+<header class="kopfleiste">
+  <div class="breite">
+    <div class="marke"><span>EW</span> EMSR-Werkzeuge</div>
+    <nav class="navi">
+      <a href="#problem">Warum</a>
+      <a href="#werkzeuge">Die <span class="anz">27</span> Werkzeuge</a>
+      <a href="#pruefung">Geprüft</a>
+      <a href="#preise">Preise</a>
+      <a href="#kontakt">Kontakt</a>
+    </nav>
+    <a href="#kontakt" class="knopf">14 Tage testen</a>
+  </div>
+</header>
+
+<div class="aufmacher">
+  <div class="breite">
+    <div class="marker"><span class="anz">27</span> Werkzeuge · EMSR, Verfahrenstechnik, Anlagenbau</div>
+    <h1>Die Rechnungen, die Sie ohnehin machen. Nur nachvollziehbar.</h1>
+    <p class="unter">
+      Kabelquerschnitt, Trafogröße, Kv-Wert, Druckverlust, Loop-Blätter, Kostenschätzung.
+      <span class="anz">27</span> Werkzeuge im Browser, ohne Installation. Jede Zahl mit der Rechenvorschrift daneben,
+      nach der sie entstanden ist &ndash; und mit dem, was das Werkzeug <em>nicht</em> leistet.
+    </p>
+    <div class="knoepfe">
+      <a href="#kontakt" class="knopf">14 Tage kostenlos testen</a>
+      <a href="#werkzeuge" class="knopf hell">Alle <span class="anz">27</span> ansehen</a>
+    </div>
+
+    <div class="zahlen">
+      <div><b class="anz">27</b><small>Werkzeuge</small></div>
+      <div><b>6</b><small>Fachgebiete</small></div>
+      <div><b class="pruefzahl">305</b><small>automatische Prüfungen</small></div>
+      <div><b>0</b><small>Installation</small></div>
+    </div>
+  </div>
+</div>
+
+<section id="problem">
+  <div class="breite">
+    <h2>Das Excel, das nur einer versteht</h2>
+    <p class="einleitung">
+      In jedem Ingenieurbüro liegen dieselben drei Dinge: eine Tabellensammlung aus zwanzig Jahren,
+      ein paar Hersteller-Programme, die je ein Fachgebiet abdecken, und die Formelsammlung im Regal.
+      Das funktioniert &ndash; bis jemand fragt, wie die Zahl zustande kam.
+    </p>
+    <div class="problem">
+      <article>
+        <h3>Herkunft nicht nachweisbar</h3>
+        <p>Eine Zelle liefert 187 A. Nach welcher Norm, bei welcher Temperatur, mit welcher
+        Verlegeart? Das wusste der Kollege, der 2012 gegangen ist.</p>
+      </article>
+      <article>
+        <h3>Jedes Fachgebiet ein anderes Programm</h3>
+        <p>Kabel beim einen Anbieter, Ventile beim Hersteller, Hydraulik im Excel. Drei Oberflächen,
+        drei Lizenzen, drei Stände der Wahrheit.</p>
+      </article>
+      <article>
+        <h3>Fehler, die niemand sieht</h3>
+        <p>Ein Vorzeichen, eine Einheit, eine vergessene Temperaturkorrektur. Das Ergebnis sieht
+        plausibel aus und ist um zwanzig Prozent daneben &ndash; meist zur unsicheren Seite.</p>
+      </article>
+    </div>
+
+    <div class="kasten">
+      <h4>Woher diese Werkzeuge kommen</h4>
+      <p>
+        Entstanden sind sie im Detail-Engineering für Raffinerieanlagen, unter anderem im Projekt
+        Closed Coke Slurry System &ndash; also aus der Arbeit, für die sie gedacht sind, nicht aus
+        einer Produktidee. Jedes einzelne ist entstanden, weil dieselbe Rechnung zum dritten Mal
+        von Hand gemacht werden musste.
+      </p>
+    </div>
+  </div>
+</section>
+
+<section class="grau" id="werkzeuge">
+  <div class="breite">
+    <h2>Die <span class="anz">27</span> Werkzeuge im Einzelnen</h2>
+    <p class="einleitung">
+      Zu jedem steht, was es tut, wem es was spart, nach welcher Rechenvorschrift es rechnet
+      und wo seine Grenze liegt. Auf eine Karte klicken für die ausführliche Beschreibung.
+    </p>
+    <div class="filter" id="filter"></div>
+    <div id="liste"></div>
+  </div>
+</section>
+
+<section id="pruefung">
+  <div class="breite">
+    <h2>Nachgerechnet, nicht behauptet</h2>
+    <p class="einleitung">
+      Berechnungssoftware zu kaufen heißt, jemandem zu glauben. Deshalb liegt hier offen, was
+      geprüft wurde und womit.
+    </p>
+
+    <div class="problem vier">
+      <article>
+        <h3>Gegen die Norm nachgerechnet</h3>
+        <p>Leiterwiderstände Cu und Al gegen IEC 60228, DIN-Profiltabellen, Darcy-Weisbach mit
+        Colebrook-White iterativ gelöst, Churchill, Kv nach IEC 60534, Motorschutz nach
+        DIN VDE 0100-430, Kurzschluss nach IEC 60909, Wärmebilanz nach IEC 61439-1 und
+        IEC 60890, Pt100 nach IEC 60751 mit dem C-Term, Arterburn/Krebs,
+        Beleuchtung nach EN 12464-1 einschließlich Gleichmäßigkeit.
+        Jede Formel einzeln gegen die Quelle gehalten &ndash; und wo eine Herleitung möglich war,
+        gegen eine zweite, unabhängige Rechnung.</p>
+      </article>
+      <article>
+        <h3><span class="pruefzahl">305</span> Prüfungen bei jeder Änderung</h3>
+        <p>Eine ausführbare Prüfung öffnet jedes Werkzeug in einem echten Browser, trägt Werte ein
+        und vergleicht, was auf dem Bildschirm steht. Ändert jemand eine Formel, wird sie rot.
+        Die Prüfung läuft mit abgeschaltetem Netz &ndash; damit fällt auf, wenn eine Rechnung
+        anfängt, von einem fremden Server abzuhängen.</p>
+      </article>
+      <article>
+        <h3>Läuft ohne Internet</h3>
+        <p>Alle Bibliotheken liegen bei der Software, nichts wird zur Laufzeit von einem
+        fremden Server geholt. Das ist nachgeprüft: mit abgeschaltetem Netz ist in allen
+        <span class="anz">27</span> Werkzeugen kein Knopf funktionslos. Für ein Anlagennetz
+        ohne Internetzugang ist das die Voraussetzung, nicht ein Zusatz.</p>
+      </article>
+      <article>
+        <h3>Keine erfundenen Zahlen</h3>
+        <p>Wo ein Wert aus dem Datenblatt kommt, ist er ein Eingabefeld mit Richtwert, keine
+        versteckte Annahme: F<sub>L</sub> und x<sub>T</sub> beim Ventil, der Betriebswirkungsgrad
+        beim Licht, die Rohrrauheit, die Verlustleistung je Bauteil im Schaltschrank,
+        u<sub>k</sub> und P<sub>k</sub> des Trafos, der Reaktanzbelag des Kabels, die Verlegeart
+        auf der Trasse. Jedes dieser Felder war einmal eine feste Zahl im Code. Der Richtwert
+        steht davor, damit man rechnen kann &ndash; überschrieben wird er vom Datenblatt.</p>
+      </article>
+    </div>
+
+    <div class="kasten warn">
+      <h4>Und was die Werkzeuge nicht sind</h4>
+      <p>
+        Sie liefern <b>Auslegungs- und Schätzwerte</b> für Vorplanung, Angebot und Detail-Engineering.
+        Sie ersetzen keinen Nachweis nach Norm, keine Netzberechnung, keine Statik, kein
+        Brandschutzkonzept und keine Lichtplanung. Bei jedem Werkzeug steht seine Grenze dabei &ndash;
+        oben in der Liste unter „Grenze“, und im Werkzeug selbst.
+      </p>
+      <p>
+        Das ist kein Kleingedrucktes, sondern der Grund, warum man den Zahlen trauen kann: ein
+        Werkzeug, das seine Grenzen nennt, verschweigt auch sonst nichts.
+      </p>
+    </div>
+  </div>
+</section>
+
+<section class="grau" id="preise">
+  <div class="breite">
+    <h2>Preise</h2>
+    <p class="einleitung">
+      Pro Arbeitsplatz, monatlich kündbar. Alle Pläne enthalten alle <span class="anz">27</span> Werkzeuge &ndash;
+      es gibt keine Version, in der etwas fehlt.
+    </p>
+
+    <div class="preise" id="preisliste">
+      <div class="preis"><p>Preise werden geladen …</p></div>
+    </div>
+
+    <div class="kasten">
+      <h4>Wie diese Preise zustande kommen</h4>
+      <p>
+        Vergleichbare browserbasierte Rechenwerkzeuge liegen bei etwa 10 bis 30 Euro im Monat &ndash;
+        decken dann aber <em>ein</em> Fachgebiet ab, meist Kabelberechnung oder Rohrhydraulik.
+        Werkzeugsammlungen für ganze Büros liegen bei rund 100 Euro je Nutzer und Monat,
+        große CAD-Suiten deutlich darüber.
+      </p>
+      <p>
+        Diese Sammlung deckt sechs Fachgebiete ab und liegt bewusst dazwischen. Ein einziger
+        vermiedener Fehler bei der Trafogröße oder ein halber Tag gesparter Loop-Blätter trägt
+        ein Jahresabo.
+      </p>
+    </div>
+
+    <div class="tabellenrahmen">
+      <table class="vgl">
+        <thead>
+          <tr><th>Angebot</th><th>Umfang</th><th>Preis je Monat</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Einzelwerkzeug Kabelberechnung</td><td>ein Fachgebiet</td><td>etwa 12 €</td></tr>
+          <tr><td>Einzelwerkzeug Rohrhydraulik</td><td>ein Fachgebiet</td><td>etwa 10 €</td></tr>
+          <tr><td>Rechnersammlung Elektro, Profi-Stufe</td><td>ein Fachgebiet, mehrere Normen</td><td>etwa 27 €</td></tr>
+          <tr class="unser"><td>EMSR-Werkzeuge, Einzelplatz</td><td>sieben Fachgebiete, <span class="anz">27</span> Werkzeuge</td><td>39 €</td></tr>
+          <tr><td>Werkzeugsammlung für Büros</td><td>je Nutzer</td><td>etwa 100 €</td></tr>
+          <tr><td>Große CAD-Suite</td><td>je Nutzer</td><td>etwa 240 €</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="font-size:13.5px; color:var(--hell); margin-top:14px">
+      Vergleichswerte aus öffentlich einsehbaren Preislisten, Stand September 2026, teils aus
+      Fremdwährung umgerechnet. Sie dienen der Einordnung, nicht als Angebot des jeweiligen Anbieters.
+    </p>
+  </div>
+</section>
+
+<section id="kontakt">
+  <div class="breite">
+    <h2>14 Tage testen</h2>
+    <p class="einleitung">
+      Voller Zugang zu allen <span class="anz">27</span> Werkzeugen, keine Zahlungsdaten nötig. Sie bekommen die Zugangsdaten
+      per E-Mail, in der Regel am selben Werktag.
+    </p>
+
+    <form id="anfrageFormular" class="formular" autocomplete="on">
+      <div>
+        <label for="f_name">Name *</label>
+        <input id="f_name" name="name" required maxlength="120" placeholder="Vor- und Nachname">
+      </div>
+      <div>
+        <label for="f_firma">Firma</label>
+        <input id="f_firma" name="firma" maxlength="160" placeholder="Ingenieurbüro">
+      </div>
+      <div>
+        <label for="f_email">E-Mail *</label>
+        <input id="f_email" name="email" type="email" required maxlength="200" placeholder="name@firma.de">
+      </div>
+      <div>
+        <label for="f_telefon">Telefon</label>
+        <input id="f_telefon" name="telefon" maxlength="60" placeholder="optional">
+      </div>
+      <div class="voll">
+        <label for="f_plan">Interesse an</label>
+        <select id="f_plan" name="plan_code">
+          <option value="">Erst einmal nur testen</option>
+          <option value="einzel_monat">Einzelplatz</option>
+          <option value="team_monat">Team</option>
+          <option value="buero_monat">Büro</option>
+        </select>
+      </div>
+      <div class="voll">
+        <label for="f_nachricht">Was rechnen Sie am häufigsten?</label>
+        <textarea id="f_nachricht" name="nachricht" maxlength="4000"
+          placeholder="Damit wir gleich sagen können, ob die Werkzeuge zu Ihrer Arbeit passen."></textarea>
+      </div>
+      <div class="voll">
+        <button type="submit" class="knopf" id="absenden">Zugang anfragen</button>
+        <div class="meldung" id="meldung"></div>
+      </div>
+    </form>
+  </div>
+</section>
+
+<footer>
+  <div class="breite">
+    <div class="fuss-raster">
+      <div>
+        <h4>EMSR-Werkzeuge</h4>
+        <p style="max-width:44ch">
+          <span class="anz">27</span> Berechnungs- und Zeichenwerkzeuge für Elektro-, MSR- und Verfahrenstechnik.
+          Entstanden im Detail-Engineering für Raffinerieanlagen.
+        </p>
+      </div>
+      <div>
+        <h4>Kontakt</h4>
+        <p>
+          Farhad Javanmardi<br>
+          Welfenstraße 30<br>
+          76137 Karlsruhe<br>
+          Deutschland
+        </p>
+      </div>
+      <div>
+        <h4>Erreichbar</h4>
+        <p>
+          <a href="mailto:Farhad.javanmardi@icloud.com">Farhad.javanmardi@icloud.com</a><br>
+          <a href="tel:+4917641685250">+49 176 41685250</a>
+        </p>
+        <p style="margin-top:14px">
+          <a href="../README.md">Technische Dokumentation</a><br>
+          <a href="../PRUEFBERICHT.md">Prüfbericht</a>
+        </p>
+      </div>
+    </div>
+    <div class="fuss-unten">
+      <span>© 2026 Farhad Javanmardi · Karlsruhe</span>
+      <span>Angaben nach § 5 DDG · Umsatzsteuer nach § 19 UStG</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // Die Daten liegen neben dieser Datei. Wo "neben" ist, haengt aber von der
+  // Adresse ab: unter /shop/ ist es dieser Ordner, unter /shop ohne
+  // Schraegstrich zaehlt der Browser den Elternordner als Basis - dann fehlt
+  // ein shop/ davor. Vercel liefert mit cleanUrls genau die zweite Form aus.
+  //
+  // Ohne diese Fallunterscheidung laedt werkzeuge.js nicht, und die Seite
+  // zeigt kein einziges Werkzeug an. Genau so war es im Netz.
+  //
+  // document.write ist hier richtig: es muss waehrend des Parsens geschehen,
+  // damit WERKZEUGE steht, bevor das Skript unten laeuft.
+  document.write('<scr' + 'ipt src="' +
+    (/\/shop$/.test(location.pathname) ? 'shop/' : '') +
+    'werkzeuge.js"></scr' + 'ipt>');
+</script>
+<script>
+// ------------------------------------------------------------- Werkzeugliste
+const liste = document.getElementById('liste');
+const filterLeiste = document.getElementById('filter');
+let aktiveGruppe = 'alle';
+
+function sicher(t){
+  return String(t).replace(/[&<>"]/g, z => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[z]));
+}
+
+function zeichneFilter(){
+  const knoepfe = [{id:'alle', name:'Alle ' + WERKZEUGE.length}].concat(GRUPPEN);
+  filterLeiste.innerHTML = knoepfe.map(g =>
+    '<button data-g="' + g.id + '"' + (g.id===aktiveGruppe ? ' class="an"' : '') + '>' +
+    sicher(g.name) + '</button>').join('');
+  filterLeiste.querySelectorAll('button').forEach(b => {
+    b.onclick = () => { aktiveGruppe = b.dataset.g; zeichneFilter(); zeichneListe(); };
+  });
+}
+
+// Wo die Werkzeuge liegen. Im Projekt steht die Seite im Unterordner shop und
+// die Werkzeuge eine Ebene darueber; wird nur der shop-Ordner ins Netz
+// gestellt, liegen sie daneben.
+//
+// Massgeblich ist der Ordner des Dokuments, nicht der Dateiname. Auf Vercel
+// steht cleanUrls, die Seite heisst dort nur noch /ingenieur-werkzeuge/shop
+// ohne Schraegstrich am Ende - ihr Ordner ist dann bereits
+// /ingenieur-werkzeuge/, und ein ../ waere einer zu viel.
+const ORDNER = location.pathname.replace(/[^/]*$/, '');
+const WZ_PFAD = ORDNER.endsWith('/shop/') ? '../' : '';
+
+// Ein Sinnbild je Fachgebiet. Bewusst gezeichnet und nicht als Schriftzeichen:
+// ein Emoji sieht auf jedem Rechner anders aus.
+const SINNBILD = {
+  elektro:    '<path d="M13 2 4 14h6l-1 8 9-12h-6z"/>',
+  msr:        '<circle cx="12" cy="12" r="9"/><path d="M12 12l4.5-3"/><path d="M12 3v2M21 12h-2M12 21v-2M3 12h2"/>',
+  prozess:    '<path d="M4 7h6l4 10h6"/><circle cx="12" cy="12" r="2.6"/><path d="M12 4v5M9 4h6"/>',
+  kalkulation:'<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h8M8 12h2M12 12h2M16 12h0M8 16h2M12 16h2M16 16h0"/>',
+  trasse:     '<path d="M4 20V8a3 3 0 0 1 3-3h4a3 3 0 0 1 3 3v8a3 3 0 0 0 3 3h3"/><circle cx="4" cy="20" r="1.6"/><circle cx="20" cy="19" r="1.6"/>',
+  bau:        '<path d="M3 21h18M6 21V8l6-4 6 4v13"/><path d="M10 21v-5h4v5"/>',
+  sonstiges:  '<path d="M12 3l7 3v6c0 4.4-3 8.1-7 9-4-.9-7-4.6-7-9V6z"/><path d="M9.5 12l1.8 1.8 3.4-3.6"/>'
+};
+
+function sinnbild(gruppe){
+  return '<svg viewBox="0 0 24 24" aria-hidden="true">' + (SINNBILD[gruppe] || SINNBILD.sonstiges) + '</svg>';
+}
+
+function karte(w){
+  const ziel = WZ_PFAD + encodeURI(w.datei);
+  return '<article class="wz" data-id="' + w.id + '">' +
+    '<div class="wz-kopf">' +
+      '<a class="sinnbild" href="' + ziel + '" target="_blank" rel="noopener"' +
+        ' title="' + sicher(w.name) + ' \u00f6ffnen">' + sinnbild(w.gruppe) + '</a>' +
+      '<div class="wz-text">' +
+        '<h4>' + sicher(w.name) + '<span class="pfeil">\u25bc</span></h4>' +
+        '<p class="wz-kurz">' + sicher(w.kurz) + '</p>' +
+      '</div>' +
+    '</div>' +
+    '<div class="wz-mehr">' +
+      '<p>' + sicher(w.lang) + '</p>' +
+      '<div class="zeile"><span class="etikett et-nutzen">Nutzen</span><span>' + sicher(w.nutzen) + '</span></div>' +
+      '<div class="zeile"><span class="etikett et-grundlage">Grundlage</span><span>' + sicher(w.grundlage) + '</span></div>' +
+      '<div class="zeile"><span class="etikett et-grenze">Grenze</span><span>' + sicher(w.grenze) + '</span></div>' +
+      '<a class="oeffnen" href="' + ziel + '" target="_blank" rel="noopener">' +
+        '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4l-9 9"/>' +
+        '<path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>' +
+        'Werkzeug \u00f6ffnen</a>' +
+      '<code class="datei">' + sicher(w.datei) + '</code>' +
+    '</div></article>';
+}
+
+function zeichneListe(){
+  const gruppen = aktiveGruppe === 'alle' ? GRUPPEN : GRUPPEN.filter(g => g.id === aktiveGruppe);
+  liste.innerHTML = gruppen.map(g => {
+    const drin = WERKZEUGE.filter(w => w.gruppe === g.id);
+    if (!drin.length) return '';
+    return '<div class="gruppe-titel"><h3>' + sicher(g.name) + '</h3><p>' + sicher(g.hinweis) +
+           ' · ' + drin.length + ' Werkzeuge</p></div>' +
+           '<div class="werkzeuge">' + drin.map(karte).join('') + '</div>';
+  }).join('');
+  liste.querySelectorAll('.wz-kopf').forEach(k => {
+    k.onclick = e => {
+      if (e.target.closest('a')) return;      // der Weg ins Werkzeug, kein Aufklappen
+      k.parentElement.classList.toggle('offen');
+    };
+  });
+}
+
+zeichneFilter();
+zeichneListe();
+
+// Jede Stelle im Text, an der die Anzahl der Werkzeuge steht, kommt aus den
+// Daten. Im Quelltext steht die Zahl nur als Platzhalter fuer den Fall, dass
+// JavaScript aus ist.
+document.querySelectorAll('.anz').forEach(e => { e.textContent = WERKZEUGE.length; });
+
+// ------------------------------------------------------------------- Preise
+const SB_URL = 'https://xdjtirojdjxqfzpjvdkw.supabase.co';
+const SB_KEY = 'sb_publishable_IR7rx1CMy7QMF3skpSYOxg_jyJtirQ_';
+
+// Die Anzahl kommt aus den Daten, nicht aus dem Text. Kommt ein Werkzeug
+// dazu, stimmt die Zahl von allein - sie ist schon einmal auseinandergelaufen.
+const ANZAHL = WERKZEUGE.length;
+const ALLE_WZ = 'Alle {anzahl} Werkzeuge';
+
+// Fallback, damit die Seite auch dann Preise zeigt, wenn die Datenbank
+// gerade nicht erreichbar ist. Muss mit werkzeuge.plaene uebereinstimmen.
+const PLAENE_FALLBACK = [
+  {code:'einzel_monat', name:'Einzelplatz', preis_cent:3900, plaetze:1, reihenfolge:10,
+   beschreibung:'Für einen Ingenieur. Alle {anzahl} Werkzeuge, im Browser, ohne Installation.',
+   merkmale:[ALLE_WZ,'Ein Arbeitsplatz','DXF- und Excel-Export','E-Mail-Unterstützung','Monatlich kündbar']},
+  {code:'team_monat', name:'Team', preis_cent:14900, plaetze:5, reihenfolge:20,
+   beschreibung:'Für eine Arbeitsgruppe bis fünf Personen.',
+   merkmale:[ALLE_WZ,'Fünf Arbeitsplätze','DXF- und Excel-Export','Eigene Katalogpreise in den Estimatoren','Unterstützung innerhalb eines Werktags','Monatlich kündbar']},
+  {code:'buero_monat', name:'Büro', preis_cent:39000, plaetze:25, reihenfolge:30,
+   beschreibung:'Für das ganze Büro, mit Betrieb im eigenen Netz.',
+   merkmale:[ALLE_WZ,'Bis 25 Arbeitsplätze','Betrieb im eigenen Netz, ohne Internet','Anpassung von Katalogen und Normwerten','Benannter Ansprechpartner','Schulung zum Einstieg']}
+];
+
+function euro(cent){
+  return (cent/100).toLocaleString('de-DE', {minimumFractionDigits:0, maximumFractionDigits:0});
+}
+
+// In der Datenbank steht {anzahl} statt einer festen Zahl. Sonst muesste die
+// Zahl an zwei Stellen gepflegt werden und waere beim naechsten Werkzeug
+// wieder falsch - genau das war sie schon einmal.
+function planText(t){
+  return sicher(String(t).replace(/\{anzahl\}/g, ANZAHL));
+}
+
+function zeichnePreise(plaene){
+  const monat = plaene.filter(p => p.code.endsWith('_monat'))
+                      .sort((a,b) => a.reihenfolge - b.reihenfolge);
+  document.getElementById('preisliste').innerHTML = monat.map((p,i) => {
+    const merkmale = Array.isArray(p.merkmale) ? p.merkmale : [];
+    const jahrPreis = euro(p.preis_cent * 10);
+    return '<div class="preis' + (i===1 ? ' beliebt' : '') + '">' +
+      (i===1 ? '<span class="fahne">Am häufigsten gewählt</span>' : '') +
+      '<h3>' + planText(p.name) + '</h3>' +
+      '<div class="wieviel">' + euro(p.preis_cent) + ' €<small> / Monat</small></div>' +
+      '<div class="jahr">oder ' + jahrPreis + ' € im Jahr &ndash; zwei Monate geschenkt</div>' +
+      '<p>' + planText(p.beschreibung || '') + '</p>' +
+      '<ul>' + merkmale.map(m => '<li>' + planText(m) + '</li>').join('') + '</ul>' +
+      '<a href="#kontakt" class="knopf' + (i===1 ? '' : ' hell') +
+        '" data-plan="' + p.code + '">14 Tage testen</a>' +
+    '</div>';
+  }).join('');
+  document.querySelectorAll('[data-plan]').forEach(a => {
+    a.onclick = () => { document.getElementById('f_plan').value = a.dataset.plan; };
+  });
+}
+
+fetch(SB_URL + '/rest/v1/plaene?select=*&aktiv=eq.true&intervall=eq.monat&order=reihenfolge', {
+  headers: {apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY, 'Accept-Profile': 'werkzeuge'}
+})
+  .then(r => r.ok ? r.json() : Promise.reject(r.status))
+  .then(d => zeichnePreise(d && d.length ? d : PLAENE_FALLBACK))
+  .catch(() => zeichnePreise(PLAENE_FALLBACK));
+
+// ---------------------------------------------------------------- Formular
+const formular = document.getElementById('anfrageFormular');
+const meldung = document.getElementById('meldung');
+const absenden = document.getElementById('absenden');
+
+formular.onsubmit = async (e) => {
+  e.preventDefault();
+  meldung.className = 'meldung';
+  absenden.disabled = true;
+  absenden.textContent = 'Wird gesendet …';
+
+  const daten = Object.fromEntries(new FormData(formular).entries());
+  Object.keys(daten).forEach(k => { if (daten[k] === '') delete daten[k]; });
+
+  try {
+    const antwort = await fetch(SB_URL + '/rest/v1/anfragen', {
+      method: 'POST',
+      headers: {
+        apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY,
+        'Content-Type': 'application/json', 'Content-Profile': 'werkzeuge',
+        Prefer: 'return=minimal'
+      },
+      body: JSON.stringify(daten)
+    });
+    if (!antwort.ok) throw new Error(await antwort.text());
+    meldung.className = 'meldung gut';
+    meldung.textContent = 'Danke. Die Anfrage ist angekommen, Sie hören in der Regel am selben Werktag von uns.';
+    formular.reset();
+  } catch (fehler) {
+    meldung.className = 'meldung schlecht';
+    meldung.innerHTML = 'Das hat nicht geklappt. Bitte schreiben Sie direkt an ' +
+      '<a href="mailto:Farhad.javanmardi@icloud.com">Farhad.javanmardi@icloud.com</a>.';
+  } finally {
+    absenden.disabled = false;
+    absenden.textContent = 'Zugang anfragen';
+  }
+};
+</script>
+</body>
+</html>

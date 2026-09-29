@@ -1,0 +1,13 @@
+{
+  "name": "ingenieur-werkzeuge-pruefung",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Pruefung der Ingenieur-Werkzeuge in einem echten Browser, ohne Netz",
+  "scripts": {
+    "test": "node run.cjs",
+    "postinstall": "playwright install chromium"
+  },
+  "devDependencies": {
+    "playwright": "1.49.1"
+  }
+}

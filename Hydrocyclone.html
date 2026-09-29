@@ -1,0 +1,1309 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>ART ENVI | HYDROCYCLONE PRO</title>
+<link href="bibliotheken/fontawesome/css/all.min.css" rel="stylesheet"/>
+<script src="bibliotheken/xlsx.full.min.js"></script>
+<script src="bibliotheken/jspdf.umd.min.js"></script>
+<script src="bibliotheken/jspdf.plugin.autotable.min.js"></script>
+<style>
+        :root { 
+            --bg: #031b18; 
+            --panel: #052e2b;
+            --accent: #10b981; /* Emerald */
+            --accent-hover: #34d399;
+            --text: #d1fae5;
+            --border: #064e42;
+            --light-color: #f1c40f; /* Keep yellow for light bulbs only */
+        }
+        body { margin:0; background:var(--bg); color:var(--text); font-family:'Segoe UI', sans-serif; height:100vh; overflow:hidden; display:flex; }
+        
+        /* SIDEBAR */
+        .sidebar { width:380px; background:var(--panel); border-right:1px solid var(--border); display:flex; flex-direction:column; z-index:20; box-shadow:4px 0 20px rgba(0,0,0,0.6); position: relative; }
+        .sidebar-header { padding:20px; padding-left: 60px; background:#020617; border-bottom:1px solid var(--border); }
+        .sidebar-content { flex:1; overflow-y:auto; padding:20px; }
+        
+        .inp-group { margin-bottom:15px; border-bottom:1px solid #334155; padding-bottom:10px; }
+        .inp-title { font-size:11px; color:var(--accent); font-weight:bold; margin-bottom:8px; text-transform:uppercase; letter-spacing:1px; }
+        
+        .inp-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
+        .inp-label { font-size:12px; color:#cbd5e1; }
+        .inp-wrap { position:relative; width:140px; }
+        
+        input { 
+            width:100%; box-sizing:border-box; background:#0f172a; border:1px solid var(--border); 
+            color:#fff; padding:6px 45px 6px 10px; border-radius:4px; text-align:right; 
+            font-family:monospace; font-weight:bold; font-size:13px; 
+        }
+        input:focus { border-color:var(--accent); outline:none; }
+        
+        .unit { position:absolute; right:8px; top:50%; transform: translateY(-50%); font-size:10px; color:#64748b; pointer-events:none; font-weight:bold; }
+        .txt-inp { text-align:left; padding-right:10px; }
+
+        .btn { padding:12px; border:none; border-radius:4px; font-weight:bold; cursor:pointer; font-size:12px; display:flex; align-items:center; justify-content:center; gap:8px; transition:0.2s; width:100%; margin-top:5px; }
+        .btn-pdf { background:var(--accent); color:#000; }
+        .btn-xls { background:#10b981; color:#fff; }
+        .btn:hover { filter:brightness(1.1); }
+
+        /* MAIN */
+        .main { flex:1; position:relative; background: radial-gradient(circle at center, #1e293b 0%, #020617 100%); }
+/* Floating Results */
+        .res-overlay { position:absolute; bottom:20px; left:20px; width:320px; background:rgba(15,23,42,0.95); border:1px solid var(--accent); border-radius:6px; padding:20px; pointer-events:none; }
+        .res-row { display:flex; justify-content:space-between; font-size:12px; margin-bottom:8px; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:4px; }
+        .res-val { font-family:monospace; font-weight:bold; color:var(--accent); }
+
+        /* Hidden Canvas for PDF Generation */
+        #blueprint-canvas { position: absolute; top: -9999px; left: -9999px; }
+
+        /* HELP / THEORY MODAL STYLES */
+        .help-btn {
+            position: absolute; top: 15px; left: 15px;
+            width: 30px; height: 30px;
+            background: rgba(0, 242, 255, 0.1);
+            border: 1px solid var(--accent);
+            border-radius: 50%;
+            color: var(--accent);
+            display: flex; align-items: center; justify-content: center;
+            font-weight: bold; cursor: pointer; z-index: 100;
+            transition: 0.3s;
+        }
+        .help-btn:hover { background: var(--accent); color: #000; box-shadow: 0 0 10px var(--accent); }
+
+        .modal-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); backdrop-filter: blur(5px);
+            z-index: 1000; justify-content: center; align-items: center;
+        }
+        .modal-box {
+            background: #151b2b; border: 1px solid var(--border);
+            width: 600px; max-height: 85vh; overflow-y: auto;
+            border-radius: 8px; padding: 0; box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            animation: fadeIn 0.3s ease;
+        }
+        .modal-header {
+            padding: 20px; background: #020617; border-bottom: 1px solid var(--border);
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .modal-title { font-size: 18px; font-weight: bold; color: #fff; }
+        .modal-close { cursor: pointer; color: #aaa; font-size: 20px; }
+        .modal-close:hover { color: #fff; }
+        .modal-content { padding: 25px; color: #cbd5e1; font-size: 14px; line-height: 1.6; }
+        
+        .formula-box {
+            background: #0f172a; border-left: 3px solid var(--accent);
+            padding: 15px; margin: 15px 0; font-family: monospace; color: #fff;
+            font-size: 13px;
+        }
+        .variable { color: var(--accent); font-weight: bold; }
+        
+        h3 { color: #fff; font-size: 15px; margin-top: 25px; border-bottom: 1px solid #333; padding-bottom: 5px; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* Scrollbar for modal */
+        .modal-box::-webkit-scrollbar { width: 8px; }
+        .modal-box::-webkit-scrollbar-track { background: #0b0f19; }
+        .modal-box::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+    
+        .plots-panel { margin-top: 14px; padding: 12px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; }
+        .plots-panel h3 { margin: 0 0 10px 0; font-size: 14px; letter-spacing: .4px; text-transform: uppercase; opacity: .9; }
+        .plots-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: start; }
+        .plot-card { padding: 10px; border-radius: 12px; background: rgba(0,0,0,0.22); border: 1px solid rgba(255,255,255,0.08); }
+        .plot-title { font-size: 12px; margin-bottom: 8px; opacity: .9; }
+        .plot-card canvas { width: 100%; height: auto; border-radius: 10px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); }
+        .source-fig { margin-top: 10px; }
+        .source-fig summary { cursor: pointer; font-size: 12px; opacity: .9; }
+        .source-fig img { width: 100%; max-width: 820px; margin-top: 10px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.12); }
+        .small-note { font-size: 11px; opacity: .75; margin-top: 6px; }
+        @media (max-width: 980px) { .plots-grid { grid-template-columns: 1fr; } }
+
+
+
+        /* ----------------------------
+           Rendering + layout fixes (v4)
+           ---------------------------- */
+        body { align-items: stretch; }
+        .main { height: 100vh; overflow: hidden; }
+.res-overlay { z-index: 3; pointer-events: none; }
+
+        .plots-panel { margin-top: 0; height: 100vh; overflow: hidden; flex: 0 0 760px; width: 760px; min-width: 680px; display: flex; flex-direction: column; }
+        .plots-grid { flex: 1 1 auto; overflow: hidden; padding-right: 0; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: repeat(3, minmax(0, 1fr)); }
+        .plot-card { display: flex; flex-direction: column; min-height: 0; }
+        .plot-title { flex: 0 0 auto; }
+
+        .plot-card canvas { flex: 1 1 auto; height: 100% !important; display: block; }
+
+        @media (max-width: 1400px) {
+            .plots-panel { flex-basis: 640px; width: 640px; min-width: 560px; }
+        }
+
+/* --- Home/Dashboard button (added) --- */
+.home-dashboard-btn{
+    position: fixed;
+    top: 14px;
+    left: 14px;
+    z-index: 9999;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid rgba(0,0,0,0.15);
+    background: rgba(255,255,255,0.92);
+    color: #111;
+    text-decoration: none;
+    font-weight: 600;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+    backdrop-filter: blur(6px);
+}
+.home-dashboard-btn:hover{
+    background: rgba(255,255,255,0.98);
+}
+.home-dashboard-btn .icon{
+    font-size: 18px;
+    line-height: 1;
+}
+@media print{
+    .home-dashboard-btn{ display:none !important; }
+}
+
+
+
+        /* NAV BUTTONS (MATCH Lighting_CAD STYLE) */
+        .nav-buttons { display: inline-flex; gap: 10px; align-items: center; position: absolute; top: 15px; right: 15px; z-index: 1000; }
+        .nav-btn {
+            width: 40px; height: 40px; background: rgba(16,185,129,0.12);
+            border: 1px solid rgba(16,185,129,0.45); border-radius: 12px;
+            display: inline-flex; align-items: center; justify-content: center;
+            color: #10b981; font-size: 18px; cursor: pointer;
+            text-decoration: none;
+            box-shadow: 0 6px 18px rgba(0,0,0,0.35);
+            transition: transform 0.15s ease, background 0.15s ease, color 0.15s ease;
+            flex: 0 0 auto;
+        }
+        .nav-btn:hover { background: #10b981; color: #00150d; transform: translateY(-1px); }
+
+        /* MODAL STYLES (MATCH Lighting_CAD STYLE) */
+        .modal-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8); z-index: 2000; backdrop-filter: blur(5px);
+            align-items: center; justify-content: center;
+        }
+        .modal-box {
+            background: #06261c; width: 700px; max-width: 92%; border-radius: 12px; border: 1px solid var(--accent);
+            padding: 25px; position: relative; box-shadow: 0 20px 50px rgba(0,0,0,0.5); color: #fff;
+            max-height: 80vh; overflow-y: auto;
+        }
+        .modal-header { font-size: 18px; font-weight: bold; color: var(--accent); margin-bottom: 15px; border-bottom: 1px solid var(--border); padding-bottom: 10px; display:flex; justify-content:space-between; align-items:center; }
+        .modal-close { color: #aaa; cursor: pointer; font-size: 20px; transition:0.2s; }
+        .modal-close:hover { color: #fff; transform: scale(1.1); }
+
+        /* Help content look */
+        .help-content h3 { font-size: 14px; color: var(--accent); margin-top: 18px; margin-bottom: 8px; text-transform: uppercase; }
+        .help-content ul { padding-left: 20px; color: #d1fae5; font-size: 13px; line-height: 1.6; }
+        .help-content li { margin-bottom: 6px; }
+        .help-content pre { background: rgba(0,0,0,0.3); padding: 10px; border-radius: 6px; border: 1px solid var(--border); color: #a9b7c6; font-size: 11px; overflow-x:auto; }
+
+</style>
+<!-- Ein Aussehen fuer alle Werkzeuge. Steht direkt hinter dem letzten
+     <style> dieses Werkzeugs: spaeter in der Reihenfolge, also gewinnt
+     es bei gleicher Spezifitaet - aber so frueh wie moeglich, damit die
+     Seite nicht erst in der alten Farbe erscheint und dann umfaerbt.
+     Am Ende des <body> geladen war genau das zu sehen: Knoepfe mit
+     transition faerbten sichtbar um. Faerbt nur, verschiebt nichts.
+     Siehe werkzeug-stil.css. -->
+<link rel="stylesheet" href="werkzeug-stil.css">
+<!-- Sprachumschaltung Deutsch / Persisch / Englisch. Was nicht im
+     Woerterbuch steht, bleibt Deutsch. Siehe uebersetzung.js. -->
+<script src="woerter.js"></script>
+<script src="woerter/Hydrocyclone.js"></script>
+<script src="uebersetzung.js"></script>
+
+</head>
+<body>
+
+
+<div class="nav-buttons">
+    <a href="dashboard/" class="nav-btn" title="Zurück zum Dashboard">
+        <i class="fas fa-home"></i>
+    </a>
+    <div class="nav-btn" onclick="openHelp()" title="Hilfe & Anleitung">
+        <i class="fas fa-question"></i>
+    </div>
+</div>
+
+<!-- HELP MODAL (THEORY DEFENSE) -->
+<div id="helpModal" class="modal-overlay">
+<div class="modal-box">
+<div class="modal-header">
+            <span><i class="fas fa-circle-info"></i> Hydrocyclone Calc - Hilfe</span>
+            <div class="modal-close" onclick="closeHelp()"><i class="fas fa-times"></i></div>
+        </div>
+<div class="help-content">
+<p>This tool mirrors the Excel sizing logic (Vorlage_Hydrozyklone.xlsx): target separation defines a theoretical cyclone size, then the chosen DN is evaluated with the same correction factors and capacity model.</p>
+<h3>1. Separation Target → d50,application</h3>
+<div class="formula-box">
+<span class="variable">f</span> = a · ln(Rr,w) + b    (a = -3.16721, b = 15.12624)<br/>
+                d50,application = dw · f
+            </div>
+<h3>2. Correction Factors (C1, C2, C3)</h3>
+<div class="formula-box">
+                C1 = ((53 - c) / 53)<sup>-1.43</sup><br/>
+                C2 = 3.27 · (100 · dp)<sup>-0.28</sup><br/>
+                C3 = (1.65 / (GS - GL))<sup>0.5</sup><br/><br/>
+                C_total = C1 · C2 · C3
+            </div>
+<h3>3. Base Cut &amp; Theoretical Diameter</h3>
+<div class="formula-box">
+                d50,base = d50,application / C_total<br/>
+                D_theor = 10 · (d50,base / 2.84)<sup>1/0.66</sup>
+</div>
+<h3>4. Chosen DN Performance</h3>
+<div class="formula-box">
+                d50,DN,base = 2.84 · (DN/10)<sup>0.66</sup><br/>
+                d50,DN,application = d50,DN,base · C_total
+            </div>
+<h3>5. Geometry Rules</h3>
+<ul>
+<li>Ae = 0.05 · D², le = √Ae</li>
+<li>l (Tauchrohr) = 0.35 · D</li>
+<li>H (Zylinder) = D</li>
+<li>Du (Unterlauf) = 0.25 · D (default)</li>
+<li>h (Konus) = (D - Du) / (2 · sin(fi))</li>
+<li>L = le + H + h</li>
+</ul>
+<h3>6. Capacity Model (Vdot/Zyklon)</h3>
+<p>Empirical fit from the Excel helper table (ABA 2025):</p>
+<div class="formula-box">
+                a(D) = αD³ + βD² + γD + δ<br/>
+                Vdot/Zyklon = a(D) · dp<sup>b</sup><br/><br/>
+                α=1.802e-05, β=-0.0089682, γ=1.70931167, δ=-90.0575, b=0.52075
+            </div>
+</div>
+<h3>2. Correction Factors</h3>
+<p>To obtain the actual application cut point, three correction factors are applied:</p>
+<p><strong>C1 (Solid Concentration):</strong> Corrections for hindered settling.</p>
+<div class="formula-box">
+                C1 = ((53 - <span class="variable">c</span>) / 53)<sup>-1.43</sup>
+<br/><span style="color:#64748b">// c = Volumetric Solids %</span>
+</div>
+<p><strong>C2 (Pressure Drop):</strong> Impact of pressure energy.</p>
+<div class="formula-box">
+                C2 = 3.27 × (100 × <span class="variable">dp</span>)<sup>-0.28</sup>
+<br/><span style="color:#64748b">// dp = Pressure drop (bar)</span>
+</div>
+<p><strong>C3 (Density Difference):</strong> Impact of specific gravity.</p>
+<div class="formula-box">
+                C3 = √ [ 1.65 / (<span class="variable">Gs</span> - <span class="variable">Gl</span>) ]
+                <br/><span style="color:#64748b">// Gs = Solid Density, Gl = Liquid Density</span>
+</div>
+<h3>3. Actual Cut Point (d50_app)</h3>
+<div class="formula-box">
+                d50_app = d50_base × C1 × C2 × C3
+            </div>
+<h3>4. Geometry Rules</h3>
+<p>Geometric dimensions are derived from the cyclone diameter (D) based on high-efficiency standard ratios:</p>
+<ul>
+<li><strong>Inlet Area (Ae):</strong> 0.05 × D²</li>
+<li><strong>Vortex Finder (l):</strong> 0.35 × D</li>
+<li><strong>Cylinder Height (H):</strong> 1.0 × D</li>
+<li><strong>Cone Height (h):</strong> Derived from Cone Angle (θ):<br/>
+<code>h = (D - Du) / (2 × sin(fi))</code>
+</li>
+</ul>
+</div>
+</div>
+
+<div class="sidebar">
+<div class="sidebar-header">
+<div style="font-size:16px; font-weight:900; color:#fff;">ART ENVI <span style="color:var(--accent)">ENGINEER</span></div>
+<div style="font-size:10px; color:#64748b;">German Standard Edition</div>
+</div>
+<div class="sidebar-content">
+<div class="inp-group">
+<div class="inp-title">Project Info</div>
+<div class="inp-row"><span class="inp-label">Client</span><div class="inp-wrap"><input class="txt-inp" id="prj_client" type="text" value="Mining Corp"/></div></div>
+<div class="inp-row"><span class="inp-label">Project No.</span><div class="inp-wrap"><input class="txt-inp" id="prj_no" type="text" value="P-2026-DE"/></div></div>
+</div>
+<div class="inp-group">
+<div class="inp-title">Feed Properties (Feed)</div>
+<div class="inp-row"><span class="inp-label">Flow (V_dot)</span><div class="inp-wrap"><input id="inp_Q" min="0" oninput="validate(this)" type="number" value="1200"/><span class="unit">m3/h</span></div></div>
+<div class="inp-row"><span class="inp-label">Solids (c)</span><div class="inp-wrap"><input id="inp_c" min="0" oninput="validate(this)" type="number" value="3"/><span class="unit">v/v%</span></div></div>
+<div class="inp-row"><span class="inp-label">Density Solid (Gs)</span><div class="inp-wrap"><input id="inp_Gs" min="0" oninput="validate(this)" type="number" value="1.35"/><span class="unit">-</span></div></div>
+<div class="inp-row"><span class="inp-label">Density Fluid (Gl)</span><div class="inp-wrap"><input id="inp_Gl" min="0" oninput="validate(this)" type="number" value="1.00"/><span class="unit">-</span></div></div>
+<div class="inp-row"><span class="inp-label">Pressure drop (ΔP)</span><div class="inp-wrap"><input id="inp_dp" min="0" oninput="validate(this)" step="0.1" type="number" value="1.0"/><span class="unit">bar</span></div></div>
+</div>
+<div class="inp-group">
+<div class="inp-title">Separation Target</div>
+<div class="inp-row"><span class="inp-label">Particle Size (dw)</span><div class="inp-wrap"><input id="inp_dw" min="0" oninput="validate(this)" type="number" value="150"/><span class="unit">µm</span></div></div>
+<div class="inp-row"><span class="inp-label">Overflow % passing at dw (Rw)</span><div class="inp-wrap"><input id="inp_Rw" max="100" min="0" oninput="validate(this)" type="number" value="90"/><span class="unit">%</span></div></div>
+</div>
+<div class="inp-group">
+<div class="inp-title">Recovery Curve (Arterburn)</div>
+<div class="inp-row">
+<span class="inp-label">Particle diameter to evaluate (d_p)</span>
+<div class="inp-wrap"><input id="inp_dpPart" min="0" oninput="validate(this)" type="number" value="100"/><span class="unit">µm</span></div>
+</div>
+<div class="inp-row">
+<span class="inp-label">Liquid split to underflow (Rl)</span>
+<div class="inp-wrap"><input id="inp_Rl" max="1" min="0" oninput="validate(this)" step="0.01" type="number" value="0.30"/><span class="unit">-</span></div>
+</div>
+</div>
+<div class="inp-group">
+<div class="inp-title">Geometry Selection</div>
+<div class="inp-row"><span class="inp-label">Selected Diameter (D_DN)</span><div class="inp-wrap"><input id="inp_D" min="50" oninput="validate(this)" step="10" type="number" value="300"/><span class="unit">mm</span></div></div>
+<div class="inp-row"><span class="inp-label">Cone Half-Angle (fi)</span><div class="inp-wrap"><input id="inp_fi" max="20" min="10" oninput="validate(this)" step="0.1" type="number" value="15"/><span class="unit">deg</span></div></div>
+<div class="inp-row"><span class="inp-label">Installed Units (optional)</span><div class="inp-wrap"><input class="txt-inp" id="inp_N_inst" min="1" oninput="validate(this)" placeholder="auto" step="1" type="number" value=""/><span class="unit">qty</span></div></div>
+</div>
+<button class="btn btn-pdf" onclick="generateDetailedPDF()"><i class="fas fa-file-pdf"></i> GENERATE GERMAN PDF</button>
+<button class="btn btn-xls" onclick="exportExcel()"><i class="fas fa-file-excel"></i> EXPORT EXCEL</button>
+</div>
+</div>
+<div class="main">
+<div class="res-overlay">
+<div style="color:#fff; font-weight:bold; border-bottom:1px solid #334155; padding-bottom:5px; margin-bottom:10px;">LIVE CALCULATION</div>
+<div class="res-row"><span>Factor f</span><span class="res-val" id="res_f">--</span></div>
+<div class="res-row"><span>Cut @Target (d50,app)</span><span class="res-val" id="res_d50app">--</span></div>
+<div class="res-row"><span>Base Cut (d50,base)</span><span class="res-val" id="res_d50base">--</span></div>
+<div class="res-row"><span>Theor. Diameter (D_theor)</span><span class="res-val" id="res_Dtheor">--</span></div>
+<div class="res-row"><span>DN Cut (d50,DN,app)</span><span class="res-val" id="res_d50DNapp">--</span></div>
+<div class="res-row"><span>Reduced Recovery Rr (corrected)</span><span class="res-val" id="res_Rr">--</span></div>
+<div class="res-row"><span>Actual Recovery Ra (with bypass)</span><span class="res-val" id="res_Ra">--</span></div>
+<div class="res-row"><span>X = dp / D50c</span><span class="res-val" id="res_X">--</span></div>
+<div class="res-row"><span>Vdot per Cyclone</span><span class="res-val" id="res_Vdot">--</span></div>
+<div id="res_grenze" style="display:none; margin-top:10px; padding:9px 10px; background:rgba(241,196,15,0.10); border:1px solid #b8912a; border-radius:6px; color:#e3cf8a; font-size:11px; line-height:1.5;"></div>
+<div class="res-row"><span>Required Units (n)</span><span class="res-val" id="res_Nreq">--</span></div>
+<div class="res-row"><span>Total Height (L)</span><span class="res-val" id="res_L">--</span></div>
+</div>
+</div>
+
+<canvas height="3508" id="blueprint-canvas" width="2480"></canvas>
+<!-- A4 High Res -->
+<script>
+    // --- GLOBAL DATA ---
+    let DATA = {};
+    
+    // --- UI LOGIC ---
+    function openHelp() {
+        document.getElementById('helpModal').style.display = 'flex';
+    }
+    function closeHelp() {
+        document.getElementById('helpModal').style.display = 'none';
+    }
+    function toggleHelp() {
+        const modal = document.getElementById('helpModal');
+        modal.style.display = (modal.style.display === 'flex') ? 'none' : 'flex';
+    }
+
+    // Close modal when clicking outside
+    document.getElementById('helpModal').addEventListener('click', function(e) {
+        if (e.target === this) closeHelp();
+    });
+
+    function validate(input) {
+        if(input.value < 0) input.value = 0;
+        recalc();
+    }
+
+    
+    function recalc() {
+        // Inputs (Excel: 3. Berechnung + helper sheets)
+        const val = (id) => parseFloat(document.getElementById(id).value);
+        const Q_total = isFinite(val('inp_Q')) ? val('inp_Q') : 0;              // V_dot [m3/h]
+        const c = isFinite(val('inp_c')) ? val('inp_c') : 0;                    // c [v/v%]
+        const Gs = isFinite(val('inp_Gs')) ? val('inp_Gs') : 0;                 // GS [-]
+        const Gl = isFinite(val('inp_Gl')) ? val('inp_Gl') : 0;                 // GL [-]
+        const dp = isFinite(val('inp_dp')) ? val('inp_dp') : 0;                 // dp [bar]
+        const dw = isFinite(val('inp_dw')) ? val('inp_dw') : 0;                 // dw [µm]
+        const Rw = isFinite(val('inp_Rw')) ? val('inp_Rw') : 0;                 // Rr,w [%]
+        const D_DN = isFinite(val('inp_D')) ? val('inp_D') : 0;                 // Selected DN [mm]
+        const fi = isFinite(val('inp_fi')) ? val('inp_fi') : 0;                 // Cone half-angle [deg]
+        const N_inst_raw = val('inp_N_inst');
+        const N_installed = (isFinite(N_inst_raw) && N_inst_raw > 0) ? Math.floor(N_inst_raw) : null;
+
+        // Guard rails (because humans)
+        const safe = (x, fallback=0) => (isFinite(x) ? x : fallback);
+
+        // Anzeige eines Zahlenwerts. Ist er nicht endlich, kommt "--" heraus und
+        // NICHT die 0. Vorher lief alles ueber safe() mit Vorgabe 0, und ein
+        // Ergebnis ausserhalb des Gueltigkeitsbereichs erschien als "0,0 µm"
+        // Trennkorngroesse - also als das bestmoegliche Ergebnis statt als Fehler.
+        const zeig = (x, stellen, einheit) =>
+            isFinite(x) ? (x.toFixed(stellen) + (einheit ? " " + einheit : "")) : "--";
+
+        // 1) f factor (Hilfstabelle - f): f = a·ln(Rw) + b  (Rw = overflow % passing at dw)
+        const f_a = -3.16721;
+        const f_b = 15.12624;
+        const f = (Rw > 0) ? (f_a * Math.log(Rw) + f_b) : 0;
+
+        // 2) d50,application (Excel: d50,application = dw * f)
+        const d50_application = dw * f;
+
+        // 3) Correction factors (Excel formulas)
+        const C1 = (c < 53) ? Math.pow((53 - c) / 53, -1.43) : Infinity;
+        const C2 = (dp > 0) ? (3.27 * Math.pow(dp * 100, -0.28)) : Infinity;
+        const C3 = (Gs > Gl) ? Math.sqrt(1.65 / (Gs - Gl)) : Infinity;
+        const Ctot = C1 * C2 * C3;
+
+        // 4) d50,base (Excel: d50,base = d50,application /(C1*C2*C3))
+        // Nicht rechenbar ergibt NaN, nicht 0: die Anzeige macht daraus "--".
+        // Eine 0 sah hier vorher wie ein Ergebnis aus, und zwar wie das beste
+        // moegliche (Trennkorngroesse null, Durchmesser null).
+        const d50_base = (Ctot > 0 && isFinite(Ctot)) ? (d50_application / Ctot) : NaN;
+
+        // 5) Theoretical diameter from base cut (Excel: Dtheor = 10 * (d50_base/2.84)^(1/0.66))
+        const D_theor = (d50_base > 0) ? (10 * Math.pow(d50_base / 2.84, 1/0.66)) : NaN;
+
+        // 6) DN base + DN application cut
+        const d50_DN_base = (D_DN > 0) ? (2.84 * Math.pow(D_DN / 10, 0.66)) : 0;
+        const d50_DN_application = d50_DN_base * Ctot;
+
+        // 7) Geometry (Excel: Ae=0.05*D^2, le=sqrt(Ae), l=0.35*D, H=D, du=0.25*D)
+        const Ae = 0.05 * D_DN * D_DN;
+        const le = Math.sqrt(Ae);
+        const l_vortex = 0.35 * D_DN;
+        const H_cyl = D_DN;
+        const du = 0.25 * D_DN;           // Excel default
+        const Do = 0.35 * D_DN;           // Not explicit in calc sheet, consistent with drawing
+        const rad = (fi * Math.PI) / 180;
+        // Excel uses: h = (D - du)/(2*sin(fi))
+        const h_cone = (fi > 0) ? ((D_DN - du) / (2 * Math.sin(rad))) : 0;
+        const L_total = le + H_cyl + h_cone;
+
+        // 8) Capacity model (Hilfstabelle - Vdot,dp,DN): Vdot_per = a(D)*dp^b
+        const alpha = 1.802e-05;
+        const beta = -0.0089682;
+        const gamma = 1.70931167;
+        const delta = -90.0575;
+        const b_exp = 0.52075;
+        const a_cap = alpha*Math.pow(D_DN,3) + beta*Math.pow(D_DN,2) + gamma*D_DN + delta;
+        const Vdot_per_cyclone = (dp > 0) ? (a_cap * Math.pow(dp, b_exp)) : 0; // [m3/h]
+
+        // 9) Required / installed cyclone count
+        const n_required = (Vdot_per_cyclone > 0) ? Math.floor(Q_total / Vdot_per_cyclone) : 0;
+        const V_unit_installed = (N_installed && N_installed > 0) ? (Q_total / N_installed) : null;
+
+        // Save Data
+        DATA = {
+            Q_total, c, Gs, Gl, dp, dw, Rw,
+            f_a, f_b, f,
+            C1, C2, C3, Ctot,
+            d50_application, d50_base, D_theor,
+            D_DN, fi, d50_DN_base, d50_DN_application,
+            Ae, le, l_vortex, H_cyl, h_cone, L_total, du, Do,
+            alpha, beta, gamma, delta, b_exp, a_cap, Vdot_per_cyclone,
+            n_required, N_installed, V_unit_installed
+        };
+
+        // Update UI
+        document.getElementById('res_f').innerText = zeig(f, 2, "");
+        document.getElementById('res_d50app').innerText = zeig(d50_application, 1, "µm");
+        document.getElementById('res_d50base').innerText = zeig(d50_base, 1, "µm");
+        document.getElementById('res_Dtheor').innerText = zeig(D_theor, 0, "mm");
+        document.getElementById('res_d50DNapp').innerText = zeig(d50_DN_application, 1, "µm");
+        document.getElementById('res_Vdot').innerText = zeig(Vdot_per_cyclone, 1, "m3/h");
+
+        // Sagen, WARUM etwas nicht gerechnet werden konnte. Die drei Korrekturen
+        // nach Arterburn haben einen Gueltigkeitsbereich; ausserhalb davon setzt
+        // der Code C1, C2 oder C3 auf Infinity.
+        const gruende = [];
+        if (!(c < 53))   gruende.push("Feststoffgehalt " + c.toFixed(1) + " % (Vol.): die Korrektur C1 nach Arterburn gilt nur unter 53 %.");
+        if (!(dp > 0))   gruende.push("Druckabfall muss über null liegen (C2).");
+        if (!(Gs > Gl))  gruende.push("Dichte des Feststoffs (" + Gs + ") muss über der der Flüssigkeit (" + Gl + ") liegen (C3).");
+        const grenzBox = document.getElementById('res_grenze');
+        if (grenzBox) {
+            grenzBox.style.display = gruende.length ? 'block' : 'none';
+            grenzBox.innerHTML = gruende.length
+                ? "<b style='color:#f1c40f'>Ausserhalb des Gültigkeitsbereichs</b><br>" + gruende.join("<br>")
+                : "";
+        }
+
+        const nTxt = (n_required>0) ? (n_required + " pcs") : "--";
+        document.getElementById('res_Nreq').innerText = nTxt;
+
+        document.getElementById('res_L').innerText = zeig(L_total, 0, "mm");
+
+        
+        // 6) Reduced recovery (Eq.1) + bypass correction
+        const dpPart = isFinite(val('inp_dpPart')) ? val('inp_dpPart') : 0; // µm
+        const Rl_raw = isFinite(val('inp_Rl')) ? val('inp_Rl') : 0;
+        const Rl = Math.max(0, Math.min(1, Rl_raw)); // fraction to underflow
+        const X = (d50_application > 0) ? (dpPart / d50_application) : NaN;
+        const Rr = (isFinite(X) && X > 0) ? reducedRecovery(X) : NaN; // fraction (corrected basis)
+        const Ra = (isFinite(Rr)) ? (Rl + (1 - Rl) * Rr) : NaN;       // fraction (actual, with bypass)
+
+        if (document.getElementById('res_Rr')) document.getElementById('res_Rr').innerText = isFinite(Rr) ? (100*Rr).toFixed(1) + " %" : "--";
+        if (document.getElementById('res_Ra')) document.getElementById('res_Ra').innerText = isFinite(Ra) ? (100*Ra).toFixed(1) + " %" : "--";
+        if (document.getElementById('res_X'))  document.getElementById('res_X').innerText  = isFinite(X)  ? X.toFixed(3) : "--";
+
+        // Plot reference curves (Graphs II + IV)
+        drawCurves(c, d50_application, dpPart);
+    }
+
+// --- ARTERBURN CURVES (Graphs II + IV) ---
+    function reducedRecovery(X) {
+        // Eq. (1): Rr = (e^(4X) - 1) / (e^(4X) + e^4 - 2)
+        const e4 = Math.exp(4);
+        const ex4 = Math.exp(4 * X);
+        return (ex4 - 1) / (ex4 + e4 - 2);
+    }
+
+    
+    function prepCanvas(canvas, desiredCssHeight) {
+        if (!canvas) return null;
+        const dpr = window.devicePixelRatio || 1;
+        const rect = canvas.getBoundingClientRect();
+        const cssW = Math.max(10, rect.width || 0);
+        const cssH = Math.max(10, (desiredCssHeight || rect.height || 0));
+        const pxW = Math.floor(cssW * dpr);
+        const pxH = Math.floor(cssH * dpr);
+        if (canvas.width !== pxW) canvas.width = pxW;
+        if (canvas.height !== pxH) canvas.height = pxH;
+        const ctx = canvas.getContext('2d');
+        // Clear in device pixels, then draw in CSS pixels
+        ctx.setTransform(1,0,0,1,0,0);
+        ctx.clearRect(0,0,canvas.width, canvas.height);
+        ctx.setTransform(dpr,0,0,dpr,0,0);
+        return { ctx, w: cssW, h: cssH, dpr };
+    }
+
+    function formatTick(v) {
+        const av = Math.abs(v);
+        if (av >= 1000) return String(Math.round(v));
+        if (av >= 100) return v.toFixed(0);
+        if (av >= 10) return v.toFixed(1);
+        if (av >= 1) return v.toFixed(2);
+        return v.toFixed(3);
+    }
+
+    function drawAxes(ctx, w, h, xMin, xMax, yMin, yMax, xLabel, yLabel, opts) {
+        opts = opts || {};
+        ctx.save();
+
+        // Styling
+        const fontTick = opts.fontTick || 10;
+        const fontLabel = opts.fontLabel || 11;
+
+        ctx.font = fontTick + "px Arial";
+        ctx.fillStyle = "rgba(255,255,255,0.9)";
+        ctx.strokeStyle = "rgba(255,255,255,0.22)";
+        ctx.lineWidth = 1;
+
+        // Padding
+        const padL = opts.padL ?? 62;
+        const padR = opts.padR ?? 14;
+        const padT = opts.padT ?? 16;
+        const padB = opts.padB ?? 52;
+
+        const plotW = Math.max(10, w - padL - padR);
+        const plotH = Math.max(10, h - padT - padB);
+
+        const xToPx = (x) => padL + (x - xMin) * plotW / (xMax - xMin);
+        const yToPx = (y) => padT + (yMax - y) * plotH / (yMax - yMin);
+
+        // Grid + ticks count based on available space
+        const xTicks = opts.xTicks ?? Math.max(3, Math.min(7, Math.floor(plotW / 80)));
+        const yTicks = opts.yTicks ?? Math.max(3, Math.min(7, Math.floor(plotH / 55)));
+
+        // Grid and tick labels
+        ctx.textAlign = "center";
+        ctx.textBaseline = "top";
+
+        for (let i = 0; i <= xTicks; i++) {
+            const x = xMin + (xMax - xMin) * i / xTicks;
+            const px = xToPx(x);
+
+            // Grid line
+            ctx.beginPath();
+            ctx.moveTo(px, padT);
+            ctx.lineTo(px, padT + plotH);
+            ctx.stroke();
+
+            // Tick label
+            const lbl = formatTick(x);
+            // Slight rotation when space is tight
+            const rotate = plotW / xTicks < 70;
+            ctx.save();
+            const yLbl = padT + plotH + (rotate ? 10 : 8);
+            ctx.translate(px, yLbl);
+            if (rotate) ctx.rotate(-Math.PI / 6); // -30 deg
+
+            // Avoid bottom-left / bottom-right collisions with the Y-axis tick label
+            ctx.textAlign = (i === 0) ? "left" : (i === xTicks ? "right" : "center");
+            ctx.textBaseline = "top";
+            const xOff = (i === 0) ? 2 : (i === xTicks ? -2 : 0);
+            ctx.fillText(lbl, xOff, 0);
+            ctx.restore();
+        }
+
+        ctx.textAlign = "right";
+        ctx.textBaseline = "middle";
+        for (let j = 0; j <= yTicks; j++) {
+            const y = yMin + (yMax - yMin) * j / yTicks;
+            const py = yToPx(y);
+
+            ctx.beginPath();
+            ctx.moveTo(padL, py);
+            ctx.lineTo(padL + plotW, py);
+            ctx.stroke();
+
+            ctx.fillText(formatTick(y), padL - 10, py);
+        }
+
+        // Border
+        ctx.strokeStyle = "rgba(255,255,255,0.35)";
+        ctx.strokeRect(padL, padT, plotW, plotH);
+
+        // Axis labels
+        ctx.fillStyle = "rgba(255,255,255,0.95)";
+        ctx.font = fontLabel + "px Arial";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "bottom";
+        ctx.fillText(xLabel, padL + plotW/2, h - 6);
+
+        ctx.save();
+        const yLabelX = opts.yLabelX ?? Math.max(14, padL - 42);
+        ctx.translate(yLabelX, padT + plotH/2);
+        ctx.rotate(-Math.PI/2);
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(yLabel, 0, 0);
+        ctx.restore();
+
+        ctx.restore();
+        return { xToPx, yToPx, padL, padT, plotW, plotH, xMin, xMax, yMin, yMax };
+    }
+
+
+    function mapToPlot(frame, x, y) {
+        const px = frame.padL + frame.plotW * (x - frame.xMin) / (frame.xMax - frame.xMin);
+        const py = frame.padT + frame.plotH * (1 - (y - frame.yMin) / (frame.yMax - frame.yMin));
+        return [px, py];
+    }
+
+    function drawCurve(ctx, frame, points) {
+        ctx.save();
+        ctx.strokeStyle = "rgba(0, 255, 180, 0.85)";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        for (let i=0;i<points.length;i++){
+            const [x,y]=points[i];
+            const [px,py]=mapToPlot(frame,x,y);
+            if(i===0) ctx.moveTo(px,py);
+            else ctx.lineTo(px,py);
+        }
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    function drawMarker(ctx, frame, x, y) {
+        const [px,py]=mapToPlot(frame,x,y);
+        ctx.save();
+        ctx.fillStyle = "rgba(255, 210, 0, 0.9)";
+        ctx.beginPath(); ctx.arc(px,py,4,0,Math.PI*2); ctx.fill();
+        ctx.restore();
+    }
+
+    function drawCurves(Vsol, d50c, dpPart) {
+        // Reduced recovery curve
+        const c1 = document.getElementById('canvas_reduced');
+        if (c1) {
+            const prep_c1 = prepCanvas(c1);
+            const ctx = prep_c1 ? prep_c1.ctx : c1.getContext('2d');
+            const w1 = prep_c1 ? prep_c1.w : c1.width;
+            const h1 = prep_c1 ? prep_c1.h : c1.height;
+            const frame = drawAxes(ctx, w1, h1, 0.2, 5.0, 0, 100, "X = dp/D50c", "Rr (% to UF)");
+            const pts=[];
+            for(let X=0.2; X<=5.0001; X+=0.02){
+                pts.push([X, 100*reducedRecovery(X)]);
+            }
+            drawCurve(ctx, frame, pts);
+            if (d50c>0 && dpPart>0) {
+                const X = dpPart/d50c;
+                drawMarker(ctx, frame, Math.max(0.2, Math.min(5.0, X)), 100*reducedRecovery(X));
+            }
+        }
+
+        // C1 curve
+        const c2 = document.getElementById('canvas_C1');
+        if (c2) {
+            const prep_c2 = prepCanvas(c2);
+            const ctx2 = prep_c2 ? prep_c2.ctx : c2.getContext('2d');
+            const w2 = prep_c2 ? prep_c2.w : c2.width;
+            const h2 = prep_c2 ? prep_c2.h : c2.height;
+            const vmax=50;
+            // Compute max C1 for scaling
+            let cmax=0;
+            for(let v=0; v<=vmax; v+=1){
+                const c = Math.pow((53 - v)/53, -1.43);
+                cmax = Math.max(cmax, c);
+            }
+            cmax = Math.min(Math.max(cmax, 8), 60);
+            const frame2 = drawAxes(ctx2, w2, h2, 0, vmax, 0, cmax, "V (% vol solids)", "C1 (-)");
+            const pts2=[];
+            for(let v=0; v<=vmax; v+=0.5){
+                pts2.push([v, Math.pow((53 - v)/53, -1.43)]);
+            }
+            drawCurve(ctx2, frame2, pts2);
+            if (isFinite(Vsol)) {
+                const v = Math.max(0, Math.min(vmax, Vsol));
+                drawMarker(ctx2, frame2, v, Math.pow((53 - v)/53, -1.43));
+            }
+        }
+    
+        // C2 curve
+        const c3 = document.getElementById('canvas_C2');
+        if (c3) {
+            const prep_c3 = prepCanvas(c3);
+            const ctx3 = prep_c3 ? prep_c3.ctx : c3.getContext('2d');
+            const w3 = prep_c3 ? prep_c3.w : c3.width;
+            const h3 = prep_c3 ? prep_c3.h : c3.height;
+            const dpMin = 10, dpMax = 200; // kPa
+            // scale y
+            let c2max = 0;
+            for (let dp=dpMin; dp<=dpMax; dp+=5) c2max = Math.max(c2max, 3.27*Math.pow(dp, -0.28));
+            c2max = Math.min(Math.max(c2max, 5), 20);
+            const frame3 = drawAxes(ctx3, w3, h3, dpMin, dpMax, 0, c2max, "ΔP (kPa)", "C2 (-)");
+            const pts3=[];
+            for(let dp=dpMin; dp<=dpMax; dp+=2){
+                pts3.push([dp, 3.27*Math.pow(dp, -0.28)]);
+            }
+            drawCurve(ctx3, frame3, pts3);
+            const dpNowBar = parseFloat(document.getElementById('inp_dp')?.value || '0');
+            const dpNow = isFinite(dpNowBar) ? (dpNowBar*100) : NaN;
+            if (isFinite(dpNow)) drawMarker(ctx3, frame3, Math.max(dpMin, Math.min(dpMax, dpNow)), 3.27*Math.pow(Math.max(dpMin, Math.min(dpMax, dpNow)), -0.28));
+        }
+
+        // D50 vs D (Graph III / Eq.3)
+        
+        // C3 curve (Graph VI, in water)
+        const c5 = document.getElementById('canvas_C3');
+        if (c5) {
+            const prep_c5 = prepCanvas(c5);
+            const ctx5 = prep_c5 ? prep_c5.ctx : c5.getContext('2d');
+            const w5 = prep_c5 ? prep_c5.w : c5.width;
+            const h5 = prep_c5 ? prep_c5.h : c5.height;
+            const gsMin = 1.10, gsMax = 10.0;
+            // scale y
+            let c3max = 0;
+            for (let gs=gsMin; gs<=gsMax; gs+=0.05){
+                const denom = (gs - 1.0);
+                if (denom>0) c3max = Math.max(c3max, Math.sqrt(1.65/denom));
+            }
+            c3max = Math.min(Math.max(c3max, 2.5), 10);
+            const frame5 = drawAxes(ctx5, w5, h5, gsMin, gsMax, 0, c3max, "Gs (-)", "C3 (-)");
+            const pts5=[];
+            for(let gs=gsMin; gs<=gsMax+1e-9; gs+=0.05){
+                const denom = (gs - 1.0);
+                pts5.push([gs, denom>0 ? Math.sqrt(1.65/denom) : c3max]);
+            }
+            drawCurve(ctx5, frame5, pts5);
+            // Marker at current Gs (uses chart definition in water)
+            const gsNow = parseFloat(document.getElementById('inp_Gs')?.value || '0');
+            if (isFinite(gsNow) && gsNow>gsMin && gsNow<gsMax) {
+                const denom = (gsNow - 1.0);
+                if (denom>0) drawMarker(ctx5, frame5, gsNow, Math.sqrt(1.65/denom));
+            }
+        }
+
+        // Water capacity (Graph VII model): Vdot_per = a(DN)*ΔP^b  (ΔP in bar, Vdot in m³/h)
+        const c6 = document.getElementById('canvas_cap');
+        if (c6) {
+            const prep_c6 = prepCanvas(c6);
+            const ctx6 = prep_c6 ? prep_c6.ctx : c6.getContext('2d');
+            const w6 = prep_c6 ? prep_c6.w : c6.width;
+            const h6 = prep_c6 ? prep_c6.h : c6.height;
+            const DN = parseFloat(document.getElementById('inp_D')?.value || '0');
+            const dpBarNow = parseFloat(document.getElementById('inp_dp')?.value || '0');
+            const alpha = 1.802e-05, beta = -0.0089682, gamma = 1.70931167, delta = -90.0575, b = 0.52075;
+            const a = alpha*Math.pow(DN,3) + beta*Math.pow(DN,2) + gamma*DN + delta;
+            const dpMin = 0.1, dpMax = 6.0;
+            // y scaling
+            let vmax = 0;
+            const pts6=[];
+            for(let dp=dpMin; dp<=dpMax+1e-9; dp+=0.05){
+                const v = (a>0) ? (a*Math.pow(dp, b)) : 0;
+                pts6.push([dp, v]);
+                vmax = Math.max(vmax, v);
+            }
+            vmax = Math.max(10, vmax*1.05);
+            const frame6 = drawAxes(ctx6, w6, h6, dpMin, dpMax, 0, vmax, "ΔP (bar)", "V̇ per cyclone (m³/h)");
+            drawCurve(ctx6, frame6, pts6);
+            if (a>0 && isFinite(dpBarNow) && dpBarNow>=dpMin && dpBarNow<=dpMax) {
+                drawMarker(ctx6, frame6, dpBarNow, a*Math.pow(dpBarNow, b));
+            }
+        }
+
+
+        const c4 = document.getElementById('canvas_D50');
+        if (c4) {
+            const prep_c4 = prepCanvas(c4);
+            const ctx4 = prep_c4 ? prep_c4.ctx : c4.getContext('2d');
+            const w4 = prep_c4 ? prep_c4.w : c4.width;
+            const h4 = prep_c4 ? prep_c4.h : c4.height;
+            const DinMin = 1, DinMax = 60; // inches
+            // compute y max
+            let d50max=0;
+            for (let Din=DinMin; Din<=DinMax; Din+=1){
+                const Dcm = Din*2.54;
+                d50max = Math.max(d50max, 2.84*Math.pow(Dcm, 0.66));
+            }
+            d50max = Math.min(Math.max(d50max, 80), 400);
+            const frame4 = drawAxes(ctx4, w4, h4, DinMin, DinMax, 0, d50max, "D (inches)", "D50c (µm)");
+            const pts4=[];
+            for(let Din=DinMin; Din<=DinMax; Din+=0.5){
+                const Dcm = Din*2.54;
+                pts4.push([Din, 2.84*Math.pow(Dcm, 0.66)]);
+            }
+            drawCurve(ctx4, frame4, pts4);
+            const d50base = (DATA && isFinite(DATA.d50_base)) ? DATA.d50_base : d50c;
+                if (isFinite(d50base) && d50base>0) {
+                // mark current theoretical diameter on this plot (from d50,base; Eq.3)
+                const Dmm = 10*Math.pow((d50base/2.84), (1/0.66)); // same as D_theor
+
+                const Din = Dmm/25.4;
+                drawMarker(ctx4, frame4, Math.max(DinMin, Math.min(DinMax, Din)), 2.84*Math.pow((Math.max(DinMin, Math.min(DinMax, Din))*2.54), 0.66));
+            }
+        }
+
+    }
+
+
+// --- GERMAN BLUEPRINT DRAWING ---
+    function drawBlueprint(ctx, w, h) {
+        // Clear background
+        ctx.fillStyle = "#ffffff"; ctx.fillRect(0,0,w,h);
+        
+        // 1. Frame and Title
+        ctx.strokeStyle = "#000"; ctx.lineWidth = 4; ctx.strokeRect(50, 50, w-100, h-100);
+        ctx.font = "bold 60px Arial"; ctx.fillStyle = "#000"; ctx.textAlign = "center";
+        ctx.fillText("Prinzipskizze / Scheme", w/2, 120);
+
+        // Dashed Page Break Line (Blue)
+        ctx.setLineDash([20, 15]); ctx.strokeStyle = "blue"; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.moveTo(w-100, 0); ctx.lineTo(w-100, h); ctx.stroke();
+        ctx.setLineDash([]); // Reset
+
+        // 2. Geometry Calculation for Drawing
+        const D = DATA.D_DN;
+        const { H_cyl, h_cone, le, du, Do, l_vortex, L_total } = DATA;
+        
+        // Scale to fit canvas (Vertical padding 400px)
+        const maxH_draw = h - 800;
+        const scale = maxH_draw / L_total;
+        
+        const cx = w/2; 
+        const topY = 300;
+        
+        // Scaled values
+        const sD = (D/2)*scale;
+        const sH = H_cyl*scale;
+        const sh = h_cone*scale;
+        const sdu = (du/2)*scale;
+        const sle = le*scale;
+        const slv = l_vortex*scale;
+        const sDo = (Do/2)*scale;
+
+        // 3. Draw Cyclone Body (Lines)
+        ctx.strokeStyle = "#000"; ctx.lineWidth = 3; ctx.lineJoin = "round";
+        ctx.beginPath();
+        // Left side
+        ctx.moveTo(cx - sD, topY);
+        ctx.lineTo(cx - sD, topY + sH); // Cylinder
+        ctx.lineTo(cx - sdu, topY + sH + sh); // Cone
+        ctx.lineTo(cx - sdu, topY + sH + sh + 20); // Underflow exit
+        // Right side
+        ctx.moveTo(cx + sD, topY);
+        ctx.lineTo(cx + sD, topY + sH);
+        ctx.lineTo(cx + sdu, topY + sH + sh);
+        ctx.lineTo(cx + sdu, topY + sH + sh + 20);
+        // Top Close
+        ctx.moveTo(cx - sD, topY); ctx.lineTo(cx + sD, topY);
+        // Bottom Close
+        ctx.moveTo(cx - sdu, topY + sH + sh + 20); ctx.lineTo(cx + sdu, topY + sH + sh + 20);
+        // Cone Top Line
+        ctx.moveTo(cx - sD, topY + sH); ctx.lineTo(cx + sD, topY + sH);
+        
+        // Inlet Box
+        ctx.rect(cx - sD - sle, topY, sle, sle);
+        ctx.stroke();
+
+        // Vortex Finder (Overflow)
+        ctx.beginPath();
+        ctx.rect(cx - sDo, topY - 100, sDo*2, 100 + slv);
+        ctx.stroke();
+
+        // Center Axis (Dash Dot)
+        ctx.beginPath();
+        ctx.setLineDash([25, 10, 5, 10]); ctx.lineWidth = 2;
+        ctx.moveTo(cx, topY - 150); ctx.lineTo(cx, topY + sH + sh + 100);
+        ctx.stroke(); ctx.setLineDash([]);
+
+        // 4. Dimensions & Labels (Exact Style)
+        const dim = (x1, y1, x2, y2, text, off, arr=true) => {
+            ctx.strokeStyle = "#444"; ctx.lineWidth = 1; ctx.fillStyle = "#000"; ctx.font = "30px Arial";
+            // Lines
+            ctx.beginPath();
+            if(x1 === x2) { // Vertical
+                ctx.moveTo(x1-10, y1); ctx.lineTo(x1-off, y1);
+                ctx.moveTo(x2-10, y2); ctx.lineTo(x2-off, y2);
+                ctx.moveTo(x1-off+10, y1); ctx.lineTo(x1-off+10, y2); // Main line
+                // Arrows
+                if(arr){
+                    ctx.moveTo(x1-off+10, y1); ctx.lineTo(x1-off+5, y1+15); ctx.lineTo(x1-off+15, y1+15);
+                    ctx.moveTo(x2-off+10, y2); ctx.lineTo(x2-off+5, y2-15); ctx.lineTo(x2-off+15, y2-15);
+                }
+                // Text
+                ctx.save(); ctx.translate(x1-off-10, (y1+y2)/2); ctx.rotate(-Math.PI/2); 
+                ctx.textAlign = "center"; ctx.fillText(text, 0, 0); ctx.restore();
+            } else { // Horizontal
+                ctx.moveTo(x1, y1-10); ctx.lineTo(x1, y1-off);
+                ctx.moveTo(x2, y2-10); ctx.lineTo(x2, y2-off);
+                ctx.moveTo(x1, y1-off+10); ctx.lineTo(x2, y2-off+10);
+                if(arr){
+                    ctx.moveTo(x1, y1-off+10); ctx.lineTo(x1+15, y1-off+5); ctx.lineTo(x1+15, y1-off+15);
+                    ctx.moveTo(x2, y2-off+10); ctx.lineTo(x2-15, y2-off+5); ctx.lineTo(x2-15, y2-off+15);
+                }
+                ctx.textAlign = "center"; ctx.fillText(text, (x1+x2)/2, y1-off-5);
+            }
+            ctx.stroke();
+        };
+
+        // Adding Dimensions
+        // Horizontal D
+        dim(cx - sD, topY, cx + sD, topY, "D", 80);
+        // Horizontal Do
+        dim(cx - sDo, topY - 100, cx + sDo, topY - 100, "Do", 40);
+        // Vertical L
+        dim(cx - sD, topY, cx - sD, topY + sH + sh, "L", 150);
+        // Vertical H
+        dim(cx + sD, topY, cx + sD, topY + sH, "H", -150); // Right side
+        // Vertical h
+        dim(cx + sD, topY + sH, cx + sD, topY + sH + sh, "h", -150); // Right side
+        // Inlet l_e (marked as 'l' in diagram)
+        dim(cx - sD - sle, topY, cx - sD - sle, topY + sle, "l_e", 40);
+
+        // Labels
+        ctx.textAlign = "left"; ctx.fillText("Feed", cx - sD - sle, topY - 20);
+        ctx.fillText("Overflow", cx + sDo + 20, topY - 50);
+        ctx.fillText("Underflow", cx + sdu + 20, topY + sH + sh + 20);
+
+        // Angle 2phi
+        ctx.beginPath(); ctx.arc(cx, topY + sH + sh, 100, Math.PI + Math.PI/2 - 0.2, Math.PI*2 + 0.2); // Rough arc
+        ctx.stroke();
+        ctx.textAlign = "center"; ctx.fillText("2 \u03C6", cx, topY + sH + sh - 80);
+
+        // 5. Legend Table at Bottom
+        const ly = h - 600;
+        ctx.lineWidth = 3; ctx.strokeRect(50, ly, w-100, 500);
+        ctx.beginPath(); ctx.moveTo(50, ly+60); ctx.lineTo(w-50, ly+60); ctx.stroke(); // Header line
+
+        ctx.font = "bold 40px Arial"; ctx.textAlign = "left"; 
+        ctx.fillText("Geometrie:", 80, ly+45);
+        ctx.fillText("Partikelgrößen, Abscheidungsgrad:", w/2 + 50, ly+45);
+        
+        // Dashed separator
+        ctx.setLineDash([10, 10]); ctx.strokeStyle = "blue";
+        ctx.beginPath(); ctx.moveTo(w/2, ly); ctx.lineTo(w/2, ly+500); ctx.stroke(); ctx.setLineDash([]);
+
+        // Legend Text
+        ctx.font = "35px Arial"; const lh = 50; let ty = ly + 120;
+        const col1 = [
+            ["D", "Zyklondurchmesser", D + " mm"],
+            ["L", "Gesamtlänge", L_total.toFixed(0) + " mm"],
+            ["H", "Höhe Zylinder", H_cyl.toFixed(0) + " mm"],
+            ["h", "Höhe Konus", h_cone.toFixed(0) + " mm"],
+            ["l", "Tauchrohrlänge", l_vortex.toFixed(0) + " mm"],
+            ["le", "Einlaufkanal", le.toFixed(0) + " mm"],
+            ["Do", "Durchmesser Oberlauf", Do.toFixed(0) + " mm"],
+            ["Du", "Durchmesser Unterlauf", du.toFixed(0) + " mm"]
+        ];
+
+        col1.forEach(row => {
+            ctx.fillStyle = "#000"; ctx.fillText(row[0], 100, ty);
+            ctx.fillStyle = "#333"; ctx.fillText(row[1], 200, ty);
+            ctx.textAlign = "right"; ctx.fillStyle = "#000"; ctx.fillText(row[2], w/2 - 50, ty);
+            ctx.textAlign = "left";
+            ty += lh;
+        });
+
+        // Right Column Text
+        ty = ly + 120;
+        const col2 = [
+            ["Rr,w", "Abscheidungsgrad (Ziel)", DATA.Rw + " %"],
+            ["dw", "Partikelgröße @Rr,w", DATA.dw + " µm"],
+            ["d50,base", "theor. Trennkorngröße", DATA.d50_base.toFixed(1) + " µm"],
+            ["d50,app", "Trennkorngröße (Actual)", DATA.d50_application.toFixed(1) + " µm"]
+        ];
+        col2.forEach(row => {
+            ctx.fillStyle = "#000"; ctx.fillText(row[0], w/2 + 80, ty);
+            ctx.fillStyle = "#333"; ctx.fillText(row[1], w/2 + 280, ty);
+            ctx.textAlign = "right"; ctx.fillStyle = "#000"; ctx.fillText(row[2], w - 80, ty);
+            ctx.textAlign = "left";
+            ty += lh;
+        });
+    }
+
+    // --- PDF EXPORT (COMPLEX) ---
+    if (window.jspdf && window.jspdf.jsPDF) { window.jsPDF = window.jspdf.jsPDF; }
+    
+    
+    
+    function printToPDF() {
+        // Uses the browser's built-in "Save as PDF". Works offline. Works everywhere.
+        // Print CSS is defined in <style> via @media print.
+        window.focus();
+        window.print();
+    }
+
+function generateDetailedPDF() {
+        // Robustness: If external PDF libs are not available (offline/blocked CDNs), fall back to browser Print-to-PDF.
+        try {
+            if (!(window.jspdf && window.jspdf.jsPDF)) {
+                printToPDF();
+                return;
+            }
+        } catch (e) {
+            printToPDF();
+            return;
+        }
+
+        // Ensure calculations are up-to-date before exporting
+        try { recalc(); } catch (e) {}
+
+        const cvs = document.getElementById('blueprint-canvas');
+        const ctx = cvs.getContext('2d');
+        drawBlueprint(ctx, cvs.width, cvs.height);
+        const imgData = cvs.toDataURL("image/jpeg", 0.85);
+
+        const doc = new jsPDF('p', 'mm', 'a4');
+        if (typeof doc.autoTable !== 'function') { printToPDF(); return; }
+        const W = doc.internal.pageSize.getWidth();
+        const H = doc.internal.pageSize.getHeight();
+
+        doc.addImage(imgData, 'JPEG', 0, 0, W, H);
+        doc.addPage();
+
+        doc.setFontSize(10);
+
+        const colHead = [220, 220, 220];
+        const colYellow = [255, 255, 153];
+
+        doc.autoTable({
+            head: [['Feed / Stoffdaten', 'Value', 'Description']],
+            body: [
+                ['V_dot', (DATA.Q_total ?? '') + ' m3/h', 'Gesamtvolumenstrom Feed'],
+                ['c', (DATA.c ?? '') + ' v/v%', 'Konzentration Solid (Volumen)'],
+                ['dp', (DATA.dp ?? '') + ' bar', 'Druckverlust Zyklon'],
+                ['GS', (DATA.Gs ?? '') + ' -', 'spezifische Dichte Solid'],
+                ['GL', (DATA.Gl ?? '') + ' -', 'spezifische Dichte Fluid']
+            ],
+            startY: 18,
+            theme: 'grid',
+            headStyles: {fillColor: colHead, textColor:0, fontStyle:'bold'},
+            columnStyles: { 1: {fillColor: colYellow} }
+        });
+
+        doc.autoTable({
+            head: [['Partikelabscheidung', 'Value', 'Description', 'Formula']],
+            body: [
+                ['dw', (DATA.dw ?? '') + ' µm', 'Partikelgröße @Rr,w (Vorgabe)', ''],
+                ['Rr,w', (DATA.Rw ?? '') + ' %', 'Abscheidungsgrad (Vorgabe)', ''],
+                ['f', (DATA.f ?? 0).toFixed(2), 'f = a*ln(Rr,w)+b', 'a=-3.16721, b=15.12624'],
+                ['d50,application', (DATA.d50_application ?? 0).toFixed(1) + ' µm', 'Ziel Trennkorngröße (Application)', 'dw * f'],
+                ['C_total', (DATA.Ctot ?? 0).toFixed(2), 'Korrekturfaktor (C1*C2*C3)', ''],
+                ['d50,base', (DATA.d50_base ?? 0).toFixed(1) + ' µm', 'theor. Trennkorngröße (Base)', 'd50,app / (C1*C2*C3)'],
+                ['D_theor', (DATA.D_theor ?? 0).toFixed(0) + ' mm', 'theor. Zyklondurchmesser', '10*(d50_base/2.84)^(1/0.66)'],
+                ['d50,DN,base', (DATA.d50_DN_base ?? 0).toFixed(1) + ' µm', 'Base bei gewähltem DN', '2.84*(DN/10)^0.66'],
+                ['d50,DN,application', (DATA.d50_DN_application ?? 0).toFixed(1) + ' µm', 'Trennkorngröße bei DN', 'd50_DN_base*C_total']
+            ],
+            startY: doc.lastAutoTable.finalY + 8,
+            theme: 'grid',
+            headStyles: {fillColor: colHead, textColor:0},
+            columnStyles: { 1: {fillColor: colYellow} }
+        });
+
+        doc.autoTable({
+            head: [['Faktoren', 'Value', 'Formula']],
+            body: [
+                ['C1 (Conc)', (DATA.C1 ?? 0).toFixed(3), '((53-c)/53)^-1.43'],
+                ['C2 (Press)', (DATA.C2 ?? 0).toFixed(3), '3.27*(100*dp)^-0.28'],
+                ['C3 (Dens)', (DATA.C3 ?? 0).toFixed(3), '(1.65/(GS-GL))^0.5']
+            ],
+            startY: doc.lastAutoTable.finalY + 8,
+            theme: 'grid',
+            headStyles: {fillColor: colHead, textColor:0}
+        });
+
+        doc.autoTable({
+            head: [['Geometrie', 'Symbol', 'Wert', 'Regel / Formel']],
+            body: [
+                ['Zyklondurchmesser', 'DN', (DATA.D_DN ?? '') + ' mm', 'Selected'],
+                ['Einlaufkanal (Seite)', 'le', (DATA.le ?? 0).toFixed(1) + ' mm', 'le = sqrt(0.05*D^2)'],
+                ['Tauchrohrlänge', 'l', (DATA.l_vortex ?? 0).toFixed(1) + ' mm', 'l = 0.35*D'],
+                ['Höhe Zylinder', 'H', (DATA.H_cyl ?? 0).toFixed(1) + ' mm', 'H = D'],
+                ['Konushalbwinkel', 'fi', (DATA.fi ?? 0).toFixed(1) + ' °', '10° < fi < 20°'],
+                ['Höhe Konus', 'h', (DATA.h_cone ?? 0).toFixed(1) + ' mm', 'h = (D-du)/(2*sin(fi))'],
+                ['Gesamtlänge', 'L', (DATA.L_total ?? 0).toFixed(0) + ' mm', 'L = le + H + h'],
+                ['Durchmesser Unterlauf', 'Du', (DATA.du ?? 0).toFixed(1) + ' mm', 'Du = 0.25*D (default)'],
+                ['Durchmesser Oberlauf', 'Do', (DATA.Do ?? 0).toFixed(1) + ' mm', 'Do = 0.35*D (typ.)']
+            ],
+            startY: doc.lastAutoTable.finalY + 8,
+            theme: 'grid',
+            headStyles: {fillColor: [100, 200, 100], textColor:0},
+            columnStyles: { 2: {fillColor: colYellow, fontStyle:'bold'} }
+        });
+
+        doc.autoTable({
+            head: [['Kapazität / Anzahl', 'Value', 'Description', 'Model']],
+            body: [
+                ['Vdot/Zyklon', (DATA.Vdot_per_cyclone ?? 0).toFixed(1) + ' m3/h', 'Volumenstrom pro Einheit', 'V = a(D)*dp^b'],
+                ['a(D)', (DATA.a_cap ?? 0).toFixed(3), 'a = αD^3+βD^2+γD+δ', 'α=1.802e-05, β=-0.0089682, γ=1.70931167, δ=-90.0575'],
+                ['b', (DATA.b_exp ?? 0).toFixed(5), 'Exponent', 'b=0.52075'],
+                ['n erforderlich', (DATA.n_required ?? 0) + ' Stück', 'benötigte Anzahl (aufgerundet)', 'ceil(V_dot / Vdot/Zyklon)'],
+                ['n installiert', (DATA.N_installed ?? '-') + '', 'optional Eingabe', '']
+            ],
+           startY: doc.lastAutoTable.finalY + 8,
+  theme: 'grid',
+  headStyles: { fillColor: colHead, textColor: 0 },
+  styles: { overflow: 'linebreak', cellWidth: 'wrap' },
+
+            columnStyles: {
+    1: { fillColor: colYellow },
+    3: { cellWidth: 70 }
+     }
+        });
+
+        doc.save('Hydrocyclone_Design_German.pdf');
+    }
+
+    // Backwards-compatible handler for the UI button
+    function generateGermanPDF() { generateDetailedPDF(); }
+
+
+
+    
+    function exportExcel() {
+        if (!(window.XLSX && XLSX.utils)) { alert('Excel export requires the XLSX library (CDN blocked/offline).'); return; }
+        // Ensure calculations are up-to-date before exporting
+        try { recalc(); } catch (e) {}
+        const wb = XLSX.utils.book_new();
+
+        const meta = [
+            ["ART ENVI REPORT - HYDROCYCLONE"],
+            ["Date", new Date().toLocaleDateString()],
+            ["Client", document.getElementById('prj_client').value || ""],
+            ["Project No.", document.getElementById('prj_no').value || ""]
+        ];
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(meta), "Meta");
+
+        const inputs = [
+            ["INPUTS","Value","Unit"],
+            ["V_dot", DATA.Q_total, "m3/h"],
+            ["c", DATA.c, "v/v%"],
+            ["dp", DATA.dp, "bar"],
+            ["GS", DATA.Gs, "-"],
+            ["GL", DATA.Gl, "-"],
+            ["dw", DATA.dw, "µm"],
+            ["Rr,w", DATA.Rw, "%"],
+            ["DN (selected)", DATA.D_DN, "mm"],
+            ["fi", DATA.fi, "deg"],
+            ["n installed (opt.)", DATA.N_installed ?? "", "pcs"]
+        ];
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(inputs), "Inputs");
+
+        const calcs = [
+            ["CALCULATION","Value","Unit","Formula (Excel)"],
+            ["f", DATA.f, "-", "a*ln(Rr,w)+b"],
+            ["d50,application", DATA.d50_application, "µm", "dw*f"],
+            ["C1", DATA.C1, "-", "((53-c)/53)^-1.43"],
+            ["C2", DATA.C2, "-", "3.27*(100*dp)^-0.28"],
+            ["C3", DATA.C3, "-", "(1.65/(GS-GL))^0.5"],
+            ["C_total", DATA.Ctot, "-", "C1*C2*C3"],
+            ["d50,base", DATA.d50_base, "µm", "d50,app/C_total"],
+            ["D_theor", DATA.D_theor, "mm", "10*(d50_base/2.84)^(1/0.66)"],
+            ["d50,DN,base", DATA.d50_DN_base, "µm", "2.84*(DN/10)^0.66"],
+            ["d50,DN,application", DATA.d50_DN_application, "µm", "d50_DN_base*C_total"]
+        ];
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(calcs), "Calc");
+
+        const geom = [
+            ["GEOMETRY","Value","Unit","Rule"],
+            ["Ae", DATA.Ae, "mm^2", "0.05*D^2"],
+            ["le", DATA.le, "mm", "sqrt(Ae)"],
+            ["l", DATA.l_vortex, "mm", "0.35*D"],
+            ["H", DATA.H_cyl, "mm", "H=D"],
+            ["Du", DATA.du, "mm", "0.25*D"],
+            ["Do", DATA.Do, "mm", "0.35*D"],
+            ["h", DATA.h_cone, "mm", "(D-Du)/(2*sin(fi))"],
+            ["L", DATA.L_total, "mm", "le+H+h"]
+        ];
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(geom), "Geometry");
+
+        const cap = [
+            ["CAPACITY","Value","Unit","Model"],
+            ["alpha", DATA.alpha, "-", ""],
+            ["beta", DATA.beta, "-", ""],
+            ["gamma", DATA.gamma, "-", ""],
+            ["delta", DATA.delta, "-", ""],
+            ["b", DATA.b_exp, "-", ""],
+            ["a(D)", DATA.a_cap, "-", "αD^3+βD^2+γD+δ"],
+            ["Vdot_per_cyclone", DATA.Vdot_per_cyclone, "m3/h", "a(D)*dp^b"],
+            ["n_required", DATA.n_required, "pcs", "ceil(V_dot/Vdot_per_cyclone)"]
+        ];
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(cap), "Capacity");
+
+        XLSX.writeFile(wb, "Design_Data.xlsx");
+    }
+
+
+    // Init
+    setTimeout(recalc, 200);
+
+    // Keep plots responsive (debounced)
+    let __rzT = null;
+    window.addEventListener('resize', () => {
+        if (__rzT) clearTimeout(__rzT);
+        __rzT = setTimeout(() => { try { recalc(); } catch (e) {} }, 150);
+    });
+
+
+    // --- INIT: ensure outputs update when inputs change ---
+    window.addEventListener('DOMContentLoaded', () => {
+        try { recalc(); } catch (e) { console.error(e); }
+        try {
+            document.querySelectorAll('input, select, textarea').forEach(el => {
+                el.addEventListener('input', () => { try { validate(el); } catch (e) {} });
+                el.addEventListener('change', () => { try { validate(el); } catch (e) {} });
+            });
+        } catch (e) {}
+    });
+
+</script>
+
+<!-- KI-Helfer: ordnet das Ergebnis ein, rechnet es nicht. Der
+     Schluessel steht nicht hier, sondern hinter der Edge Function
+     werkzeug-assistent. Siehe ki-helfer.js. -->
+<script src="ki-helfer.js"></script>
+<script>
+  KI_HELFER.einbauen({
+    werkzeug: "Hydrocyclone Pro",
+    modus: "deutung",
+    knopf: "Ergebnis einordnen",
+    titel: "Einordnung des Ergebnisses",
+    platzhalter: "Frage dazu, optional. Zum Beispiel: welche Stellschraube zuerst?",
+    ergebnisse: {
+      "res_d50app": "Trennkorngroesse d50",
+      "res_d50base": "d50 Basis",
+      "res_Vdot": "Volumenstrom",
+      "res_X": "Feststoffanteil",
+      "res_Nreq": "Anzahl Zyklone",
+      "res_grenze": "Gueltigkeitsbereich"
+    }
+  });
+</script>
+</body>
+</html>

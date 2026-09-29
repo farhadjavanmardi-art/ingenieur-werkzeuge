@@ -1,0 +1,1905 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ART ENVI | Brandschutz Master (Global Fire Protection Framework)</title>
+
+  <!-- Optional online libraries (works offline without them; 3D requires three.js) -->
+  <link rel="stylesheet" href="bibliotheken/fontawesome/css/all.min.css">
+  <script src="bibliotheken/three-0.128/three.min.js"></script>
+  <script src="bibliotheken/three-0.128/controls/OrbitControls.js"></script>
+
+  <style>
+    :root{
+      --e:#10b981; --e2:#059669; --e9:#064e3b;
+      --bg:#0b1220; --bg2:#0f172a;
+      --bd:rgba(16,185,129,.25); --bd2:rgba(16,185,129,.38);
+      --tx:#e5e7eb; --mut:#9ca3af;
+      --shadow: 0 18px 35px rgba(0,0,0,.35);
+      --r:14px; --r2:10px;
+      --red:#ff6b6b; --amber:#f39c12; --ok:#2ecc71;
+    }
+    html, body{ height:100%; }
+    body{
+      margin:0;
+      background:
+        radial-gradient(1000px 600px at 15% 10%, rgba(6,78,59,.30), transparent 60%),
+        radial-gradient(900px 550px at 85% 20%, rgba(16,185,129,.15), transparent 60%),
+        var(--bg);
+      color: var(--tx);
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+      font-size: 12px;
+      overflow:hidden;
+    }
+    *{ box-sizing:border-box; }
+    ::-webkit-scrollbar{ width: 8px; height: 8px; }
+    ::-webkit-scrollbar-thumb{ background:#2c3448; border-radius: 6px; }
+
+    /* Topbar */
+    .topbar{
+      position: sticky;
+      top:0;
+      height:56px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding: 0 14px;
+      background: linear-gradient(180deg, rgba(6,78,59,0.35), rgba(15,23,42,0.92));
+      border-bottom: 1px solid var(--bd);
+      z-index: 10000;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+    }
+    .title{
+      display:flex; align-items:center; gap:10px;
+      font-size: 13px; font-weight: 900; letter-spacing:.3px;
+      min-width:0;
+    }
+    .dot{ width:10px; height:10px; border-radius:50%; background: var(--e); box-shadow: 0 0 0 3px rgba(16,185,129,0.18); flex: 0 0 10px; }
+    .sub{ color:var(--mut); font-weight:700; font-size:12px; white-space: nowrap; overflow:hidden; text-overflow: ellipsis; }
+
+    .actions{ display:flex; align-items:center; gap:10px; }
+    .iconbtn{
+      appearance:none; border:1px solid var(--bd2);
+      background: rgba(15,23,42,.55); color: var(--tx);
+      height:36px; min-width:36px; padding: 0 10px;
+      border-radius: 10px; display:flex; align-items:center; justify-content:center; gap:8px;
+      cursor:pointer; box-shadow: 0 8px 18px rgba(0,0,0,.22);
+      user-select:none;
+    }
+    .iconbtn:hover{ border-color: rgba(16,185,129,.65); background: rgba(16,185,129,.14); }
+    .iconbtn:active{ transform: translateY(1px); }
+    .iconbtn .lbl{ font-size: 12px; color: var(--mut); font-weight: 800; }
+    @media (max-width: 820px){ .iconbtn .lbl{ display:none; } }
+
+    /* Layout */
+    .shell{ display:flex; height: calc(100vh - 56px); }
+    .sidebar{
+      width: 420px;
+      background: rgba(17,28,49,.92);
+      border-right: 1px solid rgba(255,255,255,.06);
+      padding: 16px;
+      overflow:auto;
+      min-width: 0;
+    }
+    .main{ flex:1; min-width:0; display:flex; flex-direction: column; overflow:hidden; }
+
+    .brand{
+      font-size: 16px; font-weight: 900; color:#fff;
+      margin-bottom: 14px;
+      display:flex; align-items:center; gap:10px;
+      border-bottom: 2px solid var(--e);
+      padding-bottom: 10px;
+      letter-spacing:.25px;
+    }
+    .brand span{ color:var(--e); }
+
+    .section{
+      background: rgba(15,23,42,.55);
+      border: 1px solid rgba(16,185,129,.18);
+      border-radius: 12px;
+      padding: 12px;
+      margin-bottom: 12px;
+      box-shadow: 0 12px 24px rgba(0,0,0,.18);
+      min-width: 0;
+    }
+    .sec-title{
+      font-size: 11px;
+      font-weight: 900;
+      color: var(--e);
+      text-transform: uppercase;
+      margin-bottom: 10px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 8px;
+      letter-spacing: .35px;
+    }
+
+    label{ display:block; margin-bottom: 4px; font-size: 10px; color: var(--mut); font-weight: 900; }
+    input, select, textarea{
+      width:100%;
+      background: rgba(11,18,32,.75);
+      border: 1px solid rgba(255,255,255,.12);
+      color: var(--tx);
+      padding: 8px;
+      border-radius: 10px;
+      font-size: 11px;
+      outline:none;
+    }
+    input:focus, select:focus, textarea:focus{
+      border-color: rgba(16,185,129,.55);
+      box-shadow: 0 0 0 3px rgba(16,185,129,.10);
+    }
+    textarea{ resize: vertical; min-height: 70px; }
+
+    .row{ display:flex; gap:10px; margin-bottom: 8px; min-width:0; }
+    .grp{ flex:1; min-width:0; }
+
+    .btn{
+      width:100%;
+      padding: 10px 10px;
+      border:none;
+      border-radius: 10px;
+      cursor:pointer;
+      font-weight: 900;
+      font-size: 11px;
+      letter-spacing: .2px;
+      margin-top: 6px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:8px;
+    }
+    .btn-add{ background: var(--e); color:#04130d; }
+    .btn-calc{ background: var(--e2); color:#fff; }
+    .btn-ghost{ background: rgba(255,255,255,.06); border:1px solid rgba(16,185,129,.25); color: var(--tx); }
+    .btn-ghost:hover{ background: rgba(16,185,129,.10); border-color: rgba(16,185,129,.45); }
+    .btn-danger{ background: rgba(192,57,43,.25); border:1px solid rgba(192,57,43,.55); color: #ffd2cf; }
+
+    .hint{
+      padding: 8px 10px;
+      border-radius: 10px;
+      border: 1px solid rgba(16,185,129,.20);
+      background: rgba(6,78,59,.10);
+      color: var(--tx);
+      font-size: 11px;
+      line-height: 1.45;
+    }
+    .tiny{ font-size: 10px; color: var(--mut); line-height: 1.4; }
+
+    .badge{ padding: 3px 6px; border-radius: 6px; font-weight: 900; font-size: 10px; letter-spacing:.2px; display:inline-block; border:1px solid transparent; }
+    .b-ok{ background: rgba(39,174,96,.16); color: var(--ok); border-color: var(--ok); }
+    .b-warn{ background: rgba(243,156,18,.16); color: var(--amber); border-color: var(--amber); }
+    .b-bad{ background: rgba(231,76,60,.14); color: var(--red); border-color: var(--red); }
+
+    /* Tabs + views */
+    .tabs{
+      height: 46px;
+      background: rgba(15,23,42,.75);
+      display:flex;
+      border-bottom: 1px solid rgba(255,255,255,.06);
+      overflow:auto;
+    }
+    .tab{
+      padding: 0 18px;
+      display:flex;
+      align-items:center;
+      cursor:pointer;
+      color: var(--mut);
+      font-weight: 900;
+      transition:.2s;
+      border-right: 1px solid rgba(255,255,255,.06);
+      gap: 8px;
+      user-select:none;
+      white-space: nowrap;
+      flex: 0 0 auto;
+    }
+    .tab.active{ background: rgba(11,18,32,.65); color: #fff; border-top: 3px solid var(--e); }
+    .tab:hover{ color:#fff; }
+    .view{ display:none; flex:1; padding: 16px; overflow:auto; min-width:0; }
+    .view.active{ display:block; }
+
+    .summary{
+      display:flex;
+      justify-content:space-between;
+      gap: 10px;
+      margin-bottom: 12px;
+      color: var(--mut);
+      font-size: 11px;
+      flex-wrap: wrap;
+    }
+    .summary b{ color:#fff; }
+    .summary .accent{ color: var(--e); }
+    .summary .warn{ color: var(--amber); }
+    .summary .bad{ color: var(--red); }
+
+    .tableWrap{
+      overflow:auto;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,.07);
+      background: rgba(11,18,32,.35);
+      box-shadow: 0 12px 24px rgba(0,0,0,.18);
+      min-width:0;
+    }
+    table{ width:100%; border-collapse: collapse; font-size: 11px; min-width: 1180px; }
+    th{
+      text-align:left;
+      padding: 10px;
+      background: rgba(17,28,49,.90);
+      color: #b8c0cf;
+      position: sticky;
+      top: 0;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+      z-index: 1;
+      white-space: nowrap;
+    }
+    td{
+      padding: 8px 10px;
+      border-bottom: 1px solid rgba(255,255,255,.06);
+      color: #d3d7df;
+      vertical-align: top;
+    }
+    tr:hover{ background: rgba(255,255,255,.04); }
+
+    /* 3D container */
+    .threeWrap{
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.08);
+      background: rgba(11,18,32,.35);
+      box-shadow: 0 12px 24px rgba(0,0,0,.18);
+      overflow:hidden;
+      min-height: 520px;
+      position: relative;
+    }
+    .threeHUD{
+      position:absolute; top:10px; left:10px; right:10px;
+      display:flex; gap:10px; flex-wrap: wrap; align-items:center;
+      z-index: 2;
+      pointer-events:none;
+    }
+    .hudPill{
+      pointer-events:auto;
+      display:inline-flex; align-items:center; gap:8px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(16,185,129,.28);
+      background: rgba(15,23,42,.70);
+      box-shadow: 0 10px 18px rgba(0,0,0,.16);
+      color:#fff; font-weight: 900; font-size: 11px;
+    }
+    .hudPill select, .hudPill input{
+      width:auto; padding: 5px 8px; border-radius: 10px; border:1px solid rgba(255,255,255,.12);
+      background: rgba(11,18,32,.75); color: var(--tx); font-size: 11px;
+    }
+    .hudPill button{
+      pointer-events:auto;
+      appearance:none; border:1px solid rgba(16,185,129,.35);
+      background: rgba(16,185,129,.12);
+      color:#fff; font-weight: 900; font-size: 11px;
+      padding: 6px 10px; border-radius: 10px; cursor:pointer;
+    }
+    .hudPill button:hover{ background: rgba(16,185,129,.18); border-color: rgba(16,185,129,.55); }
+    .hudNote{
+      pointer-events:none;
+      color: var(--mut);
+      font-weight: 800;
+      font-size: 10px;
+      padding-left: 4px;
+    }
+
+    /* Modal */
+    .modalOverlay{
+      display:none; position: fixed; inset:0;
+      background: rgba(0,0,0,.72);
+      z-index: 11000;
+      align-items: center; justify-content: center;
+      padding: 18px;
+    }
+    .modal{
+      width: min(980px, 96vw);
+      max-height: min(86vh, 980px);
+      overflow: auto;
+      border-radius: 14px;
+      background: rgba(17,28,49,0.96);
+      border: 1px solid rgba(16,185,129,0.35);
+      box-shadow: 0 30px 60px rgba(0,0,0,0.55);
+      color: var(--tx);
+    }
+    .modalHead{
+      position: sticky; top: 0;
+      background: rgba(11,18,32,0.92);
+      border-bottom: 1px solid rgba(16,185,129,0.25);
+      padding: 14px 16px;
+      display:flex; align-items: center; justify-content: space-between;
+      gap: 10px;
+      z-index: 1;
+    }
+    .modalHead h2{ margin:0; font-size: 14px; letter-spacing: .2px; }
+    .closeBtn{
+      border: 1px solid rgba(16,185,129,0.35);
+      background: rgba(15,23,42,0.55);
+      color: var(--tx);
+      height: 34px; min-width: 34px; padding: 0 10px;
+      border-radius: 10px;
+      cursor:pointer;
+      display:flex; align-items:center; justify-content:center;
+    }
+    .closeBtn:hover{ background: rgba(16,185,129,0.14); }
+    .modalBody{ padding: 14px 16px 18px 16px; font-size: 13px; line-height: 1.55; }
+    .box{
+      border: 1px solid rgba(16,185,129,0.22);
+      background: rgba(6,78,59,0.10);
+      border-radius: 12px;
+      padding: 12px 12px;
+      margin: 10px 0;
+    }
+    .modal code{ background: rgba(0,0,0,0.25); border: 1px solid rgba(16,185,129,0.18); padding: 2px 6px; border-radius: 8px; }
+    .modal pre{ background: rgba(0,0,0,0.28); border: 1px solid rgba(16,185,129,0.18); padding: 10px 12px; border-radius: 12px; overflow: auto; font-size: 12px; }
+  </style>
+<!-- Ein Aussehen fuer alle Werkzeuge. Steht direkt hinter dem letzten
+     <style> dieses Werkzeugs: spaeter in der Reihenfolge, also gewinnt
+     es bei gleicher Spezifitaet - aber so frueh wie moeglich, damit die
+     Seite nicht erst in der alten Farbe erscheint und dann umfaerbt.
+     Am Ende des <body> geladen war genau das zu sehen: Knoepfe mit
+     transition faerbten sichtbar um. Faerbt nur, verschiebt nichts.
+     Siehe werkzeug-stil.css. -->
+<link rel="stylesheet" href="werkzeug-stil.css">
+<!-- Sprachumschaltung Deutsch / Persisch / Englisch. Was nicht im
+     Woerterbuch steht, bleibt Deutsch. Siehe uebersetzung.js. -->
+<script src="woerter.js"></script>
+<script src="woerter/Brandschutz_Master_Global_Framework.js"></script>
+<script src="uebersetzung.js"></script>
+
+</head>
+
+<body>
+  <div class="topbar" role="navigation" aria-label="Topbar">
+    <div class="title" title="Brandschutz Master">
+      <span class="dot"></span>
+      <span>Brandschutz Master</span>
+      <span class="sub">| Global framework (EN/DIN • NFPA/IBC • BS • ISO) | Checklist + Fire Strategy + 3D Markup</span>
+    </div>
+
+    <div class="actions">
+      <button class="iconbtn" type="button" onclick="UI.goHome()" title="Back to Dashboard">
+        <i class="fa-solid fa-house" style="color:var(--e)"></i>
+        <span class="lbl">Home</span>
+      </button>
+      <button class="iconbtn" type="button" onclick="UI.openInfo()" title="Info / Rules / Assumptions">
+        <i class="fa-solid fa-circle-question" style="color:var(--e)"></i>
+        <span class="lbl">Info</span>
+      </button>
+      <button class="iconbtn" type="button" onclick="App.exportJSON()" title="Export project JSON">
+        <i class="fa-solid fa-file-export" style="color:var(--e)"></i>
+        <span class="lbl">Export</span>
+      </button>
+      <button class="iconbtn" type="button" onclick="App.importJSONPrompt()" title="Import project JSON">
+        <i class="fa-solid fa-file-import" style="color:var(--e)"></i>
+        <span class="lbl">Import</span>
+      </button>
+      <button class="iconbtn" type="button" onclick="App.resetAll()" title="Reset (local data)">
+        <i class="fa-solid fa-broom" style="color:var(--e)"></i>
+        <span class="lbl">Reset</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="shell">
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div class="brand"><i class="fa-solid fa-fire-extinguisher"></i> ART ENVI <span>BRANDSCHUTZ</span></div>
+
+      <div class="section">
+        <div class="sec-title"><span>Project Header</span><i class="fa-solid fa-clipboard"></i></div>
+
+        <div class="grp">
+          <label>Project / Building Name</label>
+          <input id="inProject" type="text" value="Building A – Fire Safety Concept v1">
+        </div>
+
+        <div class="row">
+          <div class="grp">
+            <label>Country / Region</label>
+            <input id="inRegion" type="text" value="Germany (DE)">
+          </div>
+          <div class="grp">
+            <label>Standard Pack (reference framework)</label>
+            <select id="inStdPack">
+              <option value="EU_EN_DIN">EU (EN/DIN + ISO references)</option>
+              <option value="US_NFPA_IBC">US (NFPA/IBC reference pack)</option>
+              <option value="UK_BS">UK (BS reference pack)</option>
+              <option value="CUSTOM">Custom / Project-specific</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="grp">
+            <label>Building Use / Occupancy</label>
+            <select id="inOccupancy">
+              <option value="OFFICE">Office</option>
+              <option value="RESIDENTIAL">Residential</option>
+              <option value="INDUSTRIAL">Industrial / Process</option>
+              <option value="WAREHOUSE">Warehouse / Logistics</option>
+              <option value="HEALTHCARE">Healthcare / Hospital</option>
+              <option value="SCHOOL">School / Education</option>
+              <option value="DATA_CENTER">Data Center / Critical</option>
+              <option value="MIXED">Mixed Use</option>
+            </select>
+          </div>
+          <div class="grp">
+            <label>Evacuation Strategy (concept)</label>
+            <select id="inEvac">
+              <option value="SIMULTANEOUS">Simultaneous evacuation</option>
+              <option value="PHASED">Phased evacuation (managed)</option>
+              <option value="DEFEND_IN_PLACE">Defend-in-place (healthcare)</option>
+              <option value="CUSTOM">Custom</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="grp">
+            <label>Number of floors</label>
+            <input id="inFloors" type="number" min="1" step="1" value="6">
+          </div>
+          <div class="grp">
+            <label>Floor-to-floor height (m)</label>
+            <input id="inF2F" type="number" min="2.5" step="0.1" value="3.5">
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="grp">
+            <label>Gross floor area (m²)</label>
+            <input id="inGFA" type="number" min="0" step="10" value="8000">
+          </div>
+          <div class="grp">
+            <label>Estimated occupants (people)</label>
+            <input id="inOccLoad" type="number" min="0" step="1" value="400">
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="grp">
+            <label>Sprinkler system (concept)</label>
+            <select id="inSprinkler">
+              <option value="NONE">None / not assumed</option>
+              <option value="WET">Wet sprinkler</option>
+              <option value="DRY">Dry / pre-action</option>
+              <option value="WATERMIST">Water mist</option>
+              <option value="GAS">Clean agent (rooms)</option>
+            </select>
+          </div>
+          <div class="grp">
+            <label>Detection & Alarm (concept)</label>
+            <select id="inAlarm">
+              <option value="NONE">None / not assumed</option>
+              <option value="CONVENTIONAL">Conventional FACP</option>
+              <option value="ADDRESSABLE" selected>Addressable fire alarm</option>
+              <option value="VOICE">Voice evacuation</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grp">
+          <label>Design Notes / Constraints</label>
+          <textarea id="inNotes" placeholder="e.g., atrium, underground parking, special hazards, high ceiling areas, zoning concept, AHJ constraints, etc."></textarea>
+        </div>
+
+        <div class="hint" style="margin-top:10px;">
+          <b>This is a framework tool, not a legal code engine.</b><br>
+          You pick the reference pack, then you set the project’s parameters, and the tool builds a professional checklist and concept draft.
+          Final compliance is always jurisdiction-specific (AHJ / local building authority).
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="sec-title"><span>Auto-Checklist Generator</span><i class="fa-solid fa-list-check"></i></div>
+
+        <div class="row">
+          <div class="grp">
+            <label>Risk / Criticality</label>
+            <select id="inRisk">
+              <option value="NORMAL" selected>Normal</option>
+              <option value="ELEVATED">Elevated (higher consequence)</option>
+              <option value="CRITICAL">Critical (life safety / business critical)</option>
+            </select>
+          </div>
+          <div class="grp">
+            <label>High-rise threshold (floors)</label>
+            <input id="inHighRiseFloors" type="number" min="1" step="1" value="8">
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="grp">
+            <label>Compartment approach</label>
+            <select id="inCompartment">
+              <option value="STANDARD" selected>Standard compartments</option>
+              <option value="STRONG">Enhanced compartmentation</option>
+              <option value="OPEN_PLAN">Open-plan (needs smoke strategy)</option>
+              <option value="CUSTOM">Custom</option>
+            </select>
+          </div>
+          <div class="grp">
+            <label>Fire doors (concept)</label>
+            <select id="inFireDoors">
+              <option value="STANDARD" selected>Standard rated doors where required</option>
+              <option value="HOLD_OPEN">Hold-open with release</option>
+              <option value="SMART">Smart doors + monitoring</option>
+            </select>
+          </div>
+        </div>
+
+        <button class="btn btn-calc" onclick="App.generateChecklist()">
+          <i class="fa-solid fa-wand-magic-sparkles"></i> Generate / Refresh Checklist
+        </button>
+
+        <div class="tiny" style="margin-top:8px;">
+          Tip: generate early, then mark each item as OK / Review / TBD and attach notes. Export JSON to share.
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="sec-title"><span>3D Markup</span><i class="fa-solid fa-cube"></i></div>
+        <div class="row">
+          <div class="grp">
+            <label>Marker type</label>
+            <select id="inMarkerType">
+              <option value="SMOKE_DET">Smoke detector</option>
+              <option value="HEAT_DET">Heat detector</option>
+              <option value="MCP">Manual call point</option>
+              <option value="SOUND">Sounder / Beacon</option>
+              <option value="SPRINKLER">Sprinkler head</option>
+              <option value="EXT">Fire extinguisher</option>
+              <option value="HOSE">Hose reel / hydrant</option>
+              <option value="EXIT">Exit sign</option>
+              <option value="DOOR">Fire door</option>
+              <option value="DAMPER">Fire damper</option>
+              <option value="PANEL">Fire alarm panel</option>
+            </select>
+          </div>
+          <div class="grp">
+            <label>Floor index (1..N)</label>
+            <input id="inMarkerFloor" type="number" min="1" step="1" value="1">
+          </div>
+        </div>
+        <div class="row">
+          <div class="grp">
+            <label>X (0..1)</label>
+            <input id="inMarkerX" type="number" min="0" max="1" step="0.05" value="0.25">
+          </div>
+          <div class="grp">
+            <label>Y (0..1)</label>
+            <input id="inMarkerY" type="number" min="0" max="1" step="0.05" value="0.25">
+          </div>
+        </div>
+
+        <button class="btn btn-add" onclick="ThreeUI.addMarkerFromSidebar()">
+          <i class="fa-solid fa-plus"></i> Add Marker
+        </button>
+        <button class="btn btn-danger" onclick="ThreeUI.clearMarkers()">
+          <i class="fa-solid fa-trash"></i> Clear Markers
+        </button>
+
+        <div class="tiny" style="margin-top:8px;">
+          Use 3D view to create quick “design intent” visuals. For construction drawings, you still deliver CAD/BIM.
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="sec-title"><span>Saved Projects</span><i class="fa-solid fa-folder-open"></i></div>
+        <div class="grp">
+          <label>Select</label>
+          <select id="savedProjects" onchange="App.loadSelected()"></select>
+        </div>
+        <button class="btn btn-ghost" onclick="App.saveCurrent()">
+          <i class="fa-solid fa-floppy-disk"></i> Save Current
+        </button>
+        <button class="btn btn-danger" onclick="App.deleteSelected()">
+          <i class="fa-solid fa-trash"></i> Delete Selected
+        </button>
+        <div class="tiny" style="margin-top:8px;">Saved locally in this browser (LocalStorage).</div>
+      </div>
+    </div>
+
+    <!-- Main -->
+    <div class="main">
+      <div class="tabs">
+        <div class="tab active" onclick="UI.switchView('overview')"><i class="fa-solid fa-gauge-high"></i> OVERVIEW</div>
+        <div class="tab" onclick="UI.switchView('checklist')"><i class="fa-solid fa-table-list"></i> CHECKLIST</div>
+        <div class="tab" onclick="UI.switchView('comp')"><i class="fa-solid fa-border-all"></i> COMPARTMENTS</div>
+        <div class="tab" onclick="UI.switchView('egress')"><i class="fa-solid fa-person-running"></i> EGRESS</div>
+        <div class="tab" onclick="UI.switchView('detect')"><i class="fa-solid fa-bell"></i> DETECTION & ALARM</div>
+        <div class="tab" onclick="UI.switchView('supp')"><i class="fa-solid fa-spray-can-sparkles"></i> SUPPRESSION</div>
+        <div class="tab" onclick="UI.switchView('smoke')"><i class="fa-solid fa-cloud"></i> SMOKE CONTROL</div>
+        <div class="tab" onclick="UI.switchView('mat')"><i class="fa-solid fa-shield-halved"></i> MATERIALS & RATINGS</div>
+        <div class="tab" onclick="UI.switchView('three')"><i class="fa-solid fa-cube"></i> 3D VIEW</div>
+        <div class="tab" onclick="UI.switchView('docs')"><i class="fa-solid fa-file-lines"></i> DOCUMENTS</div>
+      </div>
+
+      <!-- OVERVIEW -->
+      <div id="view-overview" class="view active">
+        <div class="summary">
+          <span>Project: <b id="ovProject">—</b></span>
+          <span>Standard pack: <b class="accent" id="ovStd">—</b></span>
+          <span>Occupancy: <b class="accent" id="ovOcc">—</b></span>
+          <span>Floors: <b class="accent" id="ovFloors">—</b></span>
+          <span>GFA: <b class="accent" id="ovGFA">—</b></span>
+          <span>Sprinkler: <b class="accent" id="ovSpr">—</b></span>
+          <span>Alarm: <b class="accent" id="ovAlm">—</b></span>
+          <span>Checklist: <b class="warn" id="ovItems">0 items</b></span>
+        </div>
+
+        <div class="row" style="flex-wrap: wrap;">
+          <div class="section" style="flex:1; min-width: 360px;">
+            <div class="sec-title"><span>Fire Strategy Snapshot</span><i class="fa-solid fa-diagram-project"></i></div>
+            <div id="strategyBox" class="hint"></div>
+            <div class="tiny" style="margin-top:10px;">
+              This is a structured “concept” view. You still validate with AHJ and project’s chosen standard.
+            </div>
+          </div>
+          <div class="section" style="flex:1; min-width: 360px;">
+            <div class="sec-title"><span>Top Risks (auto)</span><i class="fa-solid fa-triangle-exclamation"></i></div>
+            <div id="riskBox" class="hint"></div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="sec-title"><span>Quick Actions</span><i class="fa-solid fa-bolt"></i></div>
+          <div class="row" style="flex-wrap: wrap;">
+            <button class="btn btn-calc" style="width:auto" onclick="App.generateChecklist()"><i class="fa-solid fa-wand-magic-sparkles"></i> Refresh checklist</button>
+            <button class="btn btn-ghost" style="width:auto" onclick="UI.switchView('three'); ThreeUI.ensureInit()"><i class="fa-solid fa-cube"></i> Open 3D view</button>
+            <button class="btn btn-ghost" style="width:auto" onclick="UI.switchView('docs'); DocsUI.generate()"><i class="fa-solid fa-file-lines"></i> Generate documents</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- CHECKLIST -->
+      <div id="view-checklist" class="view">
+        <div class="summary">
+          <span>Items: <b id="clCount">0</b></span>
+          <span>OK: <b class="accent" id="clOK">0</b></span>
+          <span>Review: <b class="warn" id="clReview">0</b></span>
+          <span>TBD: <b class="bad" id="clTBD">0</b></span>
+          <span class="tiny">Mark items and keep notes. This becomes your audit trail.</span>
+        </div>
+
+        <div class="tableWrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Category</th>
+                <th>Requirement / Task</th>
+                <th>Reference</th>
+                <th>Rationale</th>
+                <th>Status</th>
+                <th>Owner</th>
+                <th>Due</th>
+                <th>Notes</th>
+              </tr>
+            </thead>
+            <tbody id="checklistTable"></tbody>
+          </table>
+        </div>
+
+        <div class="tiny" style="margin-top:10px;">
+          You can export/import JSON and share the project. This stays consistent across all your dashboard tools.
+        </div>
+      </div>
+
+      <!-- COMPARTMENTS -->
+      <div id="view-comp" class="view">
+        <div class="summary">
+          <span>Compartment approach: <b id="cpApproach">—</b></span>
+          <span>Evacuation: <b id="cpEvac">—</b></span>
+          <span>High-rise flag: <b id="cpHigh">—</b></span>
+          <span class="tiny">Define compartments, fire walls, shafts, penetrations, and door strategy.</span>
+        </div>
+
+        <div class="section">
+          <div class="sec-title"><span>Compartment & Shaft Rules</span><i class="fa-solid fa-border-all"></i></div>
+          <div id="compBox" class="hint"></div>
+        </div>
+
+        <div class="section">
+          <div class="sec-title"><span>Penetrations & Sealing</span><i class="fa-solid fa-plug-circle-bolt"></i></div>
+          <div class="hint">
+            <b>Global good practice (framework):</b><br>
+            • Maintain fire resistance continuity at penetrations (tested systems, installation evidence).<br>
+            • Track every penetration in an as-built register (location, system, rating, photos, approval).<br>
+            • Coordinate MEP shafts, dampers, and door hold-open release logic with detection zones.
+          </div>
+        </div>
+      </div>
+
+      <!-- EGRESS -->
+      <div id="view-egress" class="view">
+        <div class="summary">
+          <span>Occupancy: <b id="egOcc">—</b></span>
+          <span>Estimated occupants: <b id="egLoad">—</b></span>
+          <span>Strategy: <b id="egStrat">—</b></span>
+          <span class="tiny">Egress is where designs fail in the real world. Don’t guess.</span>
+        </div>
+
+        <div class="section">
+          <div class="sec-title"><span>Egress Checklist (framework)</span><i class="fa-solid fa-person-running"></i></div>
+          <div id="egressBox" class="hint"></div>
+        </div>
+      </div>
+
+      <!-- DETECTION -->
+      <div id="view-detect" class="view">
+        <div class="summary">
+          <span>Alarm concept: <b id="deAlarm">—</b></span>
+          <span>Interfaces: <b id="deIfc">—</b></span>
+          <span class="tiny">Define zones, cause&effect, power, and supervision.</span>
+        </div>
+
+        <div class="section">
+          <div class="sec-title"><span>Detection & Alarm Rules</span><i class="fa-solid fa-bell"></i></div>
+          <div id="detectBox" class="hint"></div>
+        </div>
+      </div>
+
+      <!-- SUPPRESSION -->
+      <div id="view-supp" class="view">
+        <div class="summary">
+          <span>Suppression: <b id="spType">—</b></span>
+          <span>Risk: <b id="spRisk">—</b></span>
+          <span class="tiny">Water supply, zoning, and maintenance matter more than brochure features.</span>
+        </div>
+
+        <div class="section">
+          <div class="sec-title"><span>Suppression Strategy (framework)</span><i class="fa-solid fa-spray-can-sparkles"></i></div>
+          <div id="suppBox" class="hint"></div>
+        </div>
+      </div>
+
+      <!-- SMOKE -->
+      <div id="view-smoke" class="view">
+        <div class="summary">
+          <span>Compartment approach: <b id="smComp">—</b></span>
+          <span>Open-plan flag: <b id="smOpen">—</b></span>
+          <span class="tiny">Smoke is the primary killer. Treat smoke control as a system.</span>
+        </div>
+
+        <div class="section">
+          <div class="sec-title"><span>Smoke Control (framework)</span><i class="fa-solid fa-cloud"></i></div>
+          <div id="smokeBox" class="hint"></div>
+        </div>
+      </div>
+
+      <!-- MATERIALS -->
+      <div id="view-mat" class="view">
+        <div class="summary">
+          <span>Standard pack: <b id="mtStd">—</b></span>
+          <span>Doors concept: <b id="mtDoors">—</b></span>
+          <span class="tiny">Ratings must be consistent end-to-end (walls, doors, ducts, seals).</span>
+        </div>
+
+        <div class="section">
+          <div class="sec-title"><span>Materials, Ratings, & Firestopping</span><i class="fa-solid fa-shield-halved"></i></div>
+          <div id="matBox" class="hint"></div>
+        </div>
+      </div>
+
+      <!-- 3D VIEW -->
+      <div id="view-three" class="view">
+        <div class="summary">
+          <span>3D model: <b id="thModel">—</b></span>
+          <span>Markers: <b class="accent" id="thMarkers">0</b></span>
+          <span class="tiny">This is “design intent visualization”. Not a BIM replacement.</span>
+        </div>
+
+        <div class="threeWrap" id="threeWrap">
+          <div class="threeHUD">
+            <div class="hudPill">
+              <i class="fa-solid fa-layer-group" style="color:var(--e)"></i>
+              <span>Floors</span>
+              <input id="hudFloors" type="number" min="1" step="1" value="6"/>
+              <button onclick="ThreeUI.rebuild()">Rebuild</button>
+              <span class="hudNote">Updates massing model</span>
+            </div>
+            <div class="hudPill">
+              <i class="fa-solid fa-location-dot" style="color:var(--e)"></i>
+              <span>Click to place</span>
+              <select id="hudMarkerType">
+                <option value="SMOKE_DET">Smoke detector</option>
+                <option value="MCP">Manual call point</option>
+                <option value="SPRINKLER">Sprinkler head</option>
+                <option value="EXT">Extinguisher</option>
+                <option value="EXIT">Exit sign</option>
+                <option value="DOOR">Fire door</option>
+              </select>
+              <select id="hudMarkerFloor"></select>
+              <button onclick="ThreeUI.togglePlaceMode()">Place mode: <span id="hudPlaceMode">OFF</span></button>
+            </div>
+          </div>
+          <canvas id="threeCanvas" style="width:100%; height:100%; display:block;"></canvas>
+        </div>
+
+        <div class="tiny" style="margin-top:10px;">
+          If 3D doesn't render: you're offline or Three.js couldn't load. The checklist still works.
+        </div>
+      </div>
+
+      <!-- DOCUMENTS -->
+      <div id="view-docs" class="view">
+        <div class="summary">
+          <span>Generated document: <b id="docTitle">Fire Safety Concept</b></span>
+          <span class="tiny">Copy into a formal report template.</span>
+        </div>
+
+        <div class="row" style="max-width:1000px;">
+          <button class="btn btn-calc" style="width:auto" onclick="DocsUI.generate()"><i class="fa-solid fa-gears"></i> Generate</button>
+          <button class="btn btn-ghost" style="width:auto" onclick="UI.copyText('docText')"><i class="fa-solid fa-copy"></i> Copy</button>
+        </div>
+
+        <div class="grp" style="max-width:1000px;">
+          <label>Fire Safety Concept Draft</label>
+          <textarea id="docText" placeholder="Click Generate."></textarea>
+          <div class="tiny" style="margin-top:8px;">
+            This is a structured draft. You still add drawings, calculations, and authority-specific clauses.
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Info modal -->
+  <div id="infoOverlay" class="modalOverlay" onclick="if(event.target===this) UI.closeInfo()">
+    <div class="modal" role="dialog" aria-modal="true" aria-label="Info">
+      <div class="modalHead">
+        <h2>Brandschutz Master | Rules, Structure, Standards Mapping</h2>
+        <button class="closeBtn" type="button" onclick="UI.closeInfo()" title="Close">✕</button>
+      </div>
+      <div class="modalBody">
+        <div class="box">
+          <b>What this tool is:</b><br>
+          A professional, global <b>fire protection framework</b> that organizes typical building fire safety requirements into a structured checklist
+          and produces a draft “Fire Safety Concept” document and quick 3D intent visuals.
+        </div>
+
+        <div class="box">
+          <b>What this tool is not:</b><br>
+          Not a certified code checker. Not a substitute for local codes, approvals, or an authority having jurisdiction (AHJ).
+          It refuses to “invent compliance”.
+        </div>
+
+        <div class="box">
+          <b>How the “standard packs” work:</b>
+          <ul>
+            <li><b>EU (EN/DIN + ISO):</b> Uses EN-style terminology (reaction/resistance, fire compartments, smoke control).</li>
+            <li><b>US (NFPA/IBC):</b> Uses NFPA-style building systems framing (alarm, sprinklers, smoke control, egress planning).</li>
+            <li><b>UK (BS):</b> Uses BS-style “fire strategy” approach (performance + risk-based).</li>
+            <li><b>Custom:</b> You set the project-specific rule thresholds and notes.</li>
+          </ul>
+          This is a <b>structural mapping</b> so your team’s work is consistent, auditable, and review-ready.
+        </div>
+
+        <div class="box">
+          <b>Engine logic (transparent):</b>
+          <pre><code>Inputs:
+  - Occupancy/use
+  - Floors / height
+  - Area / occupants
+  - Compartment strategy
+  - Alarm and suppression concepts
+  - Risk/criticality
+
+Derived flags:
+  - High-rise flag: floors >= High-rise threshold
+  - Special hazards: industrial / data center / underground (notes)
+  - Open-plan flag: compartment = OPEN_PLAN
+
+Output:
+  - Checklist items grouped by category
+  - Suggested document sections
+  - 3D intent model (stacked floors) with markers</code></pre>
+        </div>
+
+        <div class="box">
+          <b>3D “smart pins & wires” reality check:</b><br>
+          For CAD/BIM intelligence you still need BIM authoring or AutoCAD Electrical APIs. This tool provides clear geometry and tags
+          so downstream tools can attach intelligence cleanly.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ---------- Storage ----------
+    const LS = {
+      PROJECTS: "BRANDSCHUTZ_MASTER_PROJECTS_V1",
+      SELECTED: "BRANDSCHUTZ_MASTER_SELECTED_ID_V1",
+      HOME_URL: "KI_HOME_URL" // shared with your other tools
+    };
+
+    const U = {
+      nowISO: () => new Date().toISOString(),
+      deepClone: (obj) => JSON.parse(JSON.stringify(obj)),
+      esc: (s) => String(s ?? "").replace(/[&<>"']/g, (c)=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c])),
+      clamp: (n, a, b) => Math.max(a, Math.min(b, n)),
+      getInt: (id, def=0) => {
+        const v = parseInt(document.getElementById(id)?.value ?? def, 10);
+        return Number.isFinite(v) ? v : def;
+      },
+      getNum: (id, def=0) => {
+        const v = parseFloat(document.getElementById(id)?.value ?? def);
+        return Number.isFinite(v) ? v : def;
+      },
+      getVal: (id, def="") => (document.getElementById(id)?.value ?? def),
+      setVal: (id, v) => { const el = document.getElementById(id); if(el) el.value = v; }
+    };
+
+    // ---------- Checklist domain model ----------
+    const Status = { OK:"OK", REVIEW:"REVIEW", TBD:"TBD" };
+
+    const StdPacks = {
+      EU_EN_DIN: {
+        label: "EU (EN/DIN + ISO references)",
+        refs: {
+          compartment: "EN/DIN fire resistance & compartmentation (project-specific rating schedule)",
+          egress: "National building regs + EN fire safety concepts (project-specific)",
+          alarm: "EN fire detection & alarm systems framework (project-specific)",
+          sprinkler: "EN water-based suppression framework (project-specific)",
+          smoke: "EN smoke control & ventilation framework (project-specific)",
+          materials: "EN 13501 reaction/resistance + tested firestopping systems"
+        }
+      },
+      US_NFPA_IBC: {
+        label: "US (NFPA/IBC reference pack)",
+        refs: {
+          compartment: "IBC separation concepts + rated assemblies (project-specific)",
+          egress: "IBC / NFPA Life Safety (project-specific)",
+          alarm: "NFPA 72 alarm & signaling (project-specific)",
+          sprinkler: "NFPA 13/14/20 water-based suppression (project-specific)",
+          smoke: "IBC / NFPA smoke control (project-specific)",
+          materials: "Tested rated assemblies + penetrations (project-specific)"
+        }
+      },
+      UK_BS: {
+        label: "UK (BS reference pack)",
+        refs: {
+          compartment: "BS-style fire strategy + compartmentation (project-specific)",
+          egress: "BS 9999 / Building Regs (project-specific)",
+          alarm: "BS 5839 concept (project-specific)",
+          sprinkler: "BS EN sprinkler frameworks (project-specific)",
+          smoke: "Smoke control strategy (project-specific)",
+          materials: "Reaction/resistance schedule + fire stopping register"
+        }
+      },
+      CUSTOM: {
+        label: "Custom / Project-specific",
+        refs: {
+          compartment: "Project fire strategy document",
+          egress: "Project egress calculations",
+          alarm: "Project cause & effect / alarm matrix",
+          sprinkler: "Project suppression design basis",
+          smoke: "Project smoke control design basis",
+          materials: "Project rating schedule + test evidence"
+        }
+      }
+    };
+
+    const RuleLibrary = {
+      baseItems(inputs){
+        const pack = StdPacks[inputs.stdPack] || StdPacks.CUSTOM;
+        const items = [];
+        function add(cat, task, ref, why, status=Status.TBD){
+          items.push({
+            id: (crypto.randomUUID ? crypto.randomUUID() : (Math.random().toString(16).slice(2)+Date.now())),
+            category: cat,
+            task, reference: ref, rationale: why,
+            status, owner:"", due:"", notes:""
+          });
+        }
+
+        // Strategy
+        add("Fire Strategy", "Define fire strategy scope & stakeholders (AHJ, insurer, operator).", "Project governance", "Avoid late-stage redesign by aligning early.");
+        add("Fire Strategy", "Define evacuation concept and management plan.", "Project fire strategy", "Evacuation affects egress, alarm, smoke, and compartment design.");
+        add("Fire Strategy", "Define fire-fighting approach (access, water supply, shafts/lobbies as applicable).", "Project fire strategy", "Fire service access and operations shape building interfaces.");
+
+        // Compartmentation
+        add("Compartments", "Define compartments, fire walls, shafts, and fire doors schedule.", pack.refs.compartment, "Controls fire spread and supports evacuation strategy.");
+        add("Compartments", "Create a penetration/firestopping register (as-built evidence required).", pack.refs.materials, "Penetrations are a common failure point in real fires.");
+        add("Compartments", "Define dampers and duct/fire stopping coordination (MEP).", pack.refs.materials, "Ducts can spread smoke and fire without proper protection.");
+
+        // Egress
+        add("Egress", "Confirm occupant load basis (method & assumptions).", pack.refs.egress, "Egress capacity depends on occupant load assumptions.");
+        add("Egress", "Define exits, travel distances, and stair strategy (incl. refuge where applicable).", pack.refs.egress, "Egress geometry must match strategy and risk.");
+        add("Egress", "Emergency lighting and exit signage concept (power, autonomy).", pack.refs.egress, "Visibility and guidance are critical in smoke conditions.");
+
+        // Alarm
+        add("Detection & Alarm", "Define detection zoning and alarm matrix (cause & effect).", pack.refs.alarm, "Cause & effect must match evacuation and smoke strategies.");
+        add("Detection & Alarm", "Define power supply, backup, supervision, and fault reporting.", pack.refs.alarm, "Life safety systems must remain functional during faults.");
+        add("Detection & Alarm", "Interface list: HVAC shutdown, smoke control, doors, suppression, lifts, BMS.", "System integration", "Interfaces are where commissioning problems happen.");
+
+        // Suppression
+        add("Suppression", "Define suppression concept and coverage (whole building vs special hazards).", pack.refs.sprinkler, "Suppression reduces risk and may affect compartment/egress requirements.");
+        add("Suppression", "Water supply concept (tanks, pumps, redundancy, monitoring).", pack.refs.sprinkler, "Supply reliability often drives design and cost.");
+        add("Suppression", "Portable extinguishers strategy (types, locations, maintenance).", "Good practice", "First-aid firefighting and regulatory expectations.");
+
+        // Smoke
+        add("Smoke Control", "Define smoke zoning and smoke exhaust / pressurization concept.", pack.refs.smoke, "Smoke kills; strategy must be system-level.");
+        add("Smoke Control", "Atria / open plan: justify smoke behavior and evacuation tenability.", pack.refs.smoke, "Open volumes require explicit smoke strategy.");
+
+        // Materials
+        add("Materials & Ratings", "Define rating schedule: walls, floors, shafts, doors, dampers.", pack.refs.materials, "Consistency prevents weak links.");
+        add("Materials & Ratings", "Select tested firestopping systems & installation QA plan.", pack.refs.materials, "Testing evidence matters; QA prevents site deviations.");
+
+        // Operations
+        add("Operations", "Define inspection, testing, and maintenance (ITM) plan.", "Lifecycle", "Systems fail without ITM.");
+        add("Operations", "Define handover documentation set (as-built, certificates, registers).", "Lifecycle", "Audit trail protects you and the operator.");
+
+        // Modifiers
+        const highRise = inputs.floors >= inputs.highRiseFloors;
+        if(highRise){
+          add("High-rise", "High-rise design review: protected stairs, lobbies, fire-fighting lift concept (as applicable).", "Project-specific high-rise requirements", "High-rise complexity demands early confirmation.");
+          add("High-rise", "Voice alarm / phased evacuation suitability review.", pack.refs.alarm, "Managed evacuation is common for tall buildings.");
+          add("High-rise", "Redundancy review for life safety power and critical controls.", "System reliability", "Single points of failure are unacceptable in tall buildings.");
+        }
+        const openPlan = inputs.compartment === "OPEN_PLAN";
+        if(openPlan){
+          add("Smoke Control", "Open-plan smoke control justification (tenability time, exhaust, make-up air).", pack.refs.smoke, "Open plan needs more than hope.");
+        }
+        if(inputs.occupancy === "INDUSTRIAL" || inputs.occupancy === "WAREHOUSE"){
+          add("Special Hazards", "Hazard identification: flammables, process risk, storage heights (if any).", "Project hazard study", "Special hazards can dominate fire strategy.");
+          add("Special Hazards", "Explosion/ATEX coordination (if applicable).", "Project hazard study", "Where applicable, it changes detection and equipment selection.");
+        }
+        if(inputs.occupancy === "DATA_CENTER"){
+          add("Special Hazards", "Clean agent / pre-action zoning concept for critical rooms (if applicable).", "Project basis of design", "Data centers often require special suppression choices.");
+          add("Special Hazards", "Business continuity: separation, redundancy, early detection, monitoring.", "Project basis of design", "Downtime risk drives strategy.");
+        }
+        if(inputs.occupancy === "HEALTHCARE"){
+          add("Healthcare", "Defend-in-place plan and compartment strategy confirmation.", "Project fire strategy", "Healthcare evacuation is fundamentally different.");
+        }
+        if(inputs.risk === "CRITICAL"){
+          add("Assurance", "Third-party review / insurance engineering alignment.", "Governance", "Critical projects benefit from independent review.");
+          add("Assurance", "Enhanced commissioning plan (integrated systems testing).", "Governance", "Complex interactions require integrated testing.");
+        }
+
+        return items;
+      }
+    };
+
+    // ---------- Store ----------
+    const Store = {
+      projects: [],
+      load(){
+        const raw = localStorage.getItem(LS.PROJECTS);
+        if(!raw){ this.projects = []; return; }
+        try{ this.projects = JSON.parse(raw) || []; } catch { this.projects = []; }
+      },
+      save(){ localStorage.setItem(LS.PROJECTS, JSON.stringify(this.projects, null, 2)); },
+      selectedId(){ return localStorage.getItem(LS.SELECTED) || ""; },
+      setSelected(id){ localStorage.setItem(LS.SELECTED, id); }
+    };
+
+    // ---------- UI ----------
+    const UI = {
+      switchView(v){
+        document.querySelectorAll(".view").forEach(el=>el.classList.remove("active"));
+        document.querySelectorAll(".tab").forEach(el=>el.classList.remove("active"));
+        const view = document.getElementById("view-"+v);
+        if(view) view.classList.add("active");
+        const tab = Array.from(document.querySelectorAll(".tab")).find(t => (t.getAttribute("onclick")||"").includes(`'${v}'`));
+        if(tab) tab.classList.add("active");
+        if(v === "three"){ ThreeUI.ensureInit(); }
+      },
+      openInfo(){ document.getElementById("infoOverlay").style.display="flex"; },
+      closeInfo(){ document.getElementById("infoOverlay").style.display="none"; },
+      copyText(id){
+        const el = document.getElementById(id); if(!el) return;
+        el.select(); el.setSelectionRange(0, 999999);
+        try{ document.execCommand("copy"); }catch{}
+      },
+      goHome(){
+        const fallback = "dashboard/";
+        const home = localStorage.getItem(LS.HOME_URL) || fallback;
+        window.location.href = home;
+      }
+    };
+
+    // ---------- App ----------
+    const App = {
+      state: { header:{}, checklist:[], markers:[] },
+
+      init(){
+        Store.load();
+        this.refreshProjectsDropdown();
+        this.state.header = this.readInputs();
+        this.refreshAllViews();
+      },
+
+      readInputs(){
+        return {
+          project: U.getVal("inProject",""),
+          region: U.getVal("inRegion",""),
+          stdPack: U.getVal("inStdPack","CUSTOM"),
+          occupancy: U.getVal("inOccupancy","OFFICE"),
+          evac: U.getVal("inEvac","SIMULTANEOUS"),
+          floors: U.getInt("inFloors", 1),
+          f2f: U.getNum("inF2F", 3.3),
+          gfa: U.getNum("inGFA", 0),
+          occLoad: U.getInt("inOccLoad", 0),
+          sprinkler: U.getVal("inSprinkler","NONE"),
+          alarm: U.getVal("inAlarm","NONE"),
+          notes: U.getVal("inNotes",""),
+          risk: U.getVal("inRisk","NORMAL"),
+          highRiseFloors: U.getInt("inHighRiseFloors", 8),
+          compartment: U.getVal("inCompartment","STANDARD"),
+          fireDoors: U.getVal("inFireDoors","STANDARD")
+        };
+      },
+
+      applyInputsToUI(h){
+        U.setVal("inProject", h.project || "");
+        U.setVal("inRegion", h.region || "");
+        U.setVal("inStdPack", h.stdPack || "CUSTOM");
+        U.setVal("inOccupancy", h.occupancy || "OFFICE");
+        U.setVal("inEvac", h.evac || "SIMULTANEOUS");
+        U.setVal("inFloors", h.floors ?? 6);
+        U.setVal("inF2F", h.f2f ?? 3.5);
+        U.setVal("inGFA", h.gfa ?? 0);
+        U.setVal("inOccLoad", h.occLoad ?? 0);
+        U.setVal("inSprinkler", h.sprinkler || "NONE");
+        U.setVal("inAlarm", h.alarm || "ADDRESSABLE");
+        U.setVal("inNotes", h.notes || "");
+        U.setVal("inRisk", h.risk || "NORMAL");
+        U.setVal("inHighRiseFloors", h.highRiseFloors ?? 8);
+        U.setVal("inCompartment", h.compartment || "STANDARD");
+        U.setVal("inFireDoors", h.fireDoors || "STANDARD");
+      },
+
+      generateChecklist(){
+        const inputs = this.readInputs();
+        this.state.header = inputs;
+
+        const old = this.state.checklist || [];
+        const oldMap = new Map(old.map(it => [`${it.category}||${it.task}`, it]));
+
+        const base = RuleLibrary.baseItems(inputs);
+        const merged = base.map(it => {
+          const prev = oldMap.get(`${it.category}||${it.task}`);
+          if(!prev) return it;
+          return { ...it, status: prev.status||it.status, owner: prev.owner||"", due: prev.due||"", notes: prev.notes||"" };
+        });
+
+        this.state.checklist = merged;
+        this.refreshAllViews();
+        this.saveCurrent(true);
+      },
+
+      refreshAllViews(){
+        const h = this.readInputs();
+        const pack = StdPacks[h.stdPack] || StdPacks.CUSTOM;
+        const highRise = h.floors >= h.highRiseFloors;
+
+        document.getElementById("ovProject").textContent = h.project || "—";
+        document.getElementById("ovStd").textContent = pack.label;
+        document.getElementById("ovOcc").textContent = h.occupancy;
+        document.getElementById("ovFloors").textContent = String(h.floors);
+        document.getElementById("ovGFA").textContent = `${h.gfa} m²`;
+        document.getElementById("ovSpr").textContent = h.sprinkler;
+        document.getElementById("ovAlm").textContent = h.alarm;
+        document.getElementById("ovItems").textContent = `${(this.state.checklist||[]).length} items`;
+
+        const strat = [];
+        strat.push(`<b>Evacuation:</b> ${U.esc(h.evac)} | <b>Occupancy:</b> ${U.esc(h.occupancy)} | <b>Risk:</b> ${U.esc(h.risk)}`);
+        strat.push(`<b>Floors:</b> ${h.floors} (High-rise threshold: ${h.highRiseFloors} → <b>${highRise ? "HIGH-RISE" : "standard"}</b>)`);
+        strat.push(`<b>Compartment:</b> ${U.esc(h.compartment)} | <b>Fire doors:</b> ${U.esc(h.fireDoors)}`);
+        strat.push(`<b>Alarm:</b> ${U.esc(h.alarm)} | <b>Suppression:</b> ${U.esc(h.sprinkler)}`);
+        if(h.notes?.trim()) strat.push(`<b>Notes:</b> ${U.esc(h.notes.trim())}`);
+        document.getElementById("strategyBox").innerHTML = strat.join("<br>");
+
+        const risks = [];
+        if(highRise) risks.push(`• High-rise complexity: early AHJ alignment, staged commissioning, redundancy checks.`);
+        if(h.compartment === "OPEN_PLAN") risks.push(`• Open-plan needs explicit smoke strategy (tenability, exhaust, make-up air).`);
+        if(h.alarm === "NONE") risks.push(`• No alarm assumed: confirm if this is acceptable for the occupancy and risk.`);
+        if(h.sprinkler === "NONE") risks.push(`• No suppression assumed: confirm risk acceptance and mitigation measures.`);
+        if(h.occupancy === "INDUSTRIAL") risks.push(`• Industrial hazards: verify process/fire load, zoning, and special suppression needs.`);
+        if(h.occupancy === "DATA_CENTER") risks.push(`• Data center: consider clean agent/pre-action zoning and monitoring.`);
+        if(risks.length === 0) risks.push(`• No red flags detected from inputs. Still validate with local code and AHJ.`);
+        document.getElementById("riskBox").innerHTML = risks.join("<br>");
+
+        document.getElementById("cpApproach").textContent = h.compartment;
+        document.getElementById("cpEvac").textContent = h.evac;
+        document.getElementById("cpHigh").innerHTML = highRise ? `<span class="badge b-warn">HIGH-RISE</span>` : `<span class="badge b-ok">Standard</span>`;
+        document.getElementById("compBox").innerHTML = this.buildCompartmentText(h);
+
+        document.getElementById("egOcc").textContent = h.occupancy;
+        document.getElementById("egLoad").textContent = String(h.occLoad || 0);
+        document.getElementById("egStrat").textContent = h.evac;
+        document.getElementById("egressBox").innerHTML = this.buildEgressText(h);
+
+        document.getElementById("deAlarm").textContent = h.alarm;
+        document.getElementById("deIfc").textContent = "HVAC, smoke control, doors, lifts, suppression, BMS (conceptual)";
+        document.getElementById("detectBox").innerHTML = this.buildDetectText(h, pack);
+
+        document.getElementById("spType").textContent = h.sprinkler;
+        document.getElementById("spRisk").textContent = h.risk;
+        document.getElementById("suppBox").innerHTML = this.buildSuppText(h, pack);
+
+        document.getElementById("smComp").textContent = h.compartment;
+        document.getElementById("smOpen").innerHTML = (h.compartment === "OPEN_PLAN") ? `<span class="badge b-warn">OPEN PLAN</span>` : `<span class="badge b-ok">Standard</span>`;
+        document.getElementById("smokeBox").innerHTML = this.buildSmokeText(h, pack);
+
+        document.getElementById("mtStd").textContent = pack.label;
+        document.getElementById("mtDoors").textContent = h.fireDoors;
+        document.getElementById("matBox").innerHTML = this.buildMatText(h, pack);
+
+        document.getElementById("thModel").textContent = `Stacked floors (${h.floors})`;
+        document.getElementById("thMarkers").textContent = String((this.state.markers||[]).length);
+        ThreeUI.syncHUD(h.floors);
+
+        ChecklistUI.render(this.state.checklist || []);
+        ChecklistUI.refreshStats(this.state.checklist || []);
+
+        DocsUI.generate(false);
+        this.refreshProjectsDropdown();
+      },
+
+      buildCompartmentText(h){
+        const lines = [];
+        lines.push(`<b>Framework guidance:</b>`);
+        lines.push(`• Build a compartment schedule: compartments, shafts, fire walls, door sets, dampers, penetrations.`);
+        lines.push(`• Ensure continuity: rating must be consistent end-to-end (wall + door + seals + penetrations).`);
+        lines.push(`• Door strategy: ${U.esc(h.fireDoors)} (define hold-open logic, fail-safe, monitoring).`);
+        if(h.floors >= h.highRiseFloors) lines.push(`• High-rise consideration: protected shafts, fire service access, staged evacuation interfaces (project-specific).`);
+        if(h.compartment === "OPEN_PLAN") lines.push(`• Open-plan: compartment benefit is reduced. Smoke strategy becomes a primary safety system.`);
+        lines.push(`<br><b>Deliverables:</b><br>• Compartment drawings + door schedule + damper schedule + penetration register.`);
+        return lines.join("<br>");
+      },
+      buildEgressText(h){
+        return [
+          `<b>Framework checklist:</b>`,
+          `• Confirm occupant load assumptions and method (document your basis).`,
+          `• Define exits and stair strategy consistent with <b>${U.esc(h.evac)}</b>.`,
+          `• Define refuge areas if required by project concept (healthcare/high-rise scenarios).`,
+          `• Emergency lighting + exit signage: power/backup strategy and test plan.`,
+          `• Egress hardware: panic hardware, door swings, accessibility, wayfinding.`,
+          `<br><b>Deliverables:</b><br>• Egress plans + travel path maps + signage/lighting concept.`
+        ].join("<br>");
+      },
+      buildDetectText(h, pack){
+        const lines = [];
+        lines.push(`<b>Reference:</b> ${U.esc(pack.refs.alarm)}`);
+        lines.push(`• Define alarm zones, detector types (smoke/heat), and manual call points concept.`);
+        lines.push(`• Define <b>cause & effect matrix</b>: HVAC shutdown, smoke dampers, doors, lifts, suppression release.`);
+        lines.push(`• Power: primary + backup + supervision/fault handling.`);
+        lines.push(`• Interfaces: BMS, security, fire service panel, annunciation.`);
+        if(h.alarm === "VOICE") lines.push(`• Voice alarm: define message strategy and phased evacuation logic (project-specific).`);
+        lines.push(`<br><b>Deliverables:</b><br>• Alarm zoning drawings + C&E matrix + interface list + test procedures.`);
+        return lines.join("<br>");
+      },
+      buildSuppText(h, pack){
+        const lines = [];
+        lines.push(`<b>Reference:</b> ${U.esc(pack.refs.sprinkler)}`);
+        lines.push(`• Suppression concept: ${U.esc(h.sprinkler)} (confirm scope: whole building vs special hazards).`);
+        lines.push(`• Water supply strategy: reliability, monitoring, and maintenance access.`);
+        lines.push(`• If gas systems: define room integrity and safety interlocks (project-specific).`);
+        lines.push(`• Portable extinguishers: type matching hazards, maintenance plan, clear responsibility.`);
+        lines.push(`<br><b>Deliverables:</b><br>• Basis of design + zoning concept + equipment schedule + acceptance tests.`);
+        return lines.join("<br>");
+      },
+      buildSmokeText(h, pack){
+        const lines = [];
+        lines.push(`<b>Reference:</b> ${U.esc(pack.refs.smoke)}`);
+        lines.push(`• Define smoke zones and the control philosophy (exhaust, pressurization, purge).`);
+        lines.push(`• Define activation: detection zones → smoke control outputs (C&E matrix).`);
+        lines.push(`• Ensure power and control redundancy proportionate to risk.`);
+        if(h.compartment === "OPEN_PLAN") lines.push(`• Open-plan: justify tenability time and smoke layer management (project-specific calculations).`);
+        lines.push(`<br><b>Deliverables:</b><br>• Smoke control narrative + IO list + sequences + commissioning plan.`);
+        return lines.join("<br>");
+      },
+      buildMatText(h, pack){
+        const lines = [];
+        lines.push(`<b>Reference:</b> ${U.esc(pack.refs.materials)}`);
+        lines.push(`• Create a single rating schedule covering: walls, floors, shafts, doors, dampers, penetrations.`);
+        lines.push(`• Firestopping systems must be tested/approved; document installation evidence.`);
+        lines.push(`• Door sets: ${U.esc(h.fireDoors)}. Define hold-open release and monitoring strategy.`);
+        lines.push(`• Keep a live “as-built” register of fire safety critical elements.`);
+        lines.push(`<br><b>Deliverables:</b><br>• Rating schedule + firestopping register + certificates + inspection plan.`);
+        return lines.join("<br>");
+      },
+
+      saveCurrent(auto=false){
+        const selected = Store.selectedId();
+        if(auto && !selected) return;
+
+        let id = selected;
+        if(!id){
+          id = (crypto.randomUUID ? crypto.randomUUID() : (Math.random().toString(16).slice(2)+Date.now()));
+          Store.setSelected(id);
+        }
+
+        const header = this.readInputs();
+        const payload = {
+          id,
+          createdAt: (Store.projects.find(p=>p.id===id)?.createdAt || U.nowISO()),
+          updatedAt: U.nowISO(),
+          header,
+          checklist: this.state.checklist || [],
+          markers: this.state.markers || []
+        };
+
+        const idx = Store.projects.findIndex(p=>p.id===id);
+        if(idx>=0) Store.projects[idx] = payload;
+        else Store.projects.unshift(payload);
+
+        Store.save();
+        this.refreshProjectsDropdown();
+      },
+
+      loadSelected(){
+        const id = Store.selectedId();
+        if(!id) return;
+        const p = Store.projects.find(x => x.id === id);
+        if(!p) return;
+
+        this.state = U.deepClone(p);
+        this.applyInputsToUI(this.state.header || {});
+        this.refreshAllViews();
+
+        ThreeUI.ensureInit();
+        ThreeUI.rebuildFromState();
+      },
+
+      deleteSelected(){
+        const id = Store.selectedId();
+        if(!id) return;
+        Store.projects = Store.projects.filter(p => p.id !== id);
+        Store.setSelected("");
+        Store.save();
+
+        this.state.checklist = [];
+        this.state.markers = [];
+        this.refreshProjectsDropdown();
+        this.refreshAllViews();
+      },
+
+      refreshProjectsDropdown(){
+        const sel = document.getElementById("savedProjects");
+        if(!sel) return;
+        sel.innerHTML = "";
+        const none = document.createElement("option");
+        none.value = "";
+        none.textContent = "—";
+        sel.appendChild(none);
+
+        const selected = Store.selectedId();
+        Store.projects.forEach(p => {
+          const opt = document.createElement("option");
+          opt.value = p.id;
+          const name = (p.header?.project || "Untitled");
+          const dt = (p.updatedAt || p.createdAt || "").slice(0,19).replace("T"," ");
+          opt.textContent = `${name} (${dt})`;
+          if(p.id === selected) opt.selected = true;
+          sel.appendChild(opt);
+        });
+
+        sel.onchange = () => { Store.setSelected(sel.value||""); this.loadSelected(); };
+      },
+
+      exportJSON(){
+        this.saveCurrent(false);
+        const payload = {
+          exportedAt: U.nowISO(),
+          tool: "Brandschutz Master",
+          version: 1,
+          data: { header: this.readInputs(), checklist: this.state.checklist || [], markers: this.state.markers || [] }
+        };
+        const blob = new Blob([JSON.stringify(payload, null, 2)], {type:"application/json"});
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = `brandschutz_master_${(payload.data.header.project||"project").replaceAll(" ","_")}.json`;
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); }, 0);
+      },
+
+      importJSONPrompt(){
+        const txt = prompt("Paste exported JSON here:");
+        if(txt === null) return;
+        try{
+          const obj = JSON.parse(txt);
+          const data = obj.data || obj;
+          if(!data.header) throw new Error("Missing header");
+          this.state.header = data.header;
+          this.state.checklist = data.checklist || [];
+          this.state.markers = data.markers || [];
+          this.applyInputsToUI(this.state.header);
+          this.refreshAllViews();
+          ThreeUI.ensureInit();
+          ThreeUI.rebuildFromState();
+        }catch(e){
+          alert("Invalid JSON: " + (e?.message || e));
+        }
+      },
+
+      resetAll(){
+        if(!confirm("Reset local projects and current state?")) return;
+        localStorage.removeItem(LS.PROJECTS);
+        localStorage.removeItem(LS.SELECTED);
+        Store.projects = [];
+        Store.setSelected("");
+
+        U.setVal("inProject", "Building A – Fire Safety Concept v1");
+        U.setVal("inRegion", "Germany (DE)");
+        U.setVal("inStdPack", "EU_EN_DIN");
+        U.setVal("inOccupancy", "OFFICE");
+        U.setVal("inEvac", "SIMULTANEOUS");
+        U.setVal("inFloors", 6);
+        U.setVal("inF2F", 3.5);
+        U.setVal("inGFA", 8000);
+        U.setVal("inOccLoad", 400);
+        U.setVal("inSprinkler", "NONE");
+        U.setVal("inAlarm", "ADDRESSABLE");
+        U.setVal("inNotes", "");
+        U.setVal("inRisk", "NORMAL");
+        U.setVal("inHighRiseFloors", 8);
+        U.setVal("inCompartment", "STANDARD");
+        U.setVal("inFireDoors", "STANDARD");
+
+        this.state.checklist = [];
+        this.state.markers = [];
+        this.refreshProjectsDropdown();
+        this.refreshAllViews();
+        ThreeUI.ensureInit();
+        ThreeUI.rebuildFromState();
+      }
+    };
+
+    // ---------- Checklist UI ----------
+    const ChecklistUI = {
+      render(list){
+        const tb = document.getElementById("checklistTable");
+        if(!tb) return;
+        tb.innerHTML = "";
+        (list||[]).forEach((it, idx) => {
+          const row = document.createElement("tr");
+          row.innerHTML = `
+            <td>${U.esc(it.category)}</td>
+            <td><b>${U.esc(it.task)}</b></td>
+            <td>${U.esc(it.reference)}</td>
+            <td>${U.esc(it.rationale)}</td>
+            <td>
+              <select data-i="${idx}" data-k="status" style="width:130px">
+                <option value="OK" ${it.status==="OK"?"selected":""}>OK</option>
+                <option value="REVIEW" ${it.status==="REVIEW"?"selected":""}>REVIEW</option>
+                <option value="TBD" ${it.status==="TBD"?"selected":""}>TBD</option>
+              </select>
+            </td>
+            <td><input data-i="${idx}" data-k="owner" type="text" value="${U.esc(it.owner||"")}" style="min-width:140px"/></td>
+            <td><input data-i="${idx}" data-k="due" type="text" value="${U.esc(it.due||"")}" style="min-width:110px" placeholder="YYYY-MM-DD"/></td>
+            <td><input data-i="${idx}" data-k="notes" type="text" value="${U.esc(it.notes||"")}" style="min-width:260px"/></td>
+          `;
+          tb.appendChild(row);
+        });
+
+        tb.oninput = (ev) => {
+          const el = ev.target;
+          const i = parseInt(el.getAttribute("data-i")||"-1",10);
+          const k = el.getAttribute("data-k");
+          if(i<0 || !k) return;
+          if(!App.state.checklist[i]) return;
+          App.state.checklist[i][k] = el.value;
+          ChecklistUI.refreshStats(App.state.checklist);
+          App.saveCurrent(true);
+        };
+      },
+      refreshStats(list){
+        const c = list.length;
+        const ok = list.filter(x=>x.status===Status.OK).length;
+        const rev = list.filter(x=>x.status===Status.REVIEW).length;
+        const tbd = list.filter(x=>x.status===Status.TBD).length;
+        document.getElementById("clCount").textContent = String(c);
+        document.getElementById("clOK").textContent = String(ok);
+        document.getElementById("clReview").textContent = String(rev);
+        document.getElementById("clTBD").textContent = String(tbd);
+      }
+    };
+
+    // ---------- Docs ----------
+    const DocsUI = {
+      generate(write=true){
+        const h = App.readInputs();
+        const pack = StdPacks[h.stdPack] || StdPacks.CUSTOM;
+        const highRise = h.floors >= h.highRiseFloors;
+
+        const lines = [];
+        lines.push(`# Fire Safety Concept Draft`);
+        lines.push(`Project: ${h.project}`);
+        lines.push(`Region: ${h.region}`);
+        lines.push(`Reference pack: ${pack.label}`);
+        lines.push(`Generated: ${U.nowISO()}`);
+        lines.push(``);
+        lines.push(`## 1. Scope & Assumptions`);
+        lines.push(`- Building use/occupancy: ${h.occupancy}`);
+        lines.push(`- Floors: ${h.floors} (High-rise threshold: ${h.highRiseFloors} → ${highRise ? "HIGH-RISE" : "standard"})`);
+        lines.push(`- Gross floor area: ${h.gfa} m²`);
+        lines.push(`- Estimated occupants: ${h.occLoad}`);
+        lines.push(`- Evacuation strategy: ${h.evac}`);
+        lines.push(`- Compartment approach: ${h.compartment}`);
+        lines.push(`- Alarm concept: ${h.alarm}`);
+        lines.push(`- Suppression concept: ${h.sprinkler}`);
+        if(h.notes?.trim()) lines.push(`- Notes: ${h.notes.trim()}`);
+        lines.push(``);
+        lines.push(`## 2. Fire Strategy Overview`);
+        lines.push(`- Fire spread limitation by compartmentation and rated elements (project-specific rating schedule).`);
+        lines.push(`- Evacuation strategy and management plan aligned with alarm and smoke strategy.`);
+        lines.push(`- Fire service access and operational interfaces defined (as applicable).`);
+        lines.push(``);
+        lines.push(`## 3. Compartmentation & Rated Elements`);
+        lines.push(`- Reference: ${pack.refs.compartment}`);
+        lines.push(`- Compartment schedule, shafts, doors, dampers, penetrations register.`);
+        lines.push(``);
+        lines.push(`## 4. Egress & Evacuation`);
+        lines.push(`- Reference: ${pack.refs.egress}`);
+        lines.push(`- Occupant load basis, exits, travel paths, emergency lighting, exit signage.`);
+        lines.push(``);
+        lines.push(`## 5. Detection & Alarm`);
+        lines.push(`- Reference: ${pack.refs.alarm}`);
+        lines.push(`- Zoning, devices concept, cause & effect matrix, power/backup, fault supervision.`);
+        lines.push(``);
+        lines.push(`## 6. Suppression`);
+        lines.push(`- Reference: ${pack.refs.sprinkler}`);
+        lines.push(`- Coverage concept, water supply reliability, monitoring, acceptance tests.`);
+        lines.push(``);
+        lines.push(`## 7. Smoke Control`);
+        lines.push(`- Reference: ${pack.refs.smoke}`);
+        lines.push(`- Smoke zones, control philosophy, interfaces, commissioning.`);
+        lines.push(``);
+        lines.push(`## 8. Materials, Firestopping, and Quality Assurance`);
+        lines.push(`- Reference: ${pack.refs.materials}`);
+        lines.push(`- Tested systems, installation QA, as-built registers, certificates.`);
+        lines.push(``);
+        lines.push(`## 9. Commissioning & Integrated Systems Testing`);
+        lines.push(`- Integrated test plan across alarm, smoke control, HVAC shutdown, doors, lifts, suppression.`);
+        lines.push(`- Fault handling and recovery procedures.`);
+        lines.push(``);
+        lines.push(`## 10. Handover & Maintenance`);
+        lines.push(`- ITM plan, documentation set, training, periodic audits.`);
+
+        if(write){
+          const t = document.getElementById("docText");
+          if(t) t.value = lines.join("\n");
+        }
+      }
+    };
+
+    // ---------- Three.js UI ----------
+    const ThreeUI = {
+      inited:false, placeMode:false,
+      scene:null, camera:null, renderer:null, controls:null,
+      floorsGroup:null, raycaster:null, mouse:null, canvas:null,
+      markerMeshes:[],
+
+      ensureInit(){
+        if(this.inited) return;
+        const canvas = document.getElementById("threeCanvas");
+        this.canvas = canvas;
+        const wrap = document.getElementById("threeWrap");
+        if(!canvas || !wrap) return;
+
+        if(typeof THREE === "undefined"){
+          wrap.innerHTML = `<div style="padding:16px" class="hint">
+            <b>3D unavailable:</b> Three.js could not load (offline or blocked).<br>
+            The rest of the tool works. For 3D, open with internet access or host three.js locally.
+          </div>`;
+          return;
+        }
+
+        const w = wrap.clientWidth, h = wrap.clientHeight;
+        this.scene = new THREE.Scene();
+        this.scene.background = new THREE.Color(0x0b1220);
+
+        this.camera = new THREE.PerspectiveCamera(55, w/h, 0.1, 2000);
+        this.camera.position.set(10, 10, 14);
+
+        this.renderer = new THREE.WebGLRenderer({ canvas, antialias:true, alpha:false });
+        this.renderer.setSize(w, h);
+        this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+
+        const amb = new THREE.AmbientLight(0xffffff, 0.7);
+        this.scene.add(amb);
+        const dir = new THREE.DirectionalLight(0xffffff, 0.9);
+        dir.position.set(10, 20, 10);
+        this.scene.add(dir);
+
+        const grid = new THREE.GridHelper(24, 24, 0x2c3448, 0x1f2636);
+        grid.position.y = 0;
+        this.scene.add(grid);
+
+        // OrbitControls may be exposed differently depending on CDN
+        if(typeof THREE.OrbitControls !== "undefined"){
+          this.controls = new THREE.OrbitControls(this.camera, this.renderer.domElement);
+        }else if(typeof OrbitControls !== "undefined"){
+          this.controls = new OrbitControls(this.camera, this.renderer.domElement);
+        }
+        if(this.controls){
+          this.controls.enableDamping = true;
+          this.controls.dampingFactor = 0.08;
+        }
+
+        this.floorsGroup = new THREE.Group();
+        this.scene.add(this.floorsGroup);
+
+        this.raycaster = new THREE.Raycaster();
+        this.mouse = new THREE.Vector2();
+
+        canvas.addEventListener("click", (ev)=>this.onClick(ev));
+        window.addEventListener("resize", ()=>this.onResize());
+
+        this.inited = true;
+        this.rebuildFromState();
+        this.animate();
+      },
+
+      onResize(){
+        if(!this.inited || !this.renderer || !this.camera) return;
+        const wrap = document.getElementById("threeWrap");
+        if(!wrap) return;
+        const w = wrap.clientWidth, h = wrap.clientHeight;
+        this.camera.aspect = w/h;
+        this.camera.updateProjectionMatrix();
+        this.renderer.setSize(w, h);
+      },
+
+      animate(){
+        if(!this.inited) return;
+        requestAnimationFrame(()=>this.animate());
+        if(this.controls) this.controls.update();
+        if(this.renderer) this.renderer.render(this.scene, this.camera);
+      },
+
+      syncHUD(floors){
+        const el = document.getElementById("hudFloors");
+        if(el) el.value = String(floors || 1);
+
+        const ff = document.getElementById("hudMarkerFloor");
+        if(ff){
+          ff.innerHTML = "";
+          const n = Math.max(1, floors||1);
+          for(let i=1;i<=n;i++){
+            const opt = document.createElement("option");
+            opt.value = String(i);
+            opt.textContent = `Floor ${i}`;
+            ff.appendChild(opt);
+          }
+        }
+      },
+
+      togglePlaceMode(){
+        this.placeMode = !this.placeMode;
+        const el = document.getElementById("hudPlaceMode");
+        if(el) el.textContent = this.placeMode ? "ON" : "OFF";
+      },
+
+      rebuild(){
+        const n = U.clamp(parseInt(document.getElementById("hudFloors")?.value || "1", 10), 1, 200);
+        U.setVal("inFloors", n);
+        App.generateChecklist();
+        this.rebuildFromState();
+      },
+
+      rebuildFromState(){
+        if(!this.inited || !this.floorsGroup) return;
+        while(this.floorsGroup.children.length) this.floorsGroup.remove(this.floorsGroup.children[0]);
+
+        const h = App.readInputs();
+        const floors = Math.max(1, h.floors);
+        const f2f = Math.max(2.5, h.f2f);
+
+        const width = 10, depth = 7;
+
+        for(let i=0;i<floors;i++){
+          const geo = new THREE.BoxGeometry(width, 0.35, depth);
+          const mat = new THREE.MeshStandardMaterial({
+            color: (i%2===0) ? 0x102a43 : 0x0f2133,
+            metalness: 0.1,
+            roughness: 0.9
+          });
+          const slab = new THREE.Mesh(geo, mat);
+          slab.position.set(0, i*(f2f*0.35), 0);
+          slab.userData = { type:"FLOOR", floorIndex: i+1, width, depth, f2f };
+          this.floorsGroup.add(slab);
+        }
+
+        this.clearMarkerMeshes();
+        (App.state.markers || []).forEach(m => this.addMarkerMesh(m));
+        document.getElementById("thMarkers").textContent = String((App.state.markers||[]).length);
+      },
+
+      clearMarkerMeshes(){
+        this.markerMeshes.forEach(ms => {
+          if(ms.parent) ms.parent.remove(ms);
+          if(ms.geometry) ms.geometry.dispose?.();
+          if(ms.material) ms.material.dispose?.();
+        });
+        this.markerMeshes = [];
+      },
+
+      markerColor(type){
+        const map = {
+          SMOKE_DET: 0x10b981,
+          HEAT_DET: 0x059669,
+          MCP: 0xf39c12,
+          SOUND: 0x8ab4f8,
+          SPRINKLER: 0x2ecc71,
+          EXT: 0xff6b6b,
+          HOSE: 0xff6b6b,
+          EXIT: 0xffffff,
+          DOOR: 0xb8c0cf,
+          DAMPER: 0xb8c0cf,
+          PANEL: 0x10b981
+        };
+        return map[type] || 0x10b981;
+      },
+
+      addMarkerMesh(m){
+        if(!this.inited) return;
+        const floors = App.readInputs().floors || 1;
+        const floorIndex = U.clamp(m.floor || 1, 1, floors);
+
+        const slab = this.floorsGroup.children.find(ch => ch.userData?.floorIndex === floorIndex);
+        if(!slab) return;
+
+        const w = slab.userData.width, d = slab.userData.depth;
+        const x = (m.x01 - 0.5) * w;
+        const z = (m.y01 - 0.5) * d;
+        const y = slab.position.y + 0.25;
+
+        const geo = new THREE.SphereGeometry(0.18, 16, 16);
+        const mat = new THREE.MeshStandardMaterial({ color: this.markerColor(m.type), metalness: 0.1, roughness: 0.6 });
+        const s = new THREE.Mesh(geo, mat);
+        s.position.set(x, y, z);
+        this.scene.add(s);
+        this.markerMeshes.push(s);
+
+        const label = this.makeLabel(`${m.type}`);
+        label.position.set(x, y+0.5, z);
+        this.scene.add(label);
+        this.markerMeshes.push(label);
+      },
+
+      makeLabel(text){
+        const c = document.createElement("canvas");
+        c.width = 256; c.height = 64;
+        const ctx = c.getContext("2d");
+        ctx.fillStyle = "rgba(15,23,42,0.75)";
+        ctx.strokeStyle = "rgba(16,185,129,0.35)";
+        ctx.lineWidth = 2;
+        // Rounded rect fallback
+        const x=6,y=6,w=244,h=52,r=14;
+        ctx.beginPath();
+        ctx.moveTo(x+r, y);
+        ctx.arcTo(x+w, y, x+w, y+h, r);
+        ctx.arcTo(x+w, y+h, x, y+h, r);
+        ctx.arcTo(x, y+h, x, y, r);
+        ctx.arcTo(x, y, x+w, y, r);
+        ctx.closePath();
+        ctx.fill(); ctx.stroke();
+
+        ctx.fillStyle = "#e5e7eb";
+        ctx.font = "bold 20px Segoe UI";
+        ctx.fillText(text, 16, 40);
+
+        const tex = new THREE.CanvasTexture(c);
+        tex.minFilter = THREE.LinearFilter;
+        const mat = new THREE.SpriteMaterial({ map: tex, transparent:true });
+        const sp = new THREE.Sprite(mat);
+        sp.scale.set(4.0, 1.0, 1.0);
+        return sp;
+      },
+
+      onClick(ev){
+        if(!this.placeMode) return;
+        if(!this.inited || !this.canvas) return;
+
+        const rect = this.canvas.getBoundingClientRect();
+        const mx = ((ev.clientX - rect.left) / rect.width) * 2 - 1;
+        const my = -(((ev.clientY - rect.top) / rect.height) * 2 - 1);
+        this.mouse.set(mx, my);
+
+        this.raycaster.setFromCamera(this.mouse, this.camera);
+        const hits = this.raycaster.intersectObjects(this.floorsGroup.children, false);
+        if(hits.length === 0) return;
+
+        const hit = hits[0];
+        const slab = hit.object;
+        const floorIndex = slab.userData.floorIndex;
+        const w = slab.userData.width, d = slab.userData.depth;
+
+        const x01 = U.clamp((hit.point.x / w) + 0.5, 0, 1);
+        const y01 = U.clamp((hit.point.z / d) + 0.5, 0, 1);
+
+        const mType = document.getElementById("hudMarkerType")?.value || "SMOKE_DET";
+        const m = { type: mType, floor: floorIndex, x01, y01, createdAt: U.nowISO() };
+
+        App.state.markers = App.state.markers || [];
+        App.state.markers.push(m);
+        App.saveCurrent(true);
+
+        this.addMarkerMesh(m);
+        document.getElementById("thMarkers").textContent = String(App.state.markers.length);
+      },
+
+      addMarkerFromSidebar(){
+        const type = document.getElementById("inMarkerType").value;
+        const floor = U.clamp(parseInt(document.getElementById("inMarkerFloor").value||"1",10), 1, Math.max(1, App.readInputs().floors||1));
+        const x01 = U.clamp(parseFloat(document.getElementById("inMarkerX").value||"0.25"), 0, 1);
+        const y01 = U.clamp(parseFloat(document.getElementById("inMarkerY").value||"0.25"), 0, 1);
+
+        const m = { type, floor, x01, y01, createdAt: U.nowISO() };
+        App.state.markers = App.state.markers || [];
+        App.state.markers.push(m);
+        App.saveCurrent(true);
+
+        this.ensureInit();
+        this.addMarkerMesh(m);
+        document.getElementById("thMarkers").textContent = String(App.state.markers.length);
+      },
+
+      clearMarkers(){
+        if(!confirm("Clear all 3D markers?")) return;
+        App.state.markers = [];
+        App.saveCurrent(true);
+        if(this.inited){
+          this.clearMarkerMeshes();
+          document.getElementById("thMarkers").textContent = "0";
+        }
+      }
+    };
+
+    // ---------- Boot ----------
+    window.addEventListener("DOMContentLoaded", ()=>{
+      App.init();
+      if((App.state.checklist||[]).length === 0) App.generateChecklist();
+
+      const ids = [
+        "inProject","inRegion","inStdPack","inOccupancy","inEvac","inFloors","inF2F","inGFA","inOccLoad",
+        "inSprinkler","inAlarm","inNotes","inRisk","inHighRiseFloors","inCompartment","inFireDoors"
+      ];
+      ids.forEach(id=>{
+        const el = document.getElementById(id);
+        if(!el) return;
+        el.addEventListener("change", ()=>{ App.refreshAllViews(); App.saveCurrent(true); });
+        el.addEventListener("input", ()=>{ App.refreshAllViews(); });
+      });
+    });
+  </script>
+
+<!-- KI-Helfer: ordnet das Ergebnis ein, rechnet es nicht. Der
+     Schluessel steht nicht hier, sondern hinter der Edge Function
+     werkzeug-assistent. Siehe ki-helfer.js. -->
+<script src="ki-helfer.js"></script>
+<script>
+  KI_HELFER.einbauen({
+    werkzeug: "Brandschutz Master",
+    modus: "norm",
+    knopf: "Regelwerk fragen",
+    titel: "Frage zum Regelwerk",
+    platzhalter: "Was soll erklaert werden? Zum Beispiel: Welche Sprinklerklasse gilt hier?",
+    ergebnisse: {
+      "ovProject": "Projekt",
+      "ovOcc": "Nutzung",
+      "ovGFA": "Bruttogrundflaeche",
+      "ovFloors": "Geschosse",
+      "ovStd": "Regelwerk",
+      "ovSpr": "Sprinkler",
+      "ovAlm": "Alarmierung",
+      "clCount": "Aufgaben gesamt",
+      "clOK": "erledigt",
+      "clTBD": "offen"
+    }
+  });
+</script>
+</body>
+</html>

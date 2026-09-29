@@ -1,0 +1,557 @@
+<!-- FILE: Instrument_Selector.html -->
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ART ENVI | Instrumentation AI Selector</title>
+    
+    <link rel="stylesheet" href="bibliotheken/fontawesome/css/all.min.css">
+    <script src="bibliotheken/chart.umd.js"></script>
+    <script src="bibliotheken/xlsx.full.min.js"></script>
+
+    <style>
+        :root {
+            --bg: #0f1115;
+            --panel: #161b22;
+            --accent: #9b59b6; /* Instrument Purple */
+            --accent-dim: rgba(155, 89, 182, 0.15);
+            --text: #c9d1d9;
+            --border: #30363d;
+            --success: #238636;
+            --danger: #da3633;
+            --warn: #d29922;
+        }
+
+        body { margin: 0; background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; height: 100vh; display: flex; overflow: hidden; font-size: 12px; }
+        ::-webkit-scrollbar { width: 8px; background: var(--bg); }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
+
+        /* LAYOUT */
+        .sidebar { width: 300px; background: #0d1117; border-right: 1px solid var(--border); display: flex; flex-direction: column; z-index: 10; }
+        .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: var(--bg); }
+        .workspace { flex: 1; overflow-y: auto; padding: 20px; display: grid; grid-template-columns: 1fr 400px; gap: 20px; }
+
+        /* HEADER */
+        .header { height: 55px; border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 20px; justify-content: space-between; background: #161b22; }
+        .brand { font-size: 18px; font-weight: 800; color: #fff; letter-spacing: 1px; display:flex; align-items:center; gap:10px; }
+        .brand i { color: var(--accent); }
+
+        /* INPUTS */
+        .section { padding: 15px; border-bottom: 1px solid var(--border); }
+        .sec-title { font-size: 11px; text-transform: uppercase; color: var(--accent); font-weight: 700; margin-bottom: 10px; }
+        
+        .inp-row { display: flex; gap: 10px; margin-bottom: 8px; }
+        .inp-group { flex: 1; }
+        label { display: block; margin-bottom: 4px; font-size: 11px; color: #8b949e; }
+        
+        input, select { 
+            width: 100%; background: #0d1117; border: 1px solid #30363d; color: #fff; padding: 8px; border-radius: 4px; font-size: 12px; outline: none; transition:0.2s; box-sizing: border-box;
+        }
+        input:focus, select:focus { border-color: var(--accent); }
+
+        /* TECH MATRIX */
+        .tech-card { background: var(--panel); border: 1px solid var(--border); border-radius: 6px; padding: 15px; margin-bottom: 10px; cursor: pointer; transition: 0.2s; position: relative; overflow: hidden; }
+        .tech-card:hover { border-color: #555; }
+        .tech-card.best { border-color: var(--success); background: rgba(35, 134, 54, 0.05); }
+        .tech-card.bad { opacity: 0.5; }
+        
+        .tech-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+        .tech-name { font-weight: 700; font-size: 14px; color: #fff; }
+        .tech-score { font-weight: 800; font-size: 16px; color: var(--accent); }
+        .tech-desc { font-size: 11px; color: #8b949e; }
+        
+        .score-bar { height: 4px; background: #333; margin-top: 10px; border-radius: 2px; overflow: hidden; }
+        .score-fill { height: 100%; background: var(--accent); width: 0%; transition: 1s; }
+
+        /* RESULTS PANEL */
+        .res-panel { background: var(--panel); border-left: 1px solid var(--border); display: flex; flex-direction: column; }
+        .res-header { padding: 15px; border-bottom: 1px solid var(--border); background: #1c2128; font-weight: 700; color: #fff; }
+        
+        .calc-box { background: #0d1117; border: 1px solid #30363d; padding: 10px; border-radius: 4px; margin-top: 10px; }
+        .calc-row { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 12px; }
+        .calc-val { font-weight: bold; color: #fff; }
+
+        /* BUTTONS */
+        .btn-calc { width: 100%; padding: 12px; background: var(--accent); color: #fff; border: none; border-radius: 4px; font-weight: 700; cursor: pointer; margin-top: 10px; }
+        .btn-calc:hover { filter: brightness(1.1); }
+        .btn-excel { background: #217346; color: white; display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 10px; border:none; border-radius:4px; cursor:pointer; margin-top: auto;}
+
+        /* TABS */
+        .nav-tabs { display: flex; border-bottom: 1px solid var(--border); }
+        .nav-tab { flex: 1; text-align: center; padding: 10px; cursor: pointer; color: #8b949e; border-bottom: 2px solid transparent; }
+        .nav-tab.active { color: #fff; border-color: var(--accent); background: #161b22; }
+
+    </style>
+
+<!-- KI-TOPBAR-START -->
+<style id="ki-topbar-style">
+:root{--ki-topbar-h:52px;--ki-topbar-bg:rgba(2,6,23,.90);--ki-topbar-border:rgba(148,163,184,.18);}
+.ki-topbar{position:fixed;top:0;left:0;right:0;height:var(--ki-topbar-h);display:flex;align-items:center;justify-content:flex-end;padding:0 14px;gap:10px;background:var(--ki-topbar-bg);backdrop-filter:blur(10px);border-bottom:1px solid var(--ki-topbar-border);z-index:99999}
+.ki-iconbtn{width:38px;height:38px;display:inline-flex;align-items:center;justify-content:center;border-radius:10px;border:1px solid var(--ki-topbar-border);background:rgba(255,255,255,.03);color:#e2e8f0;cursor:pointer;text-decoration:none;transition:.15s;box-sizing:border-box}
+.ki-iconbtn:hover{background:rgba(255,255,255,.08);transform:translateY(-1px)}
+.ki-iconbtn:active{transform:translateY(0)}
+.ki-iconbtn i{font-size:16px}
+body{padding-top:var(--ki-topbar-h)!important}
+.sidebar,.main,.main-wrapper{max-height:calc(100vh - var(--ki-topbar-h))}
+.ki-modal{position:fixed;inset:0;display:none;z-index:100000}
+.ki-modal[aria-hidden="false"]{display:block}
+.ki-modal-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.55)}
+.ki-modal-card{position:relative;width:min(920px,calc(100vw - 28px));margin:calc(var(--ki-topbar-h) + 16px) auto 20px;background:rgba(15,23,42,.98);border:1px solid rgba(148,163,184,.20);border-radius:14px;box-shadow:0 30px 90px rgba(0,0,0,.55);color:#e2e8f0;overflow:hidden}
+.ki-modal-head{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid rgba(148,163,184,.18)}
+.ki-modal-title{font-weight:800;font-size:14px}
+.ki-modal-body{padding:16px;max-height:calc(100vh - (var(--ki-topbar-h) + 120px));overflow:auto;line-height:1.7;font-size:13px}
+.ki-modal-body pre{background:rgba(255,255,255,.06);border:1px solid rgba(148,163,184,.16);padding:12px;border-radius:12px;overflow:auto;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono",monospace;font-size:12px;color:#e5e7eb}
+.ki-modal-body b{color:#fff}
+</style>
+<!-- Ein Aussehen fuer alle Werkzeuge. Steht direkt hinter dem letzten
+     <style> dieses Werkzeugs: spaeter in der Reihenfolge, also gewinnt
+     es bei gleicher Spezifitaet - aber so frueh wie moeglich, damit die
+     Seite nicht erst in der alten Farbe erscheint und dann umfaerbt.
+     Am Ende des <body> geladen war genau das zu sehen: Knoepfe mit
+     transition faerbten sichtbar um. Faerbt nur, verschiebt nichts.
+     Siehe werkzeug-stil.css. -->
+<link rel="stylesheet" href="werkzeug-stil.css">
+<!-- Sprachumschaltung Deutsch / Persisch / Englisch. Was nicht im
+     Woerterbuch steht, bleibt Deutsch. Siehe uebersetzung.js. -->
+<script src="woerter.js"></script>
+<script src="woerter/Instrument_Selector.js"></script>
+<script src="uebersetzung.js"></script>
+
+<!-- KI-TOPBAR-END -->
+
+</head>
+<body>
+
+<!-- KI-TOPBAR-HTML-START -->
+<div class="ki-topbar" role="navigation" aria-label="KI Dashboard Topbar">
+  <button class="ki-iconbtn" type="button" title="Info / Anleitung" onclick="KI_openInfo()">
+    <i class="fa-solid fa-circle-info"></i>
+  </button>
+  <a class="ki-iconbtn" title="Zurück zum Dashboard" href="dashboard/">
+    <i class="fa-solid fa-house"></i>
+  </a>
+</div>
+
+<div id="kiInfoModal" class="ki-modal" aria-hidden="true">
+  <div class="ki-modal-backdrop" onclick="KI_closeInfo(event)"></div>
+  <div class="ki-modal-card" role="dialog" aria-modal="true">
+    <div class="ki-modal-head">
+      <div class="ki-modal-title">Info & Anleitung</div>
+      <button class="ki-iconbtn" type="button" title="Schließen" onclick="KI_closeInfo()">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+    <div class="ki-modal-body">
+      
+    <div>
+      <div style="font-size:13px; opacity:0.9; margin-bottom:10px;"><b>Seitenname:</b> ART ENVI | Instrumentation AI Selector</div>
+      <div style="margin-bottom:12px;"><b>Zweck:</b> Intelligente Auswahl von Feldgeräten (Durchfluss, Füllstand, Druck, Temperatur, Ventile) basierend auf Prozessbedingungen und Einschränkungen, mit Bewertung und Vorschlag der besten Technologie.</div>
+      <div style="margin-bottom:10px;"><b>Verwendung:</b></div>
+      <ol style="margin-top:0;"><li>Wählen Sie den Instrumententyp (Flow / Level / Pressure / Temperature / Control Valve).</li><li>Geben Sie die Prozessbedingungen ein (Zustand, Temperatur, Druck, Viskosität/Dichte, Schaum/Partikel, etc.).</li><li>Klicken Sie auf <b>Calculate</b>, um die Technologien zu bewerten und die beste Option zu ermitteln.</li><li>Im Modus "Control Valve" wird zusätzlich eine Cv/Kv-Berechnung zur Grobauslegung angezeigt.</li></ol>
+      <div style="margin-top:14px; margin-bottom:8px;"><b>Formeln / Berechnungslogik (Auszug aus dem Code):</b></div>
+      <pre>return { ...tech, score: Math.max(0, score) };
+const SG = inputs.cv_rho / 1000;
+const Cv = 1.16 * Q * Math.sqrt(SG / dP);
+const Kv = 0.86 * Cv;
+const Q_m3s = inputs.flow / 3600;
+const D_est = Math.sqrt((4 * Q_m3s) / (Math.PI * 2.0));
+const DN = Math.round(D_est * 1000);
+return dns.find(x => x >= d) || d;
+return 150;</pre>
+      <div style="margin-top:12px; opacity:0.75; font-size:12px;">
+        Hinweis: Wenn sich Formeln oder Projektstandards ändern, müssen diese Zeilen im JavaScript-Code aktualisiert werden, um gültige Ergebnisse zu gewährleisten.
+      </div>
+    </div>
+    
+    </div>
+  </div>
+</div>
+<!-- KI-TOPBAR-HTML-END -->
+
+
+<div class="sidebar">
+    <div class="section">
+        <div class="sec-title">1. Instrument Type</div>
+        <select id="instType" onchange="updateUI()">
+            <option value="flow">Flow (Durchfluss)</option>
+            <option value="level">Level (Niveau)</option>
+            <option value="pressure">Pressure (Druck)</option>
+            <option value="temp">Temperature (Temp)</option>
+            <option value="valve">Control Valve (Regelventil)</option>
+        </select>
+    </div>
+
+    <div class="section">
+        <div class="sec-title">2. Process Conditions</div>
+        <div class="inp-group">
+            <label>Fluid State</label>
+            <select id="state">
+                <option value="liquid">Liquid (Clean)</option>
+                <option value="slurry">Liquid (Dirty/Slurry)</option>
+                <option value="gas">Gas / Air</option>
+                <option value="steam">Steam (Dampf)</option>
+            </select>
+        </div>
+        <div class="inp-row">
+            <div class="inp-group"><label>Temp. (°C)</label><input type="number" id="temp" value="40"></div>
+            <div class="inp-group"><label>Pressure (bar)</label><input type="number" id="press" value="5"></div>
+        </div>
+        
+        <div id="flowInputs">
+            <div class="inp-row">
+                <div class="inp-group"><label>Flow Min</label><input type="number" id="q_min" value="10"></div>
+                <div class="inp-group"><label>Flow Max</label><input type="number" id="q_max" value="100"></div>
+            </div>
+            <div class="inp-group"><label>Viscosity (cP)</label><input type="number" id="visc" value="1"></div>
+            <div class="inp-group"><label>Conductive?</label>
+                <select id="conductive"><option value="yes">Yes (>5 µS/cm)</option><option value="no">No</option></select>
+            </div>
+        </div>
+
+        <div id="levelInputs" style="display:none;">
+            <div class="inp-group"><label>Tank Height (m)</label><input type="number" id="lvl_h" value="5"></div>
+            <div class="inp-group"><label>Density (kg/m³)</label><input type="number" id="lvl_rho" value="1000"></div>
+            <div class="inp-group"><label>Agitator / Foam?</label>
+                <select id="lvl_foam"><option value="no">None</option><option value="yes">Yes</option></select>
+            </div>
+        </div>
+        
+        <div id="valveInputs" style="display:none;">
+            <div class="inp-row">
+                <div class="inp-group"><label>dP (bar)</label><input type="number" id="cv_dp" value="1"></div>
+                <div class="inp-group"><label>Flow (m³/h)</label><input type="number" id="cv_flow" value="50"></div>
+            </div>
+            <div class="inp-group"><label>Density (kg/m³)</label><input type="number" id="cv_rho" value="1000"></div>
+        </div>
+    </div>
+
+    <div class="section" style="border:none;">
+        <button class="btn-calc" onclick="analyze()"><i class="fas fa-brain"></i> AI ANALYSE STARTEN</button>
+    </div>
+</div>
+
+<div class="main">
+    <div class="header">
+        <div class="brand"><i class="fas fa-microchip"></i> ART ENVI <span>SELECTOR AI</span></div>
+        <div>
+           <!-- Removed redundant text button -->
+        </div>
+    </div>
+
+    <div class="workspace">
+        <div style="display:flex; flex-direction:column;">
+            <div style="margin-bottom:10px; font-weight:700; font-size:11px; color:#8b949e; text-transform:uppercase;">Empfohlene Technologien (Ranked by Suitability)</div>
+            <div id="techList">
+                <div style="text-align:center; color:#555; margin-top:50px;">Bitte Prozessdaten eingeben und Analyse starten.</div>
+            </div>
+        </div>
+
+        <div class="res-panel">
+            <div class="res-header">SPEZIFIKATION (DATASHEET)</div>
+            
+            <div style="padding:20px; flex:1; overflow-y:auto;">
+                <div style="font-size:16px; font-weight:bold; color:#fff; margin-bottom:5px;" id="sel_tech_name">---</div>
+                <div style="font-size:11px; color:var(--accent); margin-bottom:20px;" id="sel_tech_type">Bitte Technologie wählen</div>
+
+                <div class="sec-title" style="border-bottom:1px solid #333;">Calculated Sizing</div>
+                <div class="calc-box" id="calcResults">
+                    <div class="calc-row"><span>Status:</span> <span>Waiting...</span></div>
+                </div>
+
+                <div class="sec-title" style="border-bottom:1px solid #333; margin-top:20px;">Recommended Materials</div>
+                <div class="calc-box">
+                    <div class="calc-row"><span>Body:</span> <span id="mat_body">SS316L</span></div>
+                    <div class="calc-row"><span>Trim/Sensor:</span> <span id="mat_trim">SS316L</span></div>
+                    <div class="calc-row"><span>Seals:</span> <span id="mat_seal">PTFE</span></div>
+                </div>
+
+                <div id="warnBox" style="margin-top:20px; padding:10px; background:rgba(218, 54, 51, 0.1); border:1px solid #da3633; border-radius:4px; display:none;">
+                    <div style="color:#da3633; font-weight:bold; margin-bottom:5px;"><i class="fas fa-exclamation-triangle"></i> Warnung</div>
+                    <div id="warnText" style="color:#f8d7da;">-</div>
+                </div>
+            </div>
+
+            <div style="padding:20px; border-top:1px solid #333;">
+                <button class="btn-excel" onclick="exportDatasheet()"><i class="fas fa-file-excel"></i> ISA DATASHEET EXPORT</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- KNOWLEDGE BASE (The Brain) ---
+    const DB = {
+        flow: [
+            { id: 'mag', name: 'Magnetic Flowmeter', type: 'Volumetric', desc: 'Ideal für leitfähige Flüssigkeiten. Kein Druckverlust.', suitable: (d) => d.state !== 'gas' && d.state !== 'steam' && d.cond === 'yes' ? 100 : 0 },
+            { id: 'coriolis', name: 'Coriolis Mass Flow', type: 'Mass', desc: 'Höchste Präzision. Misst Dichte direkt. Teuer.', suitable: (d) => 95 }, // Good for almost everything
+            { id: 'vortex', name: 'Vortex Flowmeter', type: 'Volumetric', desc: 'Standard für Dampf und saubere Gase/Liquids.', suitable: (d) => (d.visc < 10 && d.state !== 'slurry') ? 90 : 20 },
+            { id: 'dp', name: 'Orifice Plate (DP)', type: 'Volumetric', desc: 'Robust, günstig, hoher Druckverlust.', suitable: (d) => d.state !== 'slurry' ? 80 : 10 },
+            { id: 'ultra', name: 'Ultrasonic (Clamp-on)', type: 'Volumetric', desc: 'Non-intrusive. Gut für Nachrüstung.', suitable: (d) => d.state === 'liquid' ? 85 : 10 },
+            { id: 'thermal', name: 'Thermal Mass', type: 'Mass', desc: 'Nur für Gase geeignet.', suitable: (d) => d.state === 'gas' ? 95 : 0 }
+        ],
+        level: [
+            { id: 'radar_nc', name: 'Radar (Non-Contact)', desc: 'Top Lösung. Unabhängig von Dichte/Temp.', suitable: (d) => d.foam === 'yes' ? 60 : 95 },
+            { id: 'radar_gw', name: 'Guided Wave Radar', desc: 'Gut bei Schaum und bewegter Oberfläche.', suitable: (d) => 95 },
+            { id: 'dp_level', name: 'DP Level (Transmitter)', desc: 'Klassisch. Abhängig von Dichte.', suitable: (d) => 80 },
+            { id: 'ultra_lvl', name: 'Ultrasonic Level', desc: 'Günstig. Nicht bei Dampf/Vakuum.', suitable: (d) => (d.temp > 80 || d.pres < 1) ? 20 : 80 }
+        ],
+        valve: [
+            { id: 'globe', name: 'Globe Valve', desc: 'Beste Regelgüte. Hoher Druckverlust.', suitable: (d) => 90 },
+            { id: 'butterfly', name: 'Butterfly Valve', desc: 'Gut für große DN. Geringer dP.', suitable: (d) => d.flow > 100 ? 90 : 60 },
+            { id: 'ball', name: 'V-Notch Ball Valve', desc: 'Gut für Slurry und hohe Kapazität.', suitable: (d) => d.state === 'slurry' ? 95 : 70 }
+        ]
+    };
+
+    let currentResults = [];
+    let selectedTech = null;
+    let inputs = {};
+
+    function updateUI() {
+        const type = document.getElementById('instType').value;
+        document.getElementById('flowInputs').style.display = type === 'flow' ? 'block' : 'none';
+        document.getElementById('levelInputs').style.display = type === 'level' ? 'block' : 'none';
+        document.getElementById('valveInputs').style.display = type === 'valve' ? 'block' : 'none';
+    }
+
+    // --- AI ANALYSIS ENGINE ---
+    window.analyze = function() {
+        const type = document.getElementById('instType').value;
+        
+        // Gather Inputs
+        inputs = {
+            state: document.getElementById('state').value,
+            temp: parseFloat(document.getElementById('temp').value),
+            pres: parseFloat(document.getElementById('press').value),
+            // Flow specific
+            visc: parseFloat(document.getElementById('visc').value),
+            cond: document.getElementById('conductive').value,
+            flow: parseFloat(document.getElementById('q_max').value),
+            flow_min: parseFloat(document.getElementById('q_min').value),
+            // Level specific
+            foam: document.getElementById('lvl_foam').value,
+            // Valve specific
+            cv_dp: parseFloat(document.getElementById('cv_dp').value),
+            cv_rho: parseFloat(document.getElementById('cv_rho').value)
+        };
+
+        const candidates = DB[type] || [];
+        
+        // Score Candidates
+        currentResults = candidates.map(tech => {
+            let score = tech.suitable(inputs);
+            
+            // Penalty Logic (Refinement)
+            if(inputs.temp > 200 && score > 0) score -= 10; // High temp penalty
+            if(inputs.pres > 50 && score > 0) score -= 10; // High press penalty
+            
+            return { ...tech, score: Math.max(0, score) };
+        });
+
+        // Sort by Score
+        currentResults.sort((a, b) => b.score - a.score);
+
+        renderResults();
+        if(currentResults.length > 0) selectTech(0);
+    };
+
+    function renderResults() {
+        const list = document.getElementById('techList');
+        list.innerHTML = "";
+
+        currentResults.forEach((tech, idx) => {
+            let badge = tech.score >= 90 ? 'best' : (tech.score < 50 ? 'bad' : '');
+            let color = tech.score >= 90 ? '#2ecc71' : (tech.score < 50 ? '#e74c3c' : '#f1c40f');
+            
+            list.innerHTML += `
+                <div class="tech-card ${badge}" onclick="selectTech(${idx})">
+                    <div class="tech-head">
+                        <span class="tech-name">${tech.name}</span>
+                        <span class="tech-score" style="color:${color}">${tech.score}%</span>
+                    </div>
+                    <div class="tech-desc">${tech.desc}</div>
+                    <div class="score-bar"><div class="score-fill" style="width:${tech.score}%; background:${color}"></div></div>
+                </div>
+            `;
+        });
+    }
+
+    window.selectTech = function(idx) {
+        selectedTech = currentResults[idx];
+        document.getElementById('sel_tech_name').innerText = selectedTech.name;
+        document.getElementById('sel_tech_type').innerText = selectedTech.type || "Instrument";
+        
+        // Run Sizing
+        runSizing(selectedTech);
+    };
+
+    function runSizing(tech) {
+        const type = document.getElementById('instType').value;
+        let html = "";
+        let warn = null;
+
+        if (type === 'valve') {
+            // Cv Calculation: Q * sqrt(SG / dP)
+            // SG = rho / 1000
+            const Q = parseFloat(document.getElementById('cv_flow').value);
+            const dP = inputs.cv_dp;
+            const SG = inputs.cv_rho / 1000;
+            
+            if(dP > 0) {
+                const Cv = 1.16 * Q * Math.sqrt(SG / dP);
+                const Kv = 0.86 * Cv;
+                html += `<div class="calc-row"><span>Required Cv:</span> <span class="calc-val">${Cv.toFixed(1)}</span></div>`;
+                html += `<div class="calc-row"><span>Required Kv:</span> <span class="calc-val">${Kv.toFixed(1)}</span></div>`;
+                html += `<div class="calc-row"><span>Est. Size:</span> <span class="calc-val">DN ${getValveSize(Kv)}</span></div>`;
+            } else {
+                warn = "dP must be > 0";
+            }
+        } 
+        else if (type === 'flow') {
+            // Velocity Check
+            // v = Q / A
+            const Q_m3s = inputs.flow / 3600;
+            // Assume DN based on 2 m/s
+            const D_est = Math.sqrt((4 * Q_m3s) / (Math.PI * 2.0)); // m
+            const DN = Math.round(D_est * 1000);
+            
+            html += `<div class="calc-row"><span>Max Flow:</span> <span class="calc-val">${inputs.flow} m³/h</span></div>`;
+        // Messspanne aus den Angaben des Nutzers. Frueher wurde q_min gar nicht
+        // ausgelesen. Die Rangfolge der Technologien beruecksichtigt sie noch
+        // nicht - dafuer fehlen belastbare Spannenangaben je Messprinzip.
+        if (Number.isFinite(inputs.flow_min) && inputs.flow_min > 0 && Number.isFinite(inputs.flow)) {
+            const spanne = inputs.flow / inputs.flow_min;
+            html += `<div class="calc-row"><span>Messspanne (Q<sub>max</sub>/Q<sub>min</sub>):</span> <span class="calc-val">${spanne.toFixed(1)} : 1</span></div>`;
+            if (spanne > 100) {
+                html += `<div class="calc-row" style="color:#f1c40f"><span>Hinweis:</span> <span>Spanne über 100:1, für die meisten Messprinzipien zu groß. Bereich teilen oder Prinzip prüfen.</span></div>`;
+            }
+        }
+            html += `<div class="calc-row"><span>Rec. Line Size:</span> <span class="calc-val">DN ${roundToDN(DN)}</span></div>`;
+            
+            if(tech.id === 'coriolis') html += `<div class="calc-row"><span>Pressure Drop:</span> <span class="calc-val">~0.5 bar</span></div>`;
+            if(tech.id === 'mag') html += `<div class="calc-row"><span>Pressure Drop:</span> <span class="calc-val">0.0 bar</span></div>`;
+        }
+        else if (type === 'level') {
+            html += `<div class="calc-row"><span>Range:</span> <span class="calc-val">0 - ${document.getElementById('lvl_h').value} m</span></div>`;
+            html += `<div class="calc-row"><span>Hydro. Press:</span> <span class="calc-val">${(document.getElementById('lvl_h').value * document.getElementById('lvl_rho').value * 9.81 / 100000).toFixed(2)} bar</span></div>`;
+        }
+
+        document.getElementById('calcResults').innerHTML = html;
+        
+        // Material Logic
+        const matBody = document.getElementById('mat_body');
+        if(inputs.state === 'steam') matBody.innerText = "A216 WCB (Carbon Steel)";
+        else if(inputs.state === 'slurry') matBody.innerText = "Duplex SS (Abrasion Res.)";
+        else matBody.innerText = "SS316L (Standard)";
+
+        // Warning
+        const wBox = document.getElementById('warnBox');
+        if(selectedTech.score < 50) {
+            wBox.style.display = 'block';
+            document.getElementById('warnText').innerText = "Technologie nicht empfohlen für diese Prozessdaten!";
+        } else {
+            wBox.style.display = 'none';
+        }
+    }
+
+    function roundToDN(d) {
+        const dns = [15, 25, 40, 50, 80, 100, 150, 200, 250, 300];
+        return dns.find(x => x >= d) || d;
+    }
+    
+    function getValveSize(Kv) {
+        // Rough estimation
+        if(Kv < 4) return 15;
+        if(Kv < 10) return 25;
+        if(Kv < 25) return 40;
+        if(Kv < 40) return 50;
+        if(Kv < 100) return 80;
+        if(Kv < 160) return 100;
+        return 150;
+    }
+
+    // --- EXCEL EXPORT (ISA S20) ---
+    window.exportDatasheet = function() {
+        const wb = XLSX.utils.book_new();
+        const wsData = [
+            ["ART ENVI - INSTRUMENT DATASHEET (ISA S20)"],
+            ["Tag No:", "FT-101", "Service:", document.getElementById('instType').value.toUpperCase()],
+            ["Date:", new Date().toLocaleDateString()],
+            [],
+            ["GENERAL"],
+            ["Instrument Type", selectedTech.name],
+            ["Line Size / Conn.", document.getElementById('calcResults').innerText.includes('DN') ? "See Sizing" : "N/A"],
+            [],
+            ["PROCESS CONDITIONS"],
+            ["Fluid State", inputs.state],
+            ["Temperature", inputs.temp + " °C"],
+            ["Pressure", inputs.pres + " bar"],
+            ["Flow Max", inputs.flow || "N/A"],
+            ["Viscosity", inputs.visc || "N/A"],
+            [],
+            ["METER BODY"],
+            ["Body Material", document.getElementById('mat_body').innerText],
+            ["Trim Material", document.getElementById('mat_trim').innerText],
+            [],
+            ["NOTES"],
+            ["Suitability Score", selectedTech.score + "%"],
+            ["AI Recommendation", selectedTech.score > 80 ? "Highly Recommended" : "Check Alternatives"]
+        ];
+
+        const ws = XLSX.utils.aoa_to_sheet(wsData);
+        ws['!cols'] = [{wch:20}, {wch:30}];
+        XLSX.utils.book_append_sheet(wb, ws, "Datasheet");
+        XLSX.writeFile(wb, `Spec_${selectedTech.id}.xlsx`);
+    };
+
+</script>
+
+<!-- KI-TOPBAR-SCRIPT-START -->
+<script>
+(function(){
+  function byId(id){ return document.getElementById(id); }
+  window.KI_openInfo = function(){
+    var m = byId('kiInfoModal');
+    if(!m) return;
+    m.setAttribute('aria-hidden','false');
+    document.body.style.overflow = 'hidden';
+  };
+  window.KI_closeInfo = function(evt){
+    var m = byId('kiInfoModal');
+    if(!m) return;
+    if(evt && evt.target && evt.target.classList && !evt.target.classList.contains('ki-modal-backdrop')) return;
+    m.setAttribute('aria-hidden','true');
+    document.body.style.overflow = '';
+  };
+  document.addEventListener('keydown', function(e){
+    if(e.key === 'Escape'){
+      var m = byId('kiInfoModal');
+      if(m && m.getAttribute('aria-hidden') === 'false') window.KI_closeInfo();
+    }
+  });
+})();
+</script>
+<!-- KI-TOPBAR-SCRIPT-END -->
+
+
+<!-- KI-Helfer: ordnet das Ergebnis ein, rechnet es nicht. Der
+     Schluessel steht nicht hier, sondern hinter der Edge Function
+     werkzeug-assistent. Siehe ki-helfer.js. -->
+<script src="ki-helfer.js"></script>
+<script>
+  KI_HELFER.einbauen({
+    werkzeug: "Instrumentation Selector",
+    modus: "auswahl",
+    knopf: "Auswahl pruefen",
+    titel: "Beurteilung der Messprinzip-Wahl",
+    platzhalter: "Frage dazu, optional. Zum Beispiel: Medium, Einbaulage, Besonderheiten.",
+    ergebnisse: {
+      "sel_tech_name": "Gewaehltes Messprinzip",
+      "sel_tech_type": "Art",
+      "warnText": "Warnung des Werkzeugs",
+      "calcResults": "Auslegung"
+    }
+  });
+</script>
+</body>
+</html>

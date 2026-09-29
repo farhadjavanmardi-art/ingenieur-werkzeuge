@@ -1,0 +1,775 @@
+<!-- FILE: Earthing_CADE.html -->
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ART ENVI | Earthing Master 3D</title>
+    
+    <link rel="stylesheet" href="bibliotheken/fontawesome/css/all.min.css">
+    <script src="bibliotheken/three-0.128/three.min.js"></script>
+    <script src="bibliotheken/three-0.128/controls/OrbitControls.js"></script>
+    <script src="bibliotheken/mathjax/tex-mml-chtml.js"></script>
+
+    <style>
+        :root { 
+            --bg: #1e272e; 
+            --sidebar: #0a0a0a;
+            --accent: #e67e22; /* Earth Orange */
+            --copper: #d35400;
+            --steel: #7f8c8d;
+            --text: #f5f6fa;
+            --border: #333;
+        }
+        body { margin: 0; overflow: hidden; background: var(--bg); font-family: 'Segoe UI', sans-serif; color: var(--text); }
+        
+        .header {
+            position: fixed; top: 0; width: 100%; height: 60px;
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 0 20px; box-sizing: border-box; background: #111; border-bottom: 3px solid var(--accent); z-index: 20;
+        }
+        .brand { font-size: 20px; font-weight: 800; color: #fff; display: flex; align-items: center; gap:10px; }
+        .brand span { font-size: 11px; color: #000; background: var(--accent); padding: 3px 8px; border-radius: 4px; }
+        
+        #sidebar {
+            position: fixed; top: 60px; left: 0; bottom: 0; width: 340px;
+            background: var(--sidebar); border-right: 1px solid var(--border);
+            padding: 20px; display: flex; flex-direction: column; overflow-y: auto; z-index: 10;
+        }
+        
+        h3 { font-size: 12px; font-weight: 800; color: var(--accent); border-bottom: 1px solid #555; margin: 15px 0 10px 0; padding-bottom: 5px; text-transform: uppercase; letter-spacing: 1px;}
+        
+        .control-group { margin-bottom: 15px; background: #191f26; padding: 15px; border-radius: 8px; border: 1px solid #444; }
+        label { display: flex; justify-content: space-between; font-size: 11px; color: #ccc; margin-bottom: 5px; font-weight: bold; }
+        input, select { width: 100%; padding: 8px; background: #111; border: 1px solid #555; color: #fff; border-radius: 4px; box-sizing: border-box; font-size: 13px; }
+        input:focus { border-color: var(--accent); outline: none; }
+
+        .btn-action { 
+            width: 100%; padding: 12px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; 
+            color: #fff; background: var(--accent); margin-top: 10px; transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 10px;
+        }
+        .btn-action:hover { filter: brightness(1.1); }
+        .btn-export { background: #2980b9; }
+
+        /* RESULTS BOX */
+        .res-box { background: rgba(230, 126, 34, 0.1); border: 1px solid var(--accent); padding: 10px; border-radius: 6px; margin-top: 10px; }
+        .res-val { font-size: 24px; font-weight: bold; color: #fff; text-align: center; display: block; margin: 5px 0; }
+        .res-lbl { font-size: 10px; color: #aaa; text-align: center; display: block; text-transform: uppercase; }
+
+        #canvas-container {
+            margin-left: 340px; margin-top: 60px; width: calc(100% - 340px); height: calc(100vh - 60px);
+            background: radial-gradient(circle, #2c3e50 0%, #000000 100%); position: relative;
+        }
+        
+        .overlay { position: absolute; bottom: 20px; left: 20px; color: #aaa; font-size: 11px; pointer-events: none; }
+        .legend-item { display: flex; align-items: center; gap: 5px; margin-bottom: 3px; }
+        .dot { width: 8px; height: 8px; border-radius: 50%; }
+    </style>
+
+<style id="ki-global-topbar">
+:root {
+  --ki-topbar-h: 60px;
+  --ki-emerald: #10b981;
+  --ki-emerald-2: #0f766e;
+  --ki-bg: rgba(2, 6, 23, 0.92);
+  --ki-card: rgba(15, 23, 42, 0.92);
+  --ki-border: rgba(16, 185, 129, 0.28);
+  --ki-text: #e5e7eb;
+}
+/* Force unified accent */
+:root { --primary: var(--ki-emerald) !important; --accent: var(--ki-emerald) !important; }
+
+body {
+  padding-top: var(--ki-topbar-h);
+}
+
+.ki-topbar {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: var(--ki-topbar-h);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  box-sizing: border-box;
+  background: linear-gradient(180deg, var(--ki-bg), rgba(2, 6, 23, 0.70));
+  border-bottom: 1px solid var(--ki-border);
+  z-index: 2147483000; /* higher than your random z-index wars */
+  backdrop-filter: blur(10px);
+}
+.ki-topbar .ki-left {
+  display: flex; align-items: center; gap: 10px;
+  min-width: 0;
+}
+.ki-badge {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #052e2b;
+  background: var(--ki-emerald);
+  padding: 4px 10px;
+  border-radius: 999px;
+}
+.ki-title {
+  font-size: 13px;
+  color: var(--ki-text);
+  opacity: 0.95;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ki-actions {
+  display: flex; align-items: center; gap: 10px;
+}
+.ki-iconbtn {
+  width: 42px; height: 42px;
+  border-radius: 999px;
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  background: rgba(15, 23, 42, 0.65);
+  color: var(--ki-emerald);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  text-decoration: none;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.25);
+  transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+}
+.ki-iconbtn:hover {
+  transform: translateY(-1px);
+  background: rgba(16, 185, 129, 0.15);
+  border-color: rgba(16, 185, 129, 0.65);
+}
+.ki-iconbtn svg {
+  width: 22px; height: 22px;
+  fill: currentColor;
+}
+.ki-modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.80);
+  z-index: 2147483640;
+  justify-content: center;
+  align-items: center;
+  backdrop-filter: blur(6px);
+}
+.ki-modal .ki-modal-content {
+  background: var(--ki-card);
+  border: 1px solid rgba(16, 185, 129, 0.55);
+  border-radius: 14px;
+  width: min(860px, calc(100% - 28px));
+  max-height: calc(100vh - 28px);
+  overflow: auto;
+  padding: 22px;
+  color: #e5e7eb;
+  box-shadow: 0 25px 70px rgba(0,0,0,0.55);
+}
+.ki-modal h2 {
+  margin: 0;
+  color: var(--ki-emerald);
+  letter-spacing: 0.5px;
+}
+.ki-modal .ki-close {
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  background: transparent;
+  color: #cbd5e1;
+  border-radius: 10px;
+  width: 40px; height: 40px;
+  cursor: pointer;
+}
+.ki-modal .ki-close:hover {
+  border-color: rgba(16, 185, 129, 0.65);
+  color: var(--ki-emerald);
+}
+.ki-modal .ki-section {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px dashed rgba(148, 163, 184, 0.25);
+}
+.ki-modal .ki-formula {
+  background: rgba(2, 6, 23, 0.75);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-left: 3px solid rgba(16, 185, 129, 0.85);
+  border-radius: 10px;
+  padding: 12px;
+  overflow-x: auto;
+  margin-top: 10px;
+}
+.ki-hidden { display:none !important; }
+</style>
+
+
+<style id="ki-earthing-theme-patch">
+:root{
+  --bg: #0b1220 !important;
+  --sidebar: #07101b !important;
+  --border: rgba(148,163,184,0.18) !important;
+  --text: #e5e7eb !important;
+}
+.header{
+  background: rgba(2,6,23,0.92) !important;
+  border-bottom: 1px solid rgba(16,185,129,0.55) !important;
+  height: var(--ki-topbar-h) !important;
+}
+#sidebar{ top: var(--ki-topbar-h) !important; }
+#canvas-container{ margin-top: var(--ki-topbar-h) !important; height: calc(100vh - var(--ki-topbar-h)) !important; }
+h3{ color: var(--ki-emerald) !important; border-bottom: 1px solid rgba(16,185,129,0.35) !important; }
+input:focus{ border-color: var(--ki-emerald) !important; }
+.btn-action{ background: var(--ki-emerald) !important; }
+/* Farbe aus werkzeug-stil.css. Vorher stand hier derselbe Ton mit 85
+   Prozent Deckung - neben den anderen Exportknoepfen sichtbar blasser. */
+.btn-action.btn-export{ background: var(--wz-akzent, #10b981) !important; }
+.res-box{ border-color: rgba(16,185,129,0.55) !important; background: rgba(16,185,129,0.08) !important; }
+.brand span{ background: var(--ki-emerald) !important; color:#052e2b !important; }
+</style>
+<!-- Ein Aussehen fuer alle Werkzeuge. Steht direkt hinter dem letzten
+     <style> dieses Werkzeugs: spaeter in der Reihenfolge, also gewinnt
+     es bei gleicher Spezifitaet - aber so frueh wie moeglich, damit die
+     Seite nicht erst in der alten Farbe erscheint und dann umfaerbt.
+     Am Ende des <body> geladen war genau das zu sehen: Knoepfe mit
+     transition faerbten sichtbar um. Faerbt nur, verschiebt nichts.
+     Siehe werkzeug-stil.css. -->
+<link rel="stylesheet" href="werkzeug-stil.css">
+<!-- Sprachumschaltung Deutsch / Persisch / Englisch. Was nicht im
+     Woerterbuch steht, bleibt Deutsch. Siehe uebersetzung.js. -->
+<script src="woerter.js"></script>
+<script src="woerter/Earthing_CADE.js"></script>
+<script src="uebersetzung.js"></script>
+
+
+</head>
+<body>
+
+<header class="header">
+    <div class="brand">ART ENVI <span>EARTHING 3D</span></div>
+
+    <div class="ki-actions" style="display:flex; align-items:center; gap:10px;">
+        <!-- Corrected Home Path -->
+        <a class="ki-iconbtn" href="dashboard/" title="Zurück zum KI-Engineering Dashboard" aria-label="Home"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 3 10v11h6v-7h6v7h6V10z"/></svg></a>
+        <button class="ki-iconbtn" type="button" onclick="kiOpenInfo()" title="Info: Zweck, Nutzung & Formeln" aria-label="Info"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 1 0 .001 20.001A10 10 0 0 0 12 2Zm0 4.75a1.25 1.25 0 1 1 0 2.5 1.25 1.25 0 0 1 0-2.5ZM13 18h-2v-8h2v8Z"/></svg></button>
+    </div>
+
+    <!-- Redundant back button removed -->
+</header>
+
+<div id="sidebar">
+    <h3>1. Boden & Geometrie (Site Data)</h3>
+    <div class="control-group">
+        <label>Bodenwiderstand (ρ) [Ω.m]</label>
+        <input type="number" id="rho" value="100" onchange="updateCalc()">
+        
+        <label>Gebäudelänge (L) [m]</label>
+        <input type="number" id="dimL" value="40" onchange="updateCalc()">
+        
+        <label>Gebäudebreite (B) [m]</label>
+        <input type="number" id="dimW" value="25" onchange="updateCalc()">
+        
+        <label>Fundamenttiefe (Z) [m]</label>
+        <input type="number" id="depth" value="0.8" step="0.1" onchange="updateCalc()">
+    </div>
+
+    <h3>2. Design Grid (Foundation Earth)</h3>
+    <div class="control-group">
+        <label>Material</label>
+        <select id="matType" onchange="updateCalc()">
+            <option value="steel">Verzinkter Stahl (Galvanized Strip 30x3.5)</option>
+            <option value="copper">Kupferseil (Copper Cable 50mm²)</option>
+        </select>
+
+        <label>Rastermaß (Mesh Grid) [m]</label>
+        <input type="number" id="gridSize" value="10" onchange="updateCalc()">
+        <small style="color:#666; font-size:10px;">Kleiner = Besserer Schutz (Schrittspannung)</small>
+    </div>
+
+    <h3>3. Elektroden & Anschlüsse</h3>
+    <div class="control-group">
+        <label>Tiefenerder (Rods)</label>
+        <select id="rodConfig" onchange="updateCalc()">
+            <option value="none">Keine (Nur Fundamenterder)</option>
+            <option value="corners">Nur Ecken (4 Stk)</option>
+            <option value="perimeter">Umlaufend (Alle 10m)</option>
+        </select>
+        
+        <label>Stablänge (L) [m]</label>
+        <input type="number" id="rodLen" value="3.0" step="0.5" onchange="updateCalc()">
+
+        <label>Stabdurchmesser [mm]</label>
+        <input type="number" id="rodDia" value="20" step="1" min="8" onchange="updateCalc()">
+
+        <label>Ausnutzungsgrad der Staebe</label>
+        <input type="number" id="rodEta" value="0.75" step="0.05" min="0.3" max="1" onchange="updateCalc()">
+        <small style="color:#666; font-size:10px;">Gegenseitige Beeinflussung. Typisch 0,6 bis 0,85; 1,0 waere ohne Beeinflussung.</small>
+
+        <label>Anschlussfahnen (Riser/Test)</label>
+        <input type="number" id="risers" value="6" onchange="updateCalc()">
+    </div>
+
+    <div class="res-box">
+        <span class="res-lbl">Gesamtwiderstand (Rg)</span>
+        <span class="res-val" id="resOhm">--- Ω</span>
+        <div id="statusBadge" style="text-align:center; padding:3px; border-radius:4px; font-size:11px; font-weight:bold; margin-top:5px;">--</div>
+        <div id="resDetail" style="margin-top:8px; font-size:10.5px; color:#8a8a8a; line-height:1.5;"></div>
+    </div>
+
+    <div style="margin-top:10px; padding:10px; background:rgba(241,196,15,0.07); border:1px solid #b8912a; border-radius:6px; font-size:10.5px; line-height:1.6; color:#d9c78a;">
+        <b style="color:#f1c40f;">Schaetzung, kein Nachweis</b><br>
+        Naeherung nach Laurent/Niemann fuer <b>gleichmaessigen</b> Boden. Nicht enthalten:
+        die gegenseitige Beeinflussung zwischen Netz und Staeben (der wahre Wert liegt
+        dadurch <b>hoeher</b>), geschichteter Boden, Jahreszeit und Feuchte.
+        Die Verlegetiefe geht nur in die Zeichnung ein, nicht in die Rechnung.
+        Der Erdungswiderstand einer Anlage ist zu <b>messen</b>.
+    </div>
+
+    <button class="btn-action btn-export" onclick="exportDXF_3D()"><i class="fas fa-file-export"></i> 3D DXF für AutoCAD</button>
+</div>
+
+<div id="canvas-container">
+    <div class="overlay">
+        <div class="legend-item"><div class="dot" style="background:#e67e22"></div><span>Earthing Strip (Grid)</span></div>
+        <div class="legend-item"><div class="dot" style="background:#3498db"></div><span>Earth Rods (Vertical)</span></div>
+        <div class="legend-item"><div class="dot" style="background:#2ecc71"></div><span>Risers (To Structure)</span></div>
+    </div>
+</div>
+
+<script>
+    let scene, camera, renderer, controls;
+    let earthGroup = new THREE.Group();
+    let meshLines = []; // Store lines for DXF export
+
+    window.onload = function() {
+        init3D();
+        updateCalc();
+    };
+
+    function init3D() {
+        const container = document.getElementById('canvas-container');
+        scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x151515);
+        scene.add(new THREE.GridHelper(200, 20, 0x333333, 0x222222));
+
+        camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 1, 5000);
+        camera.position.set(50, 60, 50);
+
+        renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(container.clientWidth, container.clientHeight);
+        container.appendChild(renderer.domElement);
+
+        controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+
+        const light = new THREE.DirectionalLight(0xffffff, 1);
+        light.position.set(50, 100, 50);
+        scene.add(light);
+        scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+
+        scene.add(earthGroup);
+        animate();
+    }
+
+    // Reine Rechnung, ohne three.js. Steht bewusst getrennt vom Zeichnen:
+    // vorher lief updateCalc zuerst ueber earthGroup, und wenn das CDN mit three.js
+    // nicht geladen hat, kam gar kein Widerstand heraus, nur "--- Ohm".
+    //
+    // Naeherung nach Laurent/Niemann (IEEE 80): R = rho * (1/(4*r) + 1/L_ges).
+    // Staberder nach Dwight: R = rho/(2*pi*L) * (ln(4L/a) - 1), a ist der RADIUS.
+    // Im alten Code stand dort 0,02 - das ist der uebliche Durchmesser, nicht der
+    // Radius. Ergebnis fiel dadurch zu guenstig aus.
+    function erdungswiderstand(e) {
+      const flaeche = e.L * e.W;
+      const r_ers = Math.sqrt(flaeche / Math.PI);
+
+      // Bandlaenge exakt so, wie das Netz auch gezeichnet wird: Rand plus die
+      // INNEREN Leiter. Die Zeichenschleifen laufen von 1 bis < nX bzw. < nZ,
+      // liefern also nX-1 und nZ-1 innere Leiter. Der alte Code rechnete mit
+      // nX und nZ und zaehlte damit L+W Meter mehr, als im Bild zu sehen sind.
+      const nX = Math.floor(e.L / e.raster);
+      const nZ = Math.floor(e.W / e.raster);
+      const L_ges = (2 * e.L + 2 * e.W)
+                  + Math.max(nX - 1, 0) * e.W
+                  + Math.max(nZ - 1, 0) * e.L;
+
+      const R_netz = e.rho * ((1 / (4 * r_ers)) + (1 / L_ges));
+
+      let R_staebe = null;
+      let R_ges = R_netz;
+      if (e.stabAnzahl > 0 && e.stabLaenge > 0) {
+        const a = (e.stabDurchmesser / 1000) / 2;   // mm Durchmesser -> m Radius
+        const R_ein = (e.rho / (2 * Math.PI * e.stabLaenge)) * (Math.log((4 * e.stabLaenge) / a) - 1);
+        // Ausnutzungsgrad: n Staebe wirken nicht wie n unabhaengige Erder.
+        R_staebe = R_ein / (e.stabAnzahl * e.eta);
+        // Parallel, ohne gegenseitige Beeinflussung zwischen Netz und Staeben.
+        // Nach Schwarz waere der wahre Wert etwas hoeher, siehe Hinweis in der UI.
+        R_ges = (R_netz * R_staebe) / (R_netz + R_staebe);
+      }
+      return { r_ers, L_ges, R_netz, R_staebe, R_ges };
+    }
+
+    // Ein Punkt auf dem Umfang, s Meter von der Ecke (-L/2, -W/2) aus im
+    // Uhrzeigersinn. Damit liegen Staebe und Anschlussfahnen dort, wo die
+    // Rechnung sie annimmt - und nicht dort, wo es beim Zeichnen gerade
+    // einfach war.
+    function umfangsPunkt(s, L, W) {
+      const u = 2 * (L + W);
+      let t = u > 0 ? ((s % u) + u) % u : 0;
+      if (t < L) return { x: -L / 2 + t, z: -W / 2 };
+      t -= L;
+      if (t < W) return { x: L / 2, z: -W / 2 + t };
+      t -= W;
+      if (t < L) return { x: L / 2 - t, z: W / 2 };
+      t -= W;
+      return { x: -L / 2, z: W / 2 - t };
+    }
+
+    function updateCalc() {
+        // Inputs
+        const L = parseFloat(document.getElementById('dimL').value);
+        const W = parseFloat(document.getElementById('dimW').value);
+        const D = parseFloat(document.getElementById('depth').value);
+        const gridS = parseFloat(document.getElementById('gridSize').value);
+        const rho = parseFloat(document.getElementById('rho').value);
+        const rodType = document.getElementById('rodConfig').value;
+        const rodL = parseFloat(document.getElementById('rodLen').value);
+        const rodDia = parseFloat(document.getElementById('rodDia').value);
+        const rodEta = parseFloat(document.getElementById('rodEta').value);
+        const mat = document.getElementById('matType').value;
+        const nRisers = parseInt(document.getElementById('risers').value);
+
+        // Anzahl der Staebe, unabhaengig vom Zeichnen bestimmt
+        let rodCount = 0;
+        if (rodType === 'corners')        rodCount = 4;
+        else if (rodType === 'perimeter') rodCount = Math.ceil(2 * (L + W) / 10);
+
+        // Rechnen und anzeigen, bevor irgendetwas mit three.js passiert
+        const erg = erdungswiderstand({
+          L: L, W: W, raster: gridS, rho: rho,
+          stabAnzahl: rodCount, stabLaenge: rodL,
+          stabDurchmesser: rodDia, eta: rodEta
+        });
+        zeigeErgebnis(erg);
+
+        // Ab hier nur noch die 3D-Darstellung. Faellt sie aus, steht die Zahl trotzdem.
+        if (typeof THREE === 'undefined' || typeof earthGroup === 'undefined' || !earthGroup) return;
+
+        // Clear Previous
+        while(earthGroup.children.length > 0){ earthGroup.remove(earthGroup.children[0]); }
+        meshLines = []; // Reset DXF data
+
+        const color = (mat === 'copper') ? 0xd35400 : 0xbdc3c7;
+        const matLine = new THREE.LineBasicMaterial({ color: color, linewidth: 2 });
+
+        // --- 1. GENERATE GRID (Ring + Mesh) ---
+        // Vertical position: -D (Embedded in foundation)
+        const Y_level = -D; 
+
+        // Perimeter
+        createLine(-L/2, Y_level, -W/2, L/2, Y_level, -W/2, color); // Top
+        createLine(L/2, Y_level, -W/2, L/2, Y_level, W/2, color);   // Right
+        createLine(L/2, Y_level, W/2, -L/2, Y_level, W/2, color);   // Bottom
+        createLine(-L/2, Y_level, W/2, -L/2, Y_level, -W/2, color); // Left
+
+        // Internal Grid X
+        const nX = Math.floor(L / gridS);
+        for(let i=1; i<nX; i++) {
+            const x = -L/2 + i*gridS;
+            createLine(x, Y_level, -W/2, x, Y_level, W/2, color);
+        }
+        // Internal Grid Z
+        const nZ = Math.floor(W / gridS);
+        for(let i=1; i<nZ; i++) {
+            const z = -W/2 + i*gridS;
+            createLine(-L/2, Y_level, z, L/2, Y_level, z, color);
+        }
+
+        // --- 2. GENERATE RODS ---
+        // Gezeichnet und in den DXF exportiert wird genau das, womit gerechnet
+        // wurde. Vorher standen hier bei der umlaufenden Anordnung ZWEI Staebe,
+        // gleichgueltig ob die Rechnung mit vierzehn lief. Wer den DXF baut,
+        // baut zwei und misst hinterher einen anderen Widerstand, als die Zahl
+        // daneben versprochen hat - und sucht den Fehler im Boden.
+        const rodColor = 0x3498db; // Blue for rods
+
+        if (rodType === 'corners') {
+            addRod(-L/2, Y_level, -W/2, rodL, rodColor);
+            addRod(L/2, Y_level, -W/2, rodL, rodColor);
+            addRod(L/2, Y_level, W/2, rodL, rodColor);
+            addRod(-L/2, Y_level, W/2, rodL, rodColor);
+        } else if (rodType === 'perimeter') {
+            const umfangStab = 2 * (L + W);
+            for (let i = 0; i < rodCount; i++) {
+                const q = umfangsPunkt(i * umfangStab / rodCount, L, W);
+                addRod(q.x, Y_level, q.z, rodL, rodColor);
+            }
+        }
+
+        // --- 3. GENERATE RISERS ---
+        // Gleichmaessig ueber den Umfang. Vorher rechnete die Schleife x und z
+        // aus und benutzte sie nicht: gezeichnet wurden immer drei Fahnen an
+        // drei Ecken, ob im Feld sechs oder zwanzig standen. Die eingegebene
+        // Zahl stand nur da.
+        const riserColor = 0x2ecc71; // Green
+        const umfangFahne = 2 * (L + W);
+        for (let i = 0; i < nRisers; i++) {
+            const q = umfangsPunkt(i * umfangFahne / nRisers, L, W);
+            addRiser(q.x, Y_level, q.z, 1.5, riserColor);
+        }
+
+    }
+
+    function zeigeErgebnis(erg) {
+        const R = erg.R_ges;
+        document.getElementById('resOhm').innerText = R.toFixed(2) + " \u03A9";
+
+        const badge = document.getElementById('statusBadge');
+        if(R < 1) {
+            badge.innerText = "Excellent (< 1\u03A9) - Ind./Hv";
+            badge.style.backgroundColor = "#27ae60"; badge.style.color = "white";
+        } else if (R < 10) {
+            badge.innerText = "Good (< 10\u03A9) - Building";
+            badge.style.backgroundColor = "#f1c40f"; badge.style.color = "black";
+        } else {
+            badge.innerText = "Poor (> 10\u03A9) - Add Rods";
+            badge.style.backgroundColor = "#c0392b"; badge.style.color = "white";
+        }
+
+        const det = document.getElementById('resDetail');
+        if (det) {
+            det.innerHTML = "<span>Bandl\u00e4nge</span> <b>" + erg.L_ges.toFixed(0)
+              + " m</b><span>, Ersatzradius</span> <b>" + erg.r_ers.toFixed(1)
+              + " m</b><span>, Netz allein</span> <b>" + erg.R_netz.toFixed(2) + " \u03A9</b>"
+              + (erg.R_staebe !== null ? "<span>, St\u00e4be allein</span> <b>"
+                 + erg.R_staebe.toFixed(2) + " \u03A9</b>" : "");
+        }
+    }
+
+    // --- HELPER FUNCTIONS ---
+    function createLine(x1, y1, z1, x2, y2, z2, color) {
+        const points = [];
+        points.push(new THREE.Vector3(x1, y1, z1));
+        points.push(new THREE.Vector3(x2, y2, z2));
+        const geometry = new THREE.BufferGeometry().setFromPoints(points);
+        const material = new THREE.LineBasicMaterial({ color: color });
+        const line = new THREE.Line(geometry, material);
+        earthGroup.add(line);
+        
+        // Store for DXF
+        meshLines.push({x1, y1, z1, x2, y2, z2, layer: "Earth_Grid"});
+    }
+
+    function addRod(x, y, z, len, color) {
+        // Rod goes DOWN from y
+        createLine(x, y, z, x, y - len, z, color);
+        // Store for DXF
+        meshLines.push({x1:x, y1:y, z1:z, x2:x, y2:y-len, z2:z, layer: "Earth_Rod"});
+    }
+
+    function addRiser(x, y, z, len, color) {
+        // Riser goes UP from y
+        createLine(x, y, z, x, y + len, z, color);
+        meshLines.push({x1:x, y1:y, z1:z, x2:x, y2:y+len, z2:z, layer: "Earth_Riser"});
+    }
+
+    function animate() {
+        requestAnimationFrame(animate);
+        controls.update();
+        renderer.render(scene, camera);
+    }
+
+    // --- DXF EXPORT (3D) ---
+    window.exportDXF_3D = function() {
+        let dxf = "0\nSECTION\n2\nHEADER\n9\n$ACADVER\n1\nAC1009\n0\nENDSEC\n";
+        dxf += "0\nSECTION\n2\nTABLES\n0\nTABLE\n2\nLAYER\n70\n3\n";
+        
+        // Define Layers
+        dxf += "0\nLAYER\n2\nEarth_Grid\n70\n0\n62\n30\n6\nCONTINUOUS\n"; // Orange
+        dxf += "0\nLAYER\n2\nEarth_Rod\n70\n0\n62\n5\n6\nCONTINUOUS\n";  // Blue
+        dxf += "0\nLAYER\n2\nEarth_Riser\n70\n0\n62\n3\n6\nCONTINUOUS\n"; // Green
+        
+        dxf += "0\nENDTAB\n0\nENDSEC\n0\nSECTION\n2\nENTITIES\n";
+
+        // Entities (LINES with Z coordinates)
+        meshLines.forEach(l => {
+            dxf += "0\nLINE\n";
+            dxf += `8\n${l.layer}\n`; // Layer
+            dxf += `10\n${l.x1}\n20\n${l.z1}\n30\n${l.y1}\n`; // Start Point (Swap Y/Z for AutoCAD world)
+            dxf += `11\n${l.x2}\n21\n${l.z2}\n31\n${l.y2}\n`; // End Point
+            // Note: In ThreeJS Y is Up. In AutoCAD Z is Up. 
+            // So we map ThreeJS Y -> AutoCAD Z (Code 30/31)
+            // And ThreeJS Z -> AutoCAD Y (Code 20/21)
+        });
+
+        dxf += "0\nENDSEC\n0\nEOF";
+
+        const blob = new Blob([dxf], {type:'application/dxf'});
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = "Earthing_Design_3D.dxf";
+        link.click();
+    };
+
+    window.addEventListener('resize', () => {
+        const c = document.getElementById('canvas-container');
+        camera.aspect = c.clientWidth / c.clientHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(c.clientWidth, c.clientHeight);
+    });
+
+</script>
+
+
+<div id="kiInfoModal" class="ki-modal" onclick="if(event.target===this) kiCloseInfo()">
+  <div class="ki-modal-content" role="dialog" aria-modal="true" aria-label="Info: Earthing Master 3D">
+    <div style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+      <h2>Info: Earthing Master 3D</h2>
+      <button class="ki-close" type="button" onclick="kiCloseInfo()" aria-label="Schließen">✕</button>
+    </div>
+
+    <div class="ki-section">
+      <h3 style="margin:0; color:#cbd5e1; font-size:13px;">Anwendung dieser Seite</h3>
+      <p style="margin:10px 0 0; line-height:1.7; color:#cbd5e1;">
+        Diese Seite ist ein einfacher 3D-Modellierer für <b>Fundamenterder / Erdungsnetze</b>, der das Erdungsgitter, Tiefenerder (Rods) und Anschlussfahnen (Risers) darstellt.
+        Zusätzlich wird eine technische Schätzung (Approximation) des <b>Erdungswiderstands Rg</b> berechnet und ein <b>3D DXF</b> für AutoCAD generiert.
+      </p>
+      <p style="margin:10px 0 0; color:#94a3b8; font-size:12px;">
+        Wichtiger Hinweis: Das Berechnungsmodell ist vereinfacht und berücksichtigt nicht alle Effekte wie gegenseitigen Widerstand, Bodenschichten oder Details der IEC/IEEE-Standards.
+        Verwenden Sie dies nicht für die finale Ausführungsplanung ohne Überprüfung.
+      </p>
+    </div>
+
+    <div class="ki-section">
+      <h3 style="margin:0; color:#cbd5e1; font-size:13px;">Nutzung</h3>
+      <ol style="margin:10px 0 0; line-height:1.9; color:#cbd5e1;">
+        <li>Geben Sie den spezifischen Bodenwiderstand \(\rho\), die Gebäudeabmessungen (L, B) und die Fundamenttiefe (Z) ein.</li>
+        <li>Definieren Sie das Rastermaß (gridSize). Kleiner = dichteres Netz.</li>
+        <li>Wählen Sie die Konfiguration der Tiefenerder (Rods) und deren Länge.</li>
+        <li>Das Ergebnis Rg und der Status (Badge) werden aktualisiert. Das 3D-Modell ändert sich sofort.</li>
+        <li>Bei Bedarf können Sie das DXF exportieren.</li>
+      </ol>
+      <p style="margin:10px 0 0; color:#94a3b8; font-size:12px;">
+        Hinweis: Wenn keine Internetverbindung besteht und CDNs nicht geladen werden, ist Three.js möglicherweise nicht verfügbar und die 3D-Ansicht funktioniert nicht.
+      </p>
+    </div>
+
+    <div class="ki-section">
+      <h3 style="margin:0; color:#cbd5e1; font-size:13px;">Formeln und Berechnungslogik (aus dem Code)</h3>
+
+      <div class="ki-formula">
+        <div><b>Fläche und äquivalenter Radius:</b></div>
+        <div style="margin-top:8px;">\(Area = L \cdot W\)</div>
+        <div>\(r_{eq} = \sqrt{\frac{Area}{\pi}}\)</div>
+      </div>
+
+      <div class="ki-formula">
+        <div><b>Gesamtlänge des Erdungsbandes (Code-Näherung):</b></div>
+        <div style="margin-top:8px;">
+          Im Code: \(nX = \lfloor L/gridS \rfloor\) und \(nZ = \lfloor W/gridS \rfloor\)
+        </div>
+        <div style="margin-top:6px;">
+          \(TotalLen = (2L + 2W) + (nX \cdot W) + (nZ \cdot L)\)
+        </div>
+      </div>
+
+      <div class="ki-formula">
+        <div><b>Netzwiderstand (IEEE 80 Näherung im Code):</b></div>
+        <div style="margin-top:8px;">\(R_{grid} = \rho \left(\frac{1}{4 r_{eq}} + \frac{1}{TotalLen}\right)\)</div>
+      </div>
+
+      <div class="ki-formula">
+        <div><b>Widerstand eines Tiefenerders (Code-Näherung):</b></div>
+        <div style="margin-top:8px;">
+          Der Stabdurchmesser kommt aus dem Eingabefeld; a ist der Radius in Metern:
+        </div>
+        <div style="margin-top:6px;">
+          \(R_{one\_rod} = \frac{\rho}{2\pi L_{rod}}\left(\ln\left(\frac{4L_{rod}}{a}\right) - 1\right)\)
+        </div>
+      </div>
+
+      <div class="ki-formula">
+        <div><b>Kombination mehrerer Erder (Parallel, vereinfacht):</b></div>
+        <div style="margin-top:8px;">\(R_{rods} = R_{one\_rod}/(rodCount \cdot \eta)\)</div>
+        <div>Der Ausnutzungsgrad \(\eta\) steht im Eingabefeld: n Staebe wirken nicht
+          wie n unabhaengige Erder.</div>
+        <div>Parallelschaltung mit dem Netz:</div>
+        <div style="margin-top:6px;">\(R_{total} = \frac{R_{grid}\,R_{rods}}{R_{grid} + R_{rods}}\)</div>
+      </div>
+
+      <p style="margin:12px 0 0; color:#94a3b8; font-size:12px;">
+        Bei der umlaufenden Anordnung nimmt der Code die Anzahl der Stäbe aus dem Umfang mit 10 m Abstand. Genau diese Stäbe werden gezeichnet und in den DXF exportiert – Bild und Zahl gehören zusammen.
+      </p>
+    </div>
+  </div>
+</div>
+
+
+
+<script id="ki-global-topbar-js">
+(function() {
+  window.kiGoHome = function(ev) {
+    // Relative link handled by href
+    return true;
+  };
+
+  window.kiOpenInfo = function() {
+    const m = document.getElementById('kiInfoModal');
+    if (m) m.style.display = 'flex';
+    if (window.MathJax && window.MathJax.typeset) {
+      try { window.MathJax.typeset(); } catch(e) {}
+    }
+  };
+
+  window.kiCloseInfo = function() {
+    const m = document.getElementById('kiInfoModal');
+    if (m) m.style.display = 'none';
+  };
+})();
+</script>
+
+
+<script id="ki-earthing-js-patch">
+(function(){
+  window.addEventListener('load', function(){
+    if(!window.THREE){
+      console.warn('Three.js missing (offline/CDN blocked). 3D view will not work.');
+      try{
+        const c = document.getElementById('canvas-container');
+        if(c){
+          const warn = document.createElement('div');
+          warn.style.position='absolute';
+          warn.style.inset='16px';
+          warn.style.border='1px solid rgba(16,185,129,0.45)';
+          warn.style.borderRadius='12px';
+          warn.style.background='rgba(2,6,23,0.75)';
+          warn.style.color='#e5e7eb';
+          warn.style.padding='14px';
+          warn.style.fontFamily='Segoe UI, sans-serif';
+          warn.style.fontSize='13px';
+          warn.innerHTML = '<b>CDN/Internet fehlt:</b> Three.js konnte nicht geladen werden. Die Seite bleibt nutzbar (Inputs/Export), aber 3D-Ansicht funktioniert ohne Three.js nicht.';
+          c.appendChild(warn);
+        }
+      }catch(e){}
+    }
+  });
+})();
+</script>
+
+
+<!-- KI-Helfer: ordnet das Ergebnis ein, rechnet es nicht. Der
+     Schluessel steht nicht hier, sondern hinter der Edge Function
+     werkzeug-assistent. Siehe ki-helfer.js. -->
+<script src="ki-helfer.js"></script>
+<script>
+  KI_HELFER.einbauen({
+    werkzeug: "Earthing Master 3D",
+    modus: "deutung",
+    knopf: "Ergebnis einordnen",
+    titel: "Einordnung des Ergebnisses",
+    platzhalter: "Frage dazu, optional. Zum Beispiel: welche Stellschraube zuerst?",
+    ergebnisse: {
+      "resOhm": "Erdungswiderstand",
+      "resDetail": "Einzelheiten"
+    }
+  });
+</script>
+</body>
+</html>

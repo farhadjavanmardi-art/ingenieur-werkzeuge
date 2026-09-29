@@ -1,0 +1,1471 @@
+<!-- START OF FILE Trasse_CAD.html -->
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trasse CAD Pro (F. Javanmardi)</title>
+    
+    <script src="bibliotheken/three-0.128/three.min.js"></script>
+    <script src="bibliotheken/three-0.128/controls/OrbitControls.js"></script>
+    <script src="bibliotheken/three-0.128/utils/BufferGeometryUtils.js"></script>
+    <script src="bibliotheken/three-0.128/controls/TransformControls.js"></script>
+    
+    <link rel="stylesheet" href="bibliotheken/fontawesome/css/all.min.css">
+
+    <style>
+        :root { 
+            --bg: #121212; 
+            --card-bg: #1e272e; 
+            --sidebar-bg: #1e272e; 
+            --accent: #00d2d3; 
+            --text: #ecf0f1;
+            --border: #333; 
+            --header-height: 80px; 
+        
+            font-family: 'Segoe UI', sans-serif;
+            color-scheme: dark;
+        }
+
+        body { margin: 0; overflow: hidden; background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; }
+        
+        /* --- HEADER STYLES --- */
+        .header {
+            position: fixed; 
+            top: 0;
+            width: 100%; 
+            height: var(--header-height);
+            box-sizing: border-box;
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 0 20px;
+            border-bottom: 2px solid var(--accent);
+            background: rgba(18,18,18,0.98);
+            backdrop-filter: saturate(140%) blur(6px);
+            -webkit-backdrop-filter: saturate(140%) blur(6px);
+            z-index: 20;
+        }
+
+        .brand-group {
+            display: flex; align-items: center; gap: 20px;
+        }
+        .brand-text { font-size: 24px; font-weight: 800; color: #fff; line-height: 1.1; }
+        .brand-text span { font-size: 14px; color: var(--accent); font-weight: 400; display:block; margin-top:3px; text-transform: uppercase; letter-spacing: 1px;}
+        
+        /* --- SIDEBAR STYLES --- */
+        #sidebar {
+            position: fixed; 
+            top: var(--header-height); 
+            left: 0; 
+            bottom: 0; 
+            width: 300px;
+            background: var(--sidebar-bg); 
+            border-right: 1px solid var(--border);
+            padding: 15px; 
+            display: flex; flex-direction: column; 
+            z-index: 10;
+            overflow-y: auto; 
+            height: calc(100vh - var(--header-height)); 
+        }
+
+        /* --- CANVAS CONTAINER STYLES --- */
+        #canvas-container {
+            margin-left: 300px; 
+            margin-top: var(--header-height); 
+            width: calc(100% - 300px); 
+            height: calc(100vh - var(--header-height)); 
+            position: absolute; 
+        }
+        
+        /* --- CONTROL GROUP STYLES --- */
+        h2 { color: var(--accent); margin: 0 0 15px 0; border-bottom: 2px solid var(--accent); padding-bottom: 10px; font-size: 18px; }
+        
+        .control-group { margin-bottom: 15px; border-bottom: 1px dashed #57606f; padding-bottom: 10px; }
+        .control-group:last-of-type { border-bottom: none; } 
+        label { display: block; font-size: 12px; margin-bottom: 6px; color:#aaa; text-transform: uppercase; letter-spacing: 0.5px; }
+        
+        select, input:not([type="color"]) { 
+            width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #555;
+            background: #121212; color: #fff; font-size: 14px; box-sizing: border-box; 
+        }
+
+        /* Specific style for color input */
+        input[type="color"] { height: 35px; padding: 0; width: 100%; border: none; margin-bottom: 10px; box-sizing: content-box; }
+
+        .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+        button {
+            padding: 12px; background: #57606f; border: 1px solid #747d8c; color: white; cursor: pointer; border-radius: 4px; font-size: 12px; transition: 0.2s;
+        }
+        button:hover { background: var(--accent); color: #2f3542; }
+        
+        .mode-switch { display: flex; gap: 5px; margin-bottom: 15px; }
+        .mode-btn { flex: 1; background: #3742fa; border: none; }
+        .mode-btn.active { background: #5352ed; border: 2px solid white; }
+
+        #statusBox {
+            margin-top: auto; padding: 15px; background: #000; color: #7bed9f; font-size: 11px; border-radius: 6px; border: 1px solid #333;
+        }
+
+        .part-group-header { 
+            background: #4a69bd; 
+            color: white; 
+            padding: 5px 10px; 
+            margin-top: 5px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+    
+        /* ================================
+           KI Engineering Dashboard UI (UI-only)
+           - Emerald/Jade theme
+           - Fixed top-right icons (Info + Home)
+           ================================ */
+        :root{
+            --accent: #10b981;       /* emerald */
+            --accent-2: #0f766e;     /* jade */
+        }
+
+        /* Top-right icon cluster */
+        .ki-topbar-right{
+            display:flex;
+            align-items:center;
+            gap:10px;
+        }
+        .ki-icon-btn{
+            width:42px;
+            height:42px;
+            border-radius:12px;
+            border: 1px solid rgba(16,185,129,0.45);
+            background: rgba(16,185,129,0.14);
+            color: #d1fae5;
+            display:inline-flex;
+            align-items:center;
+            justify-content:center;
+            cursor:pointer;
+            text-decoration:none;
+            user-select:none;
+            -webkit-user-select:none;
+            box-shadow: 0 6px 18px rgba(0,0,0,0.35);
+            transition: transform .15s ease, background .15s ease, border-color .15s ease;
+        }
+        .ki-icon-btn:hover{
+            background: rgba(16,185,129,0.22);
+            border-color: rgba(16,185,129,0.85);
+            transform: translateY(-1px);
+        }
+        .ki-icon-btn:active{
+            transform: translateY(0px);
+        }
+        .ki-icon-btn svg{
+            width:20px;
+            height:20px;
+            display:block;
+            pointer-events:none;
+        }
+        .ki-icon-btn:focus-visible{
+            outline: 2px solid rgba(16,185,129,0.9);
+            outline-offset: 2px;
+        }
+
+        /* Help modal */
+        .ki-modal{
+            position: fixed;
+            inset: 0;
+            display:none;
+            align-items:center;
+            justify-content:center;
+            padding: 18px;
+            background: rgba(0,0,0,0.62);
+            z-index: 99999;
+        }
+        .ki-modal.open{ display:flex; }
+        .ki-modal-card{
+            width: min(860px, 96vw);
+            max-height: min(78vh, 780px);
+            overflow: hidden;
+            border-radius: 16px;
+            border: 1px solid rgba(16,185,129,0.35);
+            background: rgba(18,18,18,0.96);
+            box-shadow: 0 18px 60px rgba(0,0,0,0.65);
+        }
+        .ki-modal-head{
+            display:flex;
+            align-items:flex-start;
+            justify-content:space-between;
+            gap: 12px;
+            padding: 14px 16px;
+            border-bottom: 1px solid rgba(16,185,129,0.22);
+            background: rgba(16,185,129,0.08);
+        }
+        .ki-modal-title{
+            font-size: 16px;
+            font-weight: 800;
+            color: #ecfdf5;
+            margin: 0;
+        }
+        .ki-modal-sub{
+            font-size: 12px;
+            color: rgba(236,253,245,0.72);
+            margin-top: 4px;
+        }
+        .ki-modal-close{
+            width: 38px;
+            height: 38px;
+            border-radius: 12px;
+            border: 1px solid rgba(16,185,129,0.35);
+            background: rgba(16,185,129,0.14);
+            color: #d1fae5;
+            cursor: pointer;
+            display:inline-flex;
+            align-items:center;
+            justify-content:center;
+            font-size: 20px;
+            line-height: 1;
+            transition: transform .15s ease, background .15s ease, border-color .15s ease;
+        }
+        .ki-modal-close:hover{
+            background: rgba(16,185,129,0.22);
+            border-color: rgba(16,185,129,0.85);
+            transform: translateY(-1px);
+        }
+        .ki-modal-body{
+            padding: 14px 16px 16px 16px;
+            overflow:auto;
+            max-height: calc(min(78vh, 780px) - 64px);
+            color: rgba(236,240,241,0.92);
+            font-size: 13px;
+            line-height: 1.55;
+        }
+        .ki-modal-body h3{
+            margin: 14px 0 8px 0;
+            color: #a7f3d0;
+            font-size: 13px;
+            letter-spacing: .2px;
+            text-transform: uppercase;
+        }
+        .ki-modal-body code{
+            color:#a7f3d0;
+            background: rgba(16,185,129,0.10);
+            border: 1px solid rgba(16,185,129,0.22);
+            padding: 2px 6px;
+            border-radius: 8px;
+        }
+
+    </style>
+<!-- Ein Aussehen fuer alle Werkzeuge. Steht direkt hinter dem letzten
+     <style> dieses Werkzeugs: spaeter in der Reihenfolge, also gewinnt
+     es bei gleicher Spezifitaet - aber so frueh wie moeglich, damit die
+     Seite nicht erst in der alten Farbe erscheint und dann umfaerbt.
+     Am Ende des <body> geladen war genau das zu sehen: Knoepfe mit
+     transition faerbten sichtbar um. Faerbt nur, verschiebt nichts.
+     Siehe werkzeug-stil.css. -->
+<link rel="stylesheet" href="werkzeug-stil.css">
+<!-- Sprachumschaltung Deutsch / Persisch / Englisch. Was nicht im
+     Woerterbuch steht, bleibt Deutsch. Siehe uebersetzung.js. -->
+<script src="woerter.js"></script>
+<script src="woerter/Trasse_CAD.js"></script>
+<script src="uebersetzung.js"></script>
+
+</head>
+<body>
+    
+    <header class="header">
+      <div class="brand-group">
+        <div class="brand-text">
+            ART ENVI 
+            <span>Kabeltrassen CAD Modellierung</span>
+        </div>
+      </div>
+
+      <div class="ki-topbar-right">
+        <!-- INFO Button -->
+        <button class="ki-icon-btn" type="button" title="Info / Anleitung" aria-label="Info" onclick="kiOpenHelp()">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10Z" stroke="currentColor" stroke-width="2"/>
+            <path d="M12 10.5v7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            <path d="M12 7.25h.01" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+          </svg>
+        </button>
+        <!-- HOME Button -->
+        <a class="ki-icon-btn" title="Zurück zum Dashboard" aria-label="Home" href="dashboard/">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M3 10.5 12 3l9 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M5.5 10.5V21h13V10.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M10 21v-6h4v6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </a>
+      </div>
+
+    </header>
+    <div id="sidebar">
+        <h2>Trasse Steuerung</h2>
+        
+        <div class="control-group">
+            <label>Werkzeug (Tool)</label>
+            <div class="mode-switch">
+                <button class="mode-btn active" onclick="setMode('translate')" id="btnMove">Verschieben (W)</button>
+                <button class="mode-btn" onclick="setMode('rotate')" id="btnRotate">Drehen (E)</button>
+            </div>
+            <div style="font-size: 10px; color: #aaa; margin-top:5px;">
+                <input type="checkbox" id="snapToggle" checked> Magnet-Funktion (Snap) an
+            </div>
+        </div>
+        
+        <div class="control-group">
+            <label>Breite aller Trassen (Default Width)</label>
+            <select id="trayWidth">
+                <option value="200">200 mm</option>
+                <option value="300">300 mm</option>
+                <option value="400" selected>400 mm</option>
+                <option value="500">500 mm</option>
+                <option value="600">600 mm</option>
+            </select>
+        </div>
+        
+        <div class="control-group">
+            <label>Farbe der Trasse</label>
+            <input type="color" id="trasseColor" value="#95a5a6">
+        </div>
+
+        <div class="control-group">
+            <label>Höhe der Trasse (Tiefe - Standard in mm)</label>
+            <select id="trayHeight">
+                <option value="60" selected>60 mm (Standard)</option>
+                <option value="85">85 mm</option>
+                <option value="110">110 mm</option>
+                <option value="150">150 mm</option>
+            </select>
+        </div>
+        <div class="control-group">
+            <label>Neigungswinkel (Tilt Angle - Grad)</label>
+            <input type="number" id="tiltAngleVal" value="0" step="5" min="-45" max="45">
+        </div>
+
+        <div class="part-group-header">Gerade Stücke</div>
+        <div class="control-group">
+            <label>Länge (mm) - Gerade</label>
+            <input type="number" id="straightLengthVal" value="1000" step="100">
+            <button onclick="addPart('straight')" style="width:100%; margin-top:5px; background:#2ed573;">+ Gerade (Kabelwanne)</button>
+            <button onclick="addPart('ladder')" style="width:100%; margin-top:5px; background:#f7b731;">+ Gerade (Kabelleiter)</button>
+            
+            <button onclick="addPart('mesh_tray')" style="width:49%; margin-top:5px; float:left; background:#2c3e50;">+ Gerade (Gitterrinne)</button>
+            <button onclick="addPart('cable_duct')" style="width:49%; margin-top:5px; float:right; background:#1abc9c;">+ Gerade (Kabelkanal)</button>
+            <div style="clear:both;"></div>
+        </div>
+
+        <div class="part-group-header">Bögen</div>
+        <div class="control-group">
+             <label>Radius (mm) - Bögen</label>
+             <input type="number" id="elbowRadiusVal" value="500" step="50" min="100">
+             <div class="btn-grid">
+                <button onclick="addPart('elbow_left')">Bogen Links</button>
+                <button onclick="addPart('elbow_right')">Bogen Rechts</button>
+                <button onclick="addPart('riser_up')">Bogen Hoch</button>
+                <button onclick="addPart('riser_down')">Bogen Runter</button>
+            </div>
+        </div>
+
+        <div class="part-group-header">Kreuzungen / T-Stücke</div>
+        <div class="control-group">
+            <label>Zweig-Länge (mm) - T/Kreuzung</label>
+            <input type="number" id="branchLengthVal" value="300" step="50" min="100">
+            <div class="btn-grid">
+                <button onclick="addPart('tee')">T-Stück</button>
+                <button onclick="addPart('cross')">Kreuzung</button>
+            </div>
+        </div>
+        
+        <div class="part-group-header" style="background: #e74c3c;">Kabel-Modellierung</div>
+        <div class="control-group">
+            <label>Farbe des Kabels</label>
+            <input type="color" id="cableColor" value="#9b59b6">
+            
+            <label>Durchmesser [mm] - (Aus Kabelberechnung)</label>
+            <input type="number" id="cableDiameter" value="14.0" step="1" min="1">
+            
+            <label style="margin-top: 10px;">Länge des Kabelabschnitts [mm]</label>
+            <input type="number" id="cableLength" value="500" step="100" min="100">
+
+            <button onclick="addCable('straight')" style="width:100%; margin-top:5px; background:#e74c3c;">+ Gerades Kabel hinzufügen</button>
+
+            <div style="margin-top: 15px; border-top: 1px dashed #666; padding-top: 10px;">
+                 <label>Kabel-Bögen (90°)</label>
+                 <div class="btn-grid">
+                    <button onclick="addCable('elbow_left')">Kabel Bogen Links</button>
+                    <button onclick="addCable('elbow_right')">Kabel Bogen Rechts</button>
+                    <button onclick="addCable('riser_up')">Kabel Bogen Hoch</button>
+                    <button onclick="addCable('riser_down')">Kabel Bogen Runter</button>
+                 </div>
+            </div>
+        </div>
+
+        <div style="border-top: 1px solid #555; margin: 10px 0;"></div>
+
+        <button onclick="deleteSelected()" style="width:100%; background:#ff4757; margin-bottom:10px;">Löschen (Entf)</button>
+        <button onclick="exportDXF()" style="width:100%; background:#1e90ff; margin-bottom: 10px;">DXF Export</button>
+        
+        <button onclick="connectSelected()" style="width:100%; background:#3498db; color:white; margin-bottom: 10px;">Verbinden (Connect)</button>
+        
+        <button onclick="undoLastAction()" id="undoBtn" style="width:100%; background:#8e44ad; color:white;" disabled>Rückgängig (Ctrl+Z)</button>
+        
+        <div style="border-top: 1px solid #555; margin: 10px 0;"></div>
+        <h3 style="margin:0 0 6px; font-size:13px;">Stückliste</h3>
+        <div id="stuecklisteBox" style="font-size:12px; line-height:1.5; color:#dfe4ea;
+             background:#141a1f; border:1px solid #333; border-radius:6px; padding:8px;
+             max-height:220px; overflow:auto;">Noch kein Bauteil gesetzt.</div>
+        <button onclick="stuecklisteCsv()" id="btnStueckliste"
+                style="width:100%; background:#576574; color:white; margin:8px 0 10px;"
+                disabled>Stückliste als CSV</button>
+
+        <div id="statusBox">
+            1. Bauteil hinzufügen.<br>
+            2. Zum Bewegen auf das Teil klicken und Pfeile/Achsen nutzen.<br>
+            3. Nahe an anderes Teil schieben -> <b>SNAP!</b><br>
+            4. Ctrl+Z für Undo nutzen.
+        </div>
+    </div>
+
+    <div id="canvas-container"></div>
+
+    
+    <!-- KI Help Modal (UI-only) -->
+    <div id="kiHelpModal" class="ki-modal" aria-hidden="true">
+      <div class="ki-modal-card" role="dialog" aria-modal="true" aria-labelledby="kiHelpTitle">
+        <div class="ki-modal-head">
+          <div>
+            <div id="kiHelpTitle" class="ki-modal-title">Trasse CAD Pro</div>
+            <div class="ki-modal-sub">Kurzanleitung, Bedienung und Export-Hinweise</div>
+          </div>
+          <button class="ki-modal-close" type="button" onclick="kiCloseHelp()" aria-label="Schließen">×</button>
+        </div>
+        <div class="ki-modal-body">
+          <h3>Wofür ist diese Seite?</h3>
+          <p>Diese HTML-Seite ist ein interaktives 3D-Werkzeug zur Modellierung von Kabeltrassen (Kabelwanne, Kabelleiter, Gitterrinne, Kabelkanal) inklusive Bögen, Risern sowie T- und Kreuz-Stücken. Zusätzlich können Kabel als separate 3D-Objekte erzeugt und in/auf Trassen positioniert werden.</p>
+
+          <h3>So benutzt du sie</h3>
+          <ol>
+            <li>Links in der Sidebar Werte wählen (Breite, Höhe, Farbe, Längen, Radius).</li>
+            <li>Mit <code>+ Gerade</code>, <code>Bogen</code>, <code>T-Stück</code> Bauteile hinzufügen.</li>
+            <li>Objekt anklicken → Transform-Gizmo nutzen: <code>W</code> = Verschieben, <code>E</code> = Drehen.</li>
+            <li><code>Magnet (Snap)</code> aktiviert: Beim Bewegen rastet das Teil an passenden Sockets ein.</li>
+            <li><code>Verbinden (Connect)</code> verbindet Trassen über ihre Anschluss-Sockets; Kabel werden auf die nächste Trasse „gesetzt“.</li>
+            <li><code>Entf</code> löscht Auswahl, <code>Ctrl+Z</code> macht die letzte Aktion rückgängig.</li>
+          </ol>
+
+          <h3>DXF Export</h3>
+          <p><code>DXF Export</code> erzeugt eine DXF-Datei, indem für jedes Trassen-Objekt die Kanten über <code>THREE.EdgesGeometry</code> ermittelt und als <code>LINE</code>-Entities in Weltkoordinaten exportiert werden. Kabel werden beim Export bewusst ausgelassen.</p>
+
+          <h3>Hinweise</h3>
+          <ul>
+            <li>Wenn du Teile nicht auswählen kannst, prüfe ob du im Canvas klickst (nicht in der Sidebar) und ob du nicht im Header-Bereich klickst.</li>
+            <li>Der Header ist fest und „nimmt“ oben Platz. Inhalte liegen nicht darunter.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+
+    <script>
+      (function(){
+        function el(id){ return document.getElementById(id); }
+        window.kiOpenHelp = function(){
+          var m = el('kiHelpModal'); if(!m) return;
+          m.classList.add('open'); m.setAttribute('aria-hidden','false');
+        };
+        window.kiCloseHelp = function(){
+          var m = el('kiHelpModal'); if(!m) return;
+          m.classList.remove('open'); m.setAttribute('aria-hidden','true');
+        };
+        window.addEventListener('keydown', function(e){
+          if(e.key === 'Escape'){ window.kiCloseHelp(); }
+        });
+        window.addEventListener('click', function(e){
+          var m = el('kiHelpModal'); if(!m) return;
+          if(m.classList.contains('open') && e.target === m){ window.kiCloseHelp(); }
+        });
+      })();
+    </script>
+
+<script>
+        // --- VARIABLES ---
+        let scene, camera, renderer, controls, transformControl;
+        let objects = []; 
+        let selectedObject = null;
+        
+        // ** UNDO SYSTEM VARIABLES **
+        let history = []; 
+        const MAX_HISTORY = 20; 
+        let isDragging = false; 
+
+        // Materials (Base materials are now dynamic, this is just for selection highlight)
+        const matSelected = new THREE.MeshStandardMaterial({ color: 0xffa502, emissive: 0x222200 });
+        
+        // Helper to get material by type (Dynamically creates material based on stored color)
+        function getMaterialByType(type, colorHex) {
+            const metallic = (type === 'mesh_tray' || type.startsWith('elbow') || type.startsWith('riser')) ? 0.8 : 0.7;
+            const roughness = (type === 'cable') ? 0.8 : 0.3;
+            
+            // Fallback colors for safety
+            let defaultColor;
+            if (type === 'straight' || type.startsWith('elbow') || type.startsWith('riser') || type.includes('tee') || type.includes('cross')) defaultColor = '#95a5a6'; 
+            else if (type === 'ladder') defaultColor = '#95a5a6';
+            else if (type === 'mesh_tray') defaultColor = '#34495e';
+            else if (type === 'cable_duct') defaultColor = '#1abc9c';
+            else if (type === 'cable') defaultColor = '#9b59b6';
+            else defaultColor = '#b2bec3';
+
+            const finalColor = colorHex || defaultColor;
+
+            return new THREE.MeshStandardMaterial({ 
+                color: new THREE.Color(finalColor), 
+                metalness: metallic, 
+                roughness: roughness 
+            });
+        }
+
+        // --- INIT ---
+        function init() {
+            const container = document.getElementById('canvas-container');
+            
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x2f3542);
+            scene.add(new THREE.GridHelper(5000, 50, 0x57606f, 0x2f3542));
+
+            camera = new THREE.PerspectiveCamera(45, window.innerWidth/window.innerHeight, 10, 10000);
+            camera.position.set(1500, 2000, 1500);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            
+            const headerHeight = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--header-height'));
+            const sidebarWidth = 300;
+            renderer.setSize(window.innerWidth - sidebarWidth, window.innerHeight - headerHeight);
+            
+            container.appendChild(renderer.domElement);
+
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+
+            transformControl = new THREE.TransformControls(camera, renderer.domElement);
+            
+            transformControl.addEventListener('dragging-changed', function (event) {
+                controls.enabled = !event.value; 
+                isDragging = event.value;
+
+                if (!event.value && selectedObject) {
+                    recordAction('transform', selectedObject);
+                }
+            });
+
+            transformControl.addEventListener('change', checkSnap); 
+            scene.add(transformControl);
+
+            // Lights
+            scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+            const dl = new THREE.DirectionalLight(0xffffff, 0.8);
+            dl.position.set(1000, 2000, 1000);
+            scene.add(dl);
+
+            // Events
+            window.addEventListener('resize', onResize);
+            window.addEventListener('pointerdown', onPointerDown);
+            window.addEventListener('keydown', onKeyDown);
+
+            animate();
+            
+            updateUndoButtonState();
+        }
+        
+        // --- UNDO SYSTEM FUNCTIONS ---
+        
+        function recordAction(type, mesh, prevState = null) {
+            if (isDragging && type === 'transform') return;
+
+            let state;
+            
+            if (type === 'add') {
+                state = { type: 'add', meshUUID: mesh.uuid };
+            } else if (type === 'delete') {
+                state = { type: 'delete', meshData: getMeshData(mesh) };
+            } else if (type === 'transform') {
+                 state = {
+                    type: 'transform',
+                    meshUUID: mesh.uuid,
+                    prevPosition: prevState ? prevState.position.clone() : mesh.position.clone(), 
+                    prevRotation: prevState ? prevState.rotation.clone() : mesh.rotation.clone(),
+                    currPosition: mesh.position.clone(),
+                    currRotation: mesh.rotation.clone()
+                 };
+                 if (prevState && mesh.position.equals(prevState.position) && mesh.rotation.equals(prevState.rotation)) {
+                    return; 
+                 }
+            } else {
+                return;
+            }
+
+            if (history.length >= MAX_HISTORY) {
+                history.shift(); 
+            }
+            history.push(state);
+            updateUndoButtonState();
+        }
+
+        window.undoLastAction = function() {
+            if (history.length === 0) return;
+            
+            const action = history.pop();
+            deselectObject(); 
+
+            if (action.type === 'add') {
+                const mesh = objects.find(o => o.uuid === action.meshUUID);
+                if (mesh) {
+                    scene.remove(mesh);
+                    objects = objects.filter(o => o !== mesh);
+                }
+            } else if (action.type === 'delete') {
+                const mesh = createMeshFromData(action.meshData); 
+                scene.add(mesh);
+                objects.push(mesh);
+                selectObject(mesh); 
+            } else if (action.type === 'transform') {
+                const mesh = objects.find(o => o.uuid === action.meshUUID);
+                if (mesh) {
+                    mesh.position.copy(action.prevPosition);
+                    mesh.rotation.copy(action.prevRotation);
+                    selectObject(mesh); 
+                }
+            }
+
+            updateUndoButtonState();
+        }
+
+        function getMeshData(mesh) {
+            return {
+                uuid: mesh.uuid,
+                position: mesh.position.clone(),
+                rotation: mesh.rotation.clone(),
+                scale: mesh.scale.clone(),
+                userData: JSON.parse(JSON.stringify(mesh.userData)) 
+            };
+        }
+        
+        function createTrayMesh(geometry, type, colorHex) {
+            let material = getMaterialByType(type, colorHex);
+            const mesh = new THREE.Mesh(geometry, material);
+            if (!mesh.userData.params) mesh.userData.params = { type: type }; 
+            return mesh;
+        }
+
+        function createMeshFromData(data) {
+             const type = data.userData.params ? data.userData.params.type : 'other';
+             const color = data.userData.params && data.userData.params.color ? data.userData.params.color : undefined;
+             const mesh = createTrayMesh(new THREE.BoxGeometry(100, 60, 100), type, color);
+             
+             mesh.uuid = data.uuid;
+             mesh.position.copy(data.position);
+             mesh.rotation.copy(data.rotation);
+             mesh.scale.copy(data.scale);
+             mesh.userData = data.userData;
+             
+             return mesh; 
+        }
+
+        function updateUndoButtonState() {
+            document.getElementById('undoBtn').disabled = history.length === 0;
+            zeigeStueckliste();
+        }
+
+        // --- STUECKLISTE ---
+        //
+        // Im Katalog steht zu diesem Werkzeug zweimal, es fuehre die
+        // Stueckliste mit. Es fuehrte keine. Es gab weder eine Liste noch
+        // eine Zaehlung - wer wissen wollte, wieviele Boegen 300x60 er
+        // gesetzt hat, musste sie im Bild abzaehlen.
+        //
+        // Gezaehlt wird, was wirklich in der Szene steht: objects ist
+        // dieselbe Liste, aus der auch der DXF entsteht. Damit koennen
+        // Zeichnung und Stueckliste nicht auseinanderlaufen.
+        const TEILNAME = {
+            straight:    'Gerade, Kabelwanne',
+            ladder:      'Gerade, Kabelleiter',
+            mesh_tray:   'Gerade, Gitterrinne',
+            cable_duct:  'Gerade, Kabelkanal',
+            elbow_left:  'Bogen links',
+            elbow_right: 'Bogen rechts',
+            riser_up:    'Bogen hoch',
+            riser_down:  'Bogen runter',
+            tee:         'T-Stück',
+            cross:       'Kreuzung',
+            cable:       'Kabel'
+        };
+
+        // Ein Bauteil ist dasselbe wie ein anderes, wenn Typ und alle Masse
+        // uebereinstimmen. Nur dann darf es in dieselbe Zeile.
+        function teilSchluessel(p) {
+            if (p.type === 'cable') return 'cable|d' + p.d + '|l' + p.l;
+            const masse = ['w' + p.w, 'h' + p.h];
+            if (p.l !== undefined) masse.push('l' + p.l);
+            if (p.r !== undefined) masse.push('r' + p.r);
+            if (p.branchLen !== undefined) masse.push('ab' + p.branchLen);
+            return p.type + '|' + masse.join('|');
+        }
+
+        // Die Masse als Stuecke: Wort und Zahl getrennt. Nur so kann das Wort
+        // ins Woerterbuch - "Länge 1000 mm" waere als Ganzes nie ein
+        // Schluessel, weil die Zahl darin steht.
+        function teilMasseStuecke(p) {
+            if (p.type === 'cable') {
+                return [{ wort: null, wert: 'Ø ' + p.d + ' mm' },
+                        { wort: null, wert: p.l + ' mm' }];
+            }
+            const st = [{ wort: null, wert: p.w + ' x ' + p.h + ' mm' }];
+            if (p.l !== undefined) st.push({ wort: 'Länge', wert: p.l + ' mm' });
+            if (p.r !== undefined) st.push({ wort: 'Radius', wert: p.r + ' mm' });
+            if (p.branchLen !== undefined) st.push({ wort: 'Abzweig', wert: p.branchLen + ' mm' });
+            return st;
+        }
+
+        function teilMasse(p) {
+            return teilMasseStuecke(p)
+                .map(x => (x.wort ? x.wort + ' ' : '') + x.wert).join(', ');
+        }
+
+        function stueckliste() {
+            const zeilen = new Map();
+            objects.forEach(m => {
+                const p = m.userData && m.userData.params;
+                if (!p || !p.type) return;
+                const k = teilSchluessel(p);
+                if (!zeilen.has(k)) {
+                    zeilen.set(k, {
+                        name: TEILNAME[p.type] || p.type,
+                        masse: teilMasse(p),
+                        stuecke: teilMasseStuecke(p),
+                        anzahl: 0,
+                        // Nur was eine Laenge hat, wird auch in Metern summiert.
+                        laenge: (p.l !== undefined) ? p.l : null
+                    });
+                }
+                zeilen.get(k).anzahl++;
+            });
+            return [...zeilen.values()].sort((a, b) =>
+                a.name.localeCompare(b.name) || a.masse.localeCompare(b.masse));
+        }
+
+        function zeigeStueckliste() {
+            const kasten = document.getElementById('stuecklisteBox');
+            const knopf = document.getElementById('btnStueckliste');
+            if (!kasten) return;
+            const liste = stueckliste();
+            if (knopf) knopf.disabled = (liste.length === 0);
+            if (liste.length === 0) {
+                kasten.textContent = 'Noch kein Bauteil gesetzt.';
+                return;
+            }
+            kasten.textContent = '';
+            let meterGesamt = 0;
+            liste.forEach(z => {
+                const zeile = document.createElement('div');
+                const anz = document.createElement('b');
+                anz.textContent = z.anzahl + ' x ';
+                zeile.appendChild(anz);
+                const name = document.createElement('span');
+                name.textContent = z.name;
+                zeile.appendChild(name);
+                z.stuecke.forEach(x => {
+                    zeile.appendChild(document.createTextNode(' - '));
+                    if (x.wort) {
+                        const w = document.createElement('span');
+                        w.textContent = x.wort;
+                        zeile.appendChild(w);
+                        zeile.appendChild(document.createTextNode(' '));
+                    }
+                    zeile.appendChild(document.createTextNode(x.wert));
+                });
+                kasten.appendChild(zeile);
+                if (z.laenge !== null) meterGesamt += z.anzahl * z.laenge;
+            });
+            if (meterGesamt > 0) {
+                const summe = document.createElement('div');
+                summe.style.cssText = 'margin-top:6px; border-top:1px solid #333; padding-top:4px;';
+                const wort = document.createElement('span');
+                wort.textContent = 'Gerade Länge insgesamt:';
+                summe.appendChild(wort);
+                summe.appendChild(document.createTextNode(' '));
+                const b = document.createElement('b');
+                b.textContent = (meterGesamt / 1000).toFixed(2) + ' m';
+                summe.appendChild(b);
+                kasten.appendChild(summe);
+            }
+        }
+
+        window.stuecklisteCsv = function() {
+            const liste = stueckliste();
+            if (!liste.length) return;
+            const zeilen = [['Anzahl', 'Bauteil', 'Masse']];
+            liste.forEach(z => zeilen.push([z.anzahl, z.name, z.masse]));
+            // Semikolon, weil die Masse selbst Kommas enthaelt und Excel im
+            // deutschen Gebietsschema ohnehin Semikolon erwartet.
+            const csv = zeilen.map(r => r.map(f => '"' + String(f).replace(/"/g, '""') + '"')
+                                         .join(';')).join('\r\n');
+            const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'Trasse_Stueckliste.csv';
+            a.click();
+        };
+
+        // --- INTERACTION (FIXED Select/Deselect using appropriate material) ---
+        function onPointerDown(event) {
+            const headerHeight = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--header-height'));
+            const sidebarWidth = 300;
+            const canvasWidth = window.innerWidth - sidebarWidth;
+            const canvasHeight = window.innerHeight - headerHeight;
+
+            if(event.clientX < sidebarWidth || event.clientY < headerHeight) {
+                 if(event.target.closest('#sidebar')) return;
+                 if(event.clientY < headerHeight) return; 
+            }
+            
+            if (transformControl.dragging) return; 
+
+            const mouse = new THREE.Vector2();
+            mouse.x = ((event.clientX - sidebarWidth) / canvasWidth) * 2 - 1;
+            mouse.y = -((event.clientY - headerHeight) / canvasHeight) * 2 + 1;
+
+            const raycaster = new THREE.Raycaster();
+            raycaster.setFromCamera(mouse, camera);
+
+            const intersects = raycaster.intersectObjects(objects);
+
+            if(intersects.length > 0) {
+                const newSelection = intersects[0].object;
+                
+                if (selectedObject && selectedObject !== newSelection) {
+                    recordAction('transform', selectedObject); 
+                }
+                
+                selectObject(newSelection);
+            } else {
+                if(selectedObject) {
+                     recordAction('transform', selectedObject);
+                }
+                deselectObject();
+            }
+        }
+
+        function selectObject(mesh) {
+            if(selectedObject) {
+                const prevParams = selectedObject.userData.params;
+                selectedObject.material = getMaterialByType(prevParams.type, prevParams.color);
+            }
+            selectedObject = mesh;
+            selectedObject.material = matSelected;
+            transformControl.attach(selectedObject);
+        }
+
+        function deselectObject() {
+            if(selectedObject) {
+                const currentParams = selectedObject.userData.params;
+                selectedObject.material = getMaterialByType(currentParams.type, currentParams.color);
+            }
+            selectedObject = null;
+            transformControl.detach();
+        }
+
+        function setMode(mode) {
+            transformControl.setMode(mode);
+            document.getElementById('btnMove').classList.toggle('active', mode === 'translate');
+            document.getElementById('btnRotate').classList.toggle('active', mode === 'rotate');
+        }
+
+        function onKeyDown(event) {
+            if(event.key === 'Delete') deleteSelected();
+            if(event.key === 'w') setMode('translate');
+            if(event.key === 'e') setMode('rotate');
+            if((event.ctrlKey || event.metaKey) && event.key === 'z') { 
+                undoLastAction();
+            }
+        }
+        
+        window.deleteSelected = function() {
+            if(!selectedObject) return;
+            
+            recordAction('delete', selectedObject); 
+
+            transformControl.detach();
+            scene.remove(selectedObject);
+            objects = objects.filter(o => o !== selectedObject);
+            selectedObject = null;
+            // recordAction lief vor dem Entfernen, die Liste dort war also
+            // noch die alte. Hier steht sie richtig.
+            zeigeStueckliste();
+        }
+
+        // --- NEW CONNECTION LOGIC (Cables and Trays) ---
+        window.connectSelected = function() {
+            if (!selectedObject) {
+                document.getElementById('statusBox').innerHTML = "Bitte wählen Sie ein Objekt zum Verbinden aus.";
+                return;
+            }
+            
+            const currentMesh = selectedObject;
+            const type = currentMesh.userData.params.type;
+            const prevState = { position: currentMesh.position.clone(), rotation: currentMesh.rotation.clone() };
+
+            if (type === 'cable') {
+                // LOGIC FOR CABLES (Connect to nearest tray floor)
+                
+                let closestTray = { dist: Infinity, mesh: null, trayHeight: 0, trayRotation: null };
+
+                for (let other of objects) {
+                    const otherType = other.userData.params.type;
+                    if (other === currentMesh || otherType === 'cable' || otherType.includes('elbow') || otherType.includes('riser') || otherType.includes('tee') || otherType.includes('cross')) continue; // Skip complex bends/crosses for simple floor connect
+
+                    const dist = currentMesh.position.distanceTo(other.position);
+                    if (dist < closestTray.dist) {
+                        closestTray.dist = dist;
+                        closestTray.mesh = other;
+                        closestTray.trayHeight = other.userData.params.h;
+                        closestTray.trayRotation = other.rotation.clone();
+                    }
+                }
+
+                if (closestTray.mesh) {
+                    const trayPos = closestTray.mesh.position;
+                    const cableRadius = currentMesh.userData.params.d / 2;
+                    const floorY = trayPos.y - (closestTray.trayHeight / 2) + (2 / 2); // Floor is at Y_center - H/2 + T/2 (T=2)
+
+                    // Find the point on the tray that is closest to the cable's XZ position
+                    const relativeX = currentMesh.position.x - trayPos.x;
+                    const relativeZ = currentMesh.position.z - trayPos.z;
+                    
+                    // Simple snap: Align XZ and set Y to floor level
+                    currentMesh.position.x = trayPos.x + relativeX; 
+                    currentMesh.position.z = trayPos.z + relativeZ;
+                    
+                    // Position the cable slightly above the tray floor, accounting for tilt
+                    // NOTE: This basic implementation ignores the tray's rotation (tiltAngle) for Y-position, which requires matrix math.
+                    currentMesh.position.y = floorY + cableRadius + 1; // 1mm buffer
+
+                    currentMesh.rotation.copy(closestTray.trayRotation); // Align cable rotation to tray rotation
+
+                    recordAction('transform', currentMesh, prevState);
+                    document.getElementById('statusBox').innerHTML = "Kabel erfolgreich auf nächster Trasse platziert (Verbinden).";
+                    return;
+                }
+            } 
+            
+            // LOGIC FOR TRAYS (Connect to nearest socket)
+            if (type !== 'cable') {
+                const snapThreshold = 10000;
+                let closestSnap = { dist: Infinity, targetPos: null, offset: null };
+                
+                currentMesh.updateMatrixWorld();
+                const currentSockets = getSocketWorldPositions(currentMesh);
+
+                for(let other of objects) {
+                    if(other === currentMesh || other.userData.params.type === 'cable') continue;
+
+                    other.updateMatrixWorld();
+                    const otherSockets = getSocketWorldPositions(other);
+
+                    for(let mySock of currentSockets) {
+                        for(let otherSock of otherSockets) {
+                            const dist = mySock.pos.distanceTo(otherSock.pos);
+                            
+                            if(dist < closestSnap.dist) {
+                                closestSnap.dist = dist;
+                                const offset = mySock.pos.clone().sub(currentMesh.position);
+                                const target = otherSock.pos.clone();
+                                
+                                closestSnap.targetPos = target;
+                                closestSnap.offset = offset;
+                            }
+                        }
+                    }
+                }
+                
+                if (closestSnap.targetPos) {
+                    const newPos = closestSnap.targetPos.sub(closestSnap.offset);
+                    currentMesh.position.copy(newPos);
+                    recordAction('transform', currentMesh, prevState);
+                    document.getElementById('statusBox').innerHTML = `Trasse verbunden (Distanz: ${closestSnap.dist.toFixed(1)} mm).`;
+                    return;
+                } else {
+                    document.getElementById('statusBox').innerHTML = "Kein Verbindungspunkt für Trasse gefunden.";
+                    return;
+                }
+            }
+        
+            document.getElementById('statusBox').innerHTML = "Kein passendes Ziel gefunden.";
+        }
+        
+        // --- SNAPPING LOGIC (The Magnet) ---
+        function checkSnap() {
+            if(!document.getElementById('snapToggle').checked) return;
+            if(!selectedObject || transformControl.mode !== 'translate') return;
+
+            const snapThreshold = 40; 
+            const currentMesh = selectedObject;
+
+            if (currentMesh.userData.params.type === 'cable') return; 
+
+            currentMesh.updateMatrixWorld();
+
+            const currentSockets = getSocketWorldPositions(currentMesh);
+
+            for(let other of objects) {
+                if(other === currentMesh || other.userData.params.type === 'cable') continue;
+
+                other.updateMatrixWorld();
+                const otherSockets = getSocketWorldPositions(other);
+
+                for(let mySock of currentSockets) {
+                    for(let otherSock of otherSockets) {
+                        const dist = mySock.pos.distanceTo(otherSock.pos);
+                        
+                        if(dist < snapThreshold) {
+                            
+                            const offset = mySock.pos.clone().sub(currentMesh.position);
+                            const target = otherSock.pos.clone();
+                            const newPos = target.sub(offset);
+                            
+                            currentMesh.position.copy(newPos);
+                            return; 
+                        }
+                    }
+                }
+            }
+        }
+
+        function getSocketWorldPositions(mesh) {
+            return mesh.userData.sockets.map(localSock => {
+                const vec = new THREE.Vector3(localSock.x, localSock.y, localSock.z);
+                vec.applyMatrix4(mesh.matrixWorld);
+                return { pos: vec };
+            });
+        }
+
+        // --- CABLE LOGIC (Dynamic Color and Routing) ---
+        
+        function makeCableGeometry(d, l) {
+            const r = d / 2;
+            const geo = new THREE.CylinderGeometry(r, r, l, 32);
+            geo.rotateX(Math.PI / 2); 
+            geo.translate(0, 0, l / 2); 
+            return { geometry: geo, sockets: [] };
+        }
+        
+        function makeCurvedCableGeometry(d, r, dir, plane) {
+            const radius = d / 2;
+            const curveRadius = r;
+            const segments = 64; 
+            const arc = Math.PI / 2; 
+            
+            let geo = new THREE.TorusGeometry(curveRadius, radius, 16, segments, arc);
+            
+            if (plane === 'horizontal') {
+                if (dir === 1) { // Elbow Left
+                    geo.rotateY(-Math.PI / 2);
+                    geo.translate(curveRadius, 0, curveRadius); 
+                } else { // Elbow Right
+                    geo.rotateY(Math.PI);
+                    geo.translate(curveRadius, 0, curveRadius); 
+                }
+            } else { // Riser
+                 geo.rotateX(Math.PI / 2);
+                 if (dir === 1) { // Riser Up
+                    geo.translate(0, curveRadius, curveRadius); 
+                 } else { // Riser Down
+                    geo.rotateZ(-Math.PI / 2);
+                    geo.translate(0, -curveRadius, curveRadius);
+                 }
+            }
+            
+            return { geometry: geo, sockets: [] };
+        }
+
+        window.addCable = function(cableType) {
+            const d = parseFloat(document.getElementById('cableDiameter').value);
+            const l = parseFloat(document.getElementById('cableLength').value);
+            const r = parseFloat(document.getElementById('elbowRadiusVal').value);
+            const colorCode = document.getElementById('cableColor').value;
+            
+            if (d <= 0 || (cableType === 'straight' && l <= 0)) {
+                document.getElementById('statusBox').innerHTML = "Fehler: Kabeldurchmesser und Länge müssen positiv sein.";
+                return;
+            }
+
+            let geoData;
+            let currentL = l; 
+
+            if (cableType === 'straight') {
+                geoData = makeCableGeometry(d, l);
+            } else {
+                const curveRadius = Math.max(r, d * 5); 
+                let dir = (cableType === 'elbow_left' || cableType === 'riser_up') ? 1 : -1;
+                let plane = (cableType.startsWith('elbow')) ? 'horizontal' : 'vertical';
+                
+                geoData = makeCurvedCableGeometry(d, curveRadius, dir, plane);
+                currentL = (Math.PI / 2) * curveRadius; 
+            }
+            
+            const mesh = createTrayMesh(geoData.geometry, 'cable', colorCode);
+            
+            mesh.userData.sockets = geoData.sockets;
+            mesh.userData.params = { type: 'cable', d: d, l: currentL, color: colorCode };
+
+            mesh.position.set(200, d / 2 + 5, 200); 
+
+            scene.add(mesh);
+            objects.push(mesh);
+            selectObject(mesh); 
+            
+            recordAction('add', mesh); 
+        }
+
+        // --- ADD PART LOGIC (for Trays) ---
+        window.addPart = function(type) {
+            const w = parseFloat(document.getElementById('trayWidth').value);
+            const h = parseFloat(document.getElementById('trayHeight').value);
+            const l = parseFloat(document.getElementById('straightLengthVal').value); 
+            
+            const trasseColorCode = document.getElementById('trasseColor').value;
+            
+            const tiltAngle = THREE.MathUtils.degToRad(parseFloat(document.getElementById('tiltAngleVal').value));
+            
+            let geoData;
+            let partParams = { type: type, w: w, h: h, tilt: tiltAngle, color: trasseColorCode }; 
+
+            // Geometry Generators
+            if(type === 'straight' || type === 'ladder' || type === 'mesh_tray' || type === 'cable_duct') {
+                partParams.l = l;
+                if(type === 'straight') geoData = makeStraight(l, w, h, tiltAngle); 
+                else if(type === 'ladder') geoData = makeLadder(l, w, h, tiltAngle); 
+                else if(type === 'mesh_tray') geoData = makeMeshTray(l, w, h, tiltAngle); 
+                else if(type === 'cable_duct') geoData = makeCableDuct(l, w, h, tiltAngle); 
+            }
+            else if(type.startsWith('elbow') || type.startsWith('riser')) {
+                let r = parseFloat(document.getElementById('elbowRadiusVal').value);
+                r = Math.max(r, w + 50); 
+                partParams.r = r;
+                
+                if(type === 'elbow_left') geoData = makeElbow(w, h, 1, r);
+                else if(type === 'elbow_right') geoData = makeElbow(w, h, -1, r);
+                else if(type === 'riser_up') geoData = makeRiser(w, h, 1, r);
+                else if(type === 'riser_down') geoData = makeRiser(w, h, -1, r);
+            }
+            else if(type === 'tee' || type === 'cross') {
+                const branchLen = parseFloat(document.getElementById('branchLengthVal').value);
+                partParams.branchLen = branchLen;
+
+                if(type === 'tee') geoData = makeTee(w, h, branchLen);
+                else if(type === 'cross') geoData = makeCross(w, h, branchLen);
+            }
+
+            const mesh = createTrayMesh(geoData.geometry, type, trasseColorCode);
+            
+            mesh.userData.sockets = geoData.sockets;
+            mesh.userData.params = partParams; 
+
+            if(selectedObject) {
+                mesh.position.copy(selectedObject.position);
+                mesh.position.x += 50; 
+                mesh.position.z += 50;
+            } else {
+                mesh.position.set(0,0,0);
+            }
+
+            scene.add(mesh);
+            objects.push(mesh);
+            selectObject(mesh); 
+            
+            recordAction('add', mesh); 
+        }
+
+        // --- GEOMETRY FACTORY (Trays) ---
+        
+        function makeStraight(l, w, h, tiltAngle = 0) {
+            const t = 2;
+            const parts = [];
+            
+            const floor = new THREE.BoxGeometry(w, t, l); 
+            floor.translate(0, -h/2, l/2);
+            if (tiltAngle !== 0) { floor.rotateX(tiltAngle); }
+            parts.push(floor);
+
+            const wl = new THREE.BoxGeometry(t, h, l); 
+            wl.translate(-w/2, 0, l/2);
+            if (tiltAngle !== 0) {
+                wl.translate(w/2, 0, -l/2); 
+                wl.rotateX(tiltAngle);
+                wl.translate(-w/2, 0, l/2); 
+            }
+            parts.push(wl);
+
+            const wr = new THREE.BoxGeometry(t, h, l); 
+            wr.translate(w/2, 0, l/2);
+            if (tiltAngle !== 0) {
+                wr.translate(-w/2, 0, -l/2); 
+                wr.rotateX(tiltAngle);
+                wr.translate(w/2, 0, l/2); 
+            }
+            parts.push(wr);
+            
+            return {
+                geometry: THREE.BufferGeometryUtils.mergeBufferGeometries(parts),
+                sockets: [
+                    {x:0, y:0, z:0}, 
+                    {x:0, y:0, z:l}  
+                ]
+            };
+        }
+        
+        function makeLadder(l, w, h, tiltAngle = 0) {
+            const t_rail = 4; 
+            const num_rungs = Math.floor(l / 300); 
+            const parts = [];
+
+            const wl = new THREE.BoxGeometry(t_rail, h, l); wl.translate(-w/2 + t_rail/2, 0, l/2);
+            const wr = new THREE.BoxGeometry(t_rail, h, l); wr.translate(w/2 - t_rail/2, 0, l/2);
+            
+            if (tiltAngle !== 0) {
+                wl.translate(w/2 - t_rail/2, 0, -l/2); 
+                wl.rotateX(tiltAngle);
+                wl.translate(-(w/2 - t_rail/2), 0, l/2); 
+
+                wr.translate(-(w/2 - t_rail/2), 0, -l/2); 
+                wr.rotateX(tiltAngle);
+                wr.translate(w/2 - t_rail/2, 0, l/2); 
+            }
+            parts.push(wl, wr);
+            
+            const rung_width = w - 2 * t_rail;
+            const rung_geo = new THREE.BoxGeometry(rung_width, 2, t_rail); 
+            
+            const step_size = l / (num_rungs + 1);
+            
+            for (let i = 0; i < num_rungs; i++) {
+                const rung_z = (i + 1) * step_size;
+                const rung = rung_geo.clone();
+                rung.translate(0, -h/2 + 2, rung_z);
+                
+                if (tiltAngle !== 0) {
+                     rung.translate(0, h/2 - 2, -rung_z); 
+                     rung.rotateX(tiltAngle);
+                     rung.translate(0, -(h/2 - 2), rung_z);
+                }
+                parts.push(rung);
+            }
+            
+            return {
+                geometry: THREE.BufferGeometryUtils.mergeBufferGeometries(parts),
+                sockets: [
+                    {x:0, y:0, z:0}, 
+                    {x:0, y:0, z:l}  
+                ]
+            };
+        }
+        
+        function makeMeshTray(l, w, h, tiltAngle = 0) {
+            const t_wire = 3; 
+            const parts = [];
+            
+            const long_geo = new THREE.BoxGeometry(t_wire, h, l);
+            const wl = long_geo.clone(); wl.translate(-w/2 + t_wire/2, 0, l/2);
+            const wr = long_geo.clone(); wr.translate(w/2 - t_wire/2, 0, l/2);
+
+            if (tiltAngle !== 0) {
+                wl.translate(w/2 - t_wire/2, 0, -l/2); wl.rotateX(tiltAngle); wl.translate(-(w/2 - t_wire/2), 0, l/2); 
+                wr.translate(-(w/2 - t_wire/2), 0, -l/2); wr.rotateX(tiltAngle); wr.translate(w/2 - t_wire/2, 0, l/2); 
+            }
+            parts.push(wl, wr);
+            
+            const num_cross = Math.floor(l / 150); 
+            const cross_geo = new THREE.BoxGeometry(w, t_wire, t_wire); 
+            
+            for (let i = 0; i <= num_cross; i++) {
+                const cross_z = (l / num_cross) * i;
+                const bottom_cross = cross_geo.clone();
+                bottom_cross.translate(0, -h/2 + t_wire/2, cross_z);
+                
+                if (tiltAngle !== 0) {
+                    bottom_cross.translate(0, h/2 - t_wire/2, -cross_z); bottom_cross.rotateX(tiltAngle); bottom_cross.translate(0, -(h/2 - t_wire/2), cross_z);
+                }
+                parts.push(bottom_cross);
+            }
+
+            return {
+                geometry: THREE.BufferGeometryUtils.mergeBufferGeometries(parts),
+                sockets: [
+                    {x:0, y:0, z:0}, 
+                    {x:0, y:0, z:l}  
+                ]
+            };
+        }
+
+        function makeCableDuct(l, w, h, tiltAngle = 0) {
+            const t = 3; 
+            const parts = [];
+            
+            const floor = new THREE.BoxGeometry(w, t, l); floor.translate(0, -h/2, l/2);
+            const wl = new THREE.BoxGeometry(t, h + t, l); wl.translate(-w/2, t/2, l/2);
+            const wr = new THREE.BoxGeometry(t, h + t, l); wr.translate(w/2, t/2, l/2);
+            const lid = new THREE.BoxGeometry(w + 2*t, t, l); lid.translate(0, h/2 + t/2, l/2); 
+
+            if (tiltAngle !== 0) {
+                const rotationMatrix = new THREE.Matrix4().makeRotationX(tiltAngle);
+                const pivotZ = -l/2; 
+                
+                floor.translate(0, h/2, pivotZ).applyMatrix4(rotationMatrix).translate(0, -h/2, -pivotZ);
+                wl.translate(w/2, 0, pivotZ).applyMatrix4(rotationMatrix).translate(-w/2, 0, -pivotZ);
+                wr.translate(-w/2, 0, pivotZ).applyMatrix4(rotationMatrix).translate(w/2, 0, -pivotZ);
+                lid.translate(0, h/2 + t/2, pivotZ).applyMatrix4(rotationMatrix).translate(0, -(h/2 + t/2), -pivotZ);
+            }
+            
+            parts.push(floor, wl, wr, lid);
+
+            return {
+                geometry: THREE.BufferGeometryUtils.mergeBufferGeometries(parts),
+                sockets: [
+                    {x:0, y:0, z:0}, 
+                    {x:0, y:0, z:l}  
+                ]
+            };
+        }
+
+        function makeElbow(w, h, dir, r) {
+            const segments = 12;
+            const parts = [];
+            const angleTotal = Math.PI/2; 
+            
+            for(let i=0; i<segments; i++) {
+                const ang = (i/segments) * angleTotal;
+                const len = (2*Math.PI*r/4) / segments;
+                const seg = new THREE.BoxGeometry(w, 2, len+1);
+                
+                const pivotX = -dir * r;
+                seg.translate(0, -h/2, 0);
+                seg.translate(-pivotX, 0, 0); 
+                seg.rotateY( dir * (ang + (angleTotal/segments)/2) );
+                seg.translate(pivotX, 0, 0);
+                parts.push(seg);
+
+                const wl = new THREE.BoxGeometry(2, h, len+1);
+                wl.translate(-w/2, 0, 0); wl.translate(-pivotX, 0, 0); wl.rotateY(dir*(ang+0.05)); wl.translate(pivotX, 0, 0);
+                parts.push(wl);
+                const wr = new THREE.BoxGeometry(2, h, len+1);
+                wr.translate(w/2, 0, 0); wr.translate(-pivotX, 0, 0); wr.rotateY(dir*(ang+0.05)); wr.translate(pivotX, 0, 0);
+                parts.push(wr);
+            }
+
+            const exitX = (dir === 1) ? -r : r;
+            return {
+                geometry: THREE.BufferGeometryUtils.mergeBufferGeometries(parts),
+                sockets: [
+                    {x:0, y:0, z:0}, 
+                    {x: exitX, y:0, z:r} 
+                ]
+            };
+        }
+
+        function makeRiser(w, h, dir, r) {
+            const segments = 10;
+            const parts = [];
+            for(let i=0; i<segments; i++) {
+                const len = (2*Math.PI*r/4)/segments;
+                const seg = new THREE.BoxGeometry(w, 2, len+1);
+                const pivotY = -dir * r;
+                
+                seg.translate(0, -pivotY, 0);
+                seg.rotateX( dir * ((i/segments)*Math.PI/2 + 0.1)); 
+                seg.translate(0, pivotY, 0);
+                parts.push(seg);
+            }
+            return {
+                geometry: THREE.BufferGeometryUtils.mergeBufferGeometries(parts),
+                sockets: [
+                    {x:0, y:0, z:0},
+                    {x:0, y:dir*r, z:r}
+                ]
+            };
+        }
+
+        function makeTee(w, h, branchLen) {
+            const s = makeStraight(branchLen * 2, w, h, 0).geometry; 
+            const b = makeStraight(branchLen, w, h, 0).geometry;
+            
+            b.rotateY(Math.PI/2);
+            b.translate(0, 0, branchLen); 
+            
+            return {
+                geometry: THREE.BufferGeometryUtils.mergeBufferGeometries([s, b]),
+                sockets: [
+                    {x:0, y:0, z:0},
+                    {x:0, y:0, z:branchLen * 2},
+                    {x:branchLen, y:0, z:branchLen} 
+                ]
+            };
+        }
+
+        function makeCross(w, h, branchLen) {
+            const mainLen = branchLen * 2;
+            const s1 = makeStraight(mainLen, w, h, 0).geometry;
+            const s2 = makeStraight(mainLen, w, h, 0).geometry;
+            
+            s2.rotateY(Math.PI/2);
+            s2.translate(0, 0, mainLen/2); s2.translate(-mainLen/2, 0, 0);
+
+            return {
+                geometry: THREE.BufferGeometryUtils.mergeBufferGeometries([s1, s2]),
+                sockets: [
+                    {x:0, y:0, z:0},
+                    {x:0, y:0, z:mainLen},
+                    {x:branchLen, y:0, z:mainLen/2},
+                    {x:-branchLen, y:0, z:mainLen/2}
+                ]
+            };
+        }
+
+        // --- EXPORT ---
+        window.exportDXF = function() {
+            let dxf = "0\nSECTION\n2\nENTITIES\n";
+            objects.forEach(mesh => {
+                mesh.updateMatrixWorld();
+                if(mesh.userData.params.type !== 'cable') {
+                    const edges = new THREE.EdgesGeometry(mesh.geometry, 20);
+                    const pos = edges.attributes.position;
+                    for(let i=0; i<pos.count; i+=2) {
+                        const v1 = new THREE.Vector3().fromBufferAttribute(pos, i).applyMatrix4(mesh.matrixWorld);
+                        const v2 = new THREE.Vector3().fromBufferAttribute(pos, i+1).applyMatrix4(mesh.matrixWorld);
+                        dxf += `0\nLINE\n8\nTrasse\n10\n${v1.x}\n20\n${v1.y}\n30\n${v1.z}\n11\n${v2.x}\n21\n${v2.y}\n31\n${v2.z}\n`;
+                    }
+                }
+            });
+            dxf += "0\nENDSEC\n0\nEOF";
+            const blob = new Blob([dxf], {type:'application/dxf'});
+            const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = 'Trasse_Pro.dxf'; link.click();
+        }
+
+        function onResize() {
+            const headerHeight = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--header-height'));
+            const sidebarWidth = 300;
+            const canvasWidth = window.innerWidth - sidebarWidth;
+            const canvasHeight = window.innerHeight - headerHeight;
+
+            renderer.setSize(canvasWidth, canvasHeight);
+
+            camera.aspect = canvasWidth / canvasHeight;
+            camera.updateProjectionMatrix();
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        init();
+    </script>
+</body>
+</html>
